@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Splatterhouse</title>
+<title>Splatterhaus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -107,7 +107,7 @@ body.hunt canvas{cursor:none}
 </head>
 <body>
 <canvas id="c" tabindex="0"></canvas>
-<div id="tag"><b>Splatterhouse</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
+<div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
 <button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
@@ -122,7 +122,7 @@ body.hunt canvas{cursor:none}
   <label class="ck"><input type="checkbox" data-k="sort" checked> Depth sort</label>
   <button type="button" id="advR">Reset</button>
 </form>
-<button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhouse mode: hunt the birds with a shotgun">Splatterhouse mode</button>
+<button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button>
 <div id="flash"></div><div id="lens"></div>
 <div id="bag" hidden></div>
 <div id="xh" hidden><i></i><b></b></div>
@@ -146,7 +146,7 @@ body.hunt canvas{cursor:none}
   <div class="row sl">
     <select id="species" aria-label="Species">
       <option value="starling">Starlings</option><option value="dunlin">Dunlin</option><option value="jackdaw">Jackdaws</option>
-      <option value="pigeon">Pigeons</option><option value="goose">Geese</option><option value="stork">White storks</option><option value="pteranodon">Pteranodon</option>
+      <option value="pigeon">Pigeons</option><option value="goose">Geese</option><option value="duck">Ducks</option><option value="stork">White storks</option><option value="pteranodon">Pteranodon</option>
     </select>
     <input id="count" type="range" aria-label="Number of birds" min="150" max="2400" step="50" value="1000"><output id="countOut" for="count">1000</output></div>
 </div>
@@ -974,6 +974,12 @@ const SPECIES={
     shape:{fat:1.15,len:1.05,neck:.055,head:.8,bill:.016,billW:1.5,tail:.6,tailW:1.3,tip:'round',chord:1.1,belly:true,sided:true,
       accents:[[[0,.002,.1265],[.0105,.006,.006],5],[[0,.006,-.068],[.012,.004,.008],5]]},
     pals:[mkPal({body:[.34,.27,.20],bill:[.03,.03,.03],wing:[.27,.22,.17],under:[.38,.33,.28],tail:[.04,.04,.04],accent:[.94,.93,.90],belly:[.70,.66,.58],head:[.035,.035,.035],hand:[.13,.11,.10],handUnder:[.27,.24,.22]})]},
+  duck:{one:'Mallard',gait:{morph:[1.1,.90,.10],tau:.50,th0:.06,sr:.65,sw:.10,tw:.28,style:'steady'},label:'Ducks',tag:'Loose skeins',word:['skein','skeins'],model:'vee',size:2.25,n:[42,30],min:6,max:120,step:1,
+    v0:19,amp:.72,flap:'always',roost:[0,-95,70],alt:[34,8,4,22],pose:[.05,.05,.12,.5],falcon:false,vee:{skein:11,lop:5,lead:[7,14]},
+    shape:{fat:1.2,len:1,neck:.03,head:.85,bill:.02,billW:1.9,tail:.6,tailW:1.1,tip:'point',chord:.95,belly:true,sided:true,bars:true,
+      accents:[[[0,-.004,.044],[.0135,.0125,.013],5]]},
+    pals:[mkPal({body:[.50,.48,.45],bill:[.80,.68,.16],wing:[.36,.33,.30],under:[.80,.78,.74],tail:[.09,.09,.10],accent:[.36,.17,.10],belly:[.68,.66,.62],head:[.03,.17,.09],hand:[.24,.22,.20],handUnder:[.72,.70,.67],bar:[.10,.22,.62]}),      // the drake: green head, chestnut breast, blue speculum
+      mkPal({body:[.42,.33,.22],bill:[.72,.46,.15],wing:[.34,.27,.19],under:[.64,.58,.50],tail:[.36,.29,.20],accent:[.46,.36,.25],belly:[.52,.43,.32],head:[.41,.33,.23],hand:[.22,.18,.14],handUnder:[.58,.53,.46],bar:[.10,.22,.62]})]},     // the hen: mottled brown, the same speculum
   stork:{one:'White stork',gait:{morph:[3.4,2.0,.58],tau:.55,th0:.08,sr:.80,sw:.06,tw:.15,style:'soar'},label:'White storks',tag:'Thermal kettle',word:['kettle','kettles'],model:'soar',size:5,n:[36,26],min:8,max:80,step:2,
     v0:10.5,amp:.45,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.09,.02,.05,.3],falcon:false,
     shape:{neck:.05,head:.8,bill:.04,billW:1.1,tail:.6,tip:'finger',chord:1.25,twoTone:true,legs:.075,farTip:true},
@@ -1014,7 +1020,7 @@ const REACT=.1,REFR=1.6,ZIG=.5,DAMP=.985,FLEE=11,DETECT=24;
 const TREFR=3,TPEAK=11,PAIRD=1.3;                    // turning waves; how close a mated pair keeps
 // flight parameters of the current species, set by setSpecies()
 const SOAR0={vc:10.5,vg:15,sink:.85,gsink:4.2,rad:[11,15],sep:8,thr:[26,8],files:false,cx:0,cz:-70};let SOAR=SOAR0;
-let sp=SPECIES.starling,K=7,V0C=10,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,NOISE=1.9,WR=4,WBF=10.4,HEAVE=0,TREACT=.07,HOPM=2.3,SPACE=1,RSX=0,RSZ=-70,R0=48,SIZE=1,PAIRS=false,HIER=false,FLAPMODE='mix',BOUNDS=false;
+let sp=SPECIES.starling,K=7,V0C=10,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,NOISE=1.9,WR=4,WBF=10.4,HEAVE=0,TREACT=.07,HOPM=2.3,SPACE=1,RSX=0,RSZ=-70,R0=48,SIZE=1,PAIRS=false,HIER=false,FLAPMODE='mix',BOUNDS=false,SKEIN=29,LOP=2,LEAD0=25,LEAD1=30;
 const MAXC=12,LINK2=49,RVIS=140,WV=1.3,WVS=3.5,WJ=3.2,WO=2.6;       // flocks and the pull between them
 let P=new Float32Array(MAXB*3),H=new Float32Array(MAXB*3),Pn=new Float32Array(MAXB*3),Hn=new Float32Array(MAXB*3);
 const V=new Float32Array(MAXB),V0=new Float32Array(MAXB),BETA=new Float32Array(MAXB),UPv=new Float32Array(MAXB*3);
@@ -1041,8 +1047,8 @@ function initBird(i,px,py,pz,fx,fy,fz){
   RANK[i]=rnd();V0[i]=V0C*(HIER?.95+.09*RANK[i]:.96+.08*rnd());V[i]=V0[i];BETA[i]=0;UPv[i3]=0;UPv[i3+1]=1;UPv[i3+2]=0;NZ[i3]=NZ[i3+1]=NZ[i3+2]=0;
   SC[i]=SIZE*(.95+.1*rnd());WB[i]=WBF*(sp.model==='vee'?.99+.02*rnd():.95+.1*rnd());PH[i]=rnd()*6.28;FS[i]=1;FLAP[i]=1;FT[i]=rnd();TK[i]=0;DEM[i]=.5;
   ESC[i]=-99;ESCA[i]=0;CEN[i]=0;TT[i]=-99;THop[i]=0;LAB[i]=-1;BND[i]=0;BOF[i]=0;FD[i]=0;FSB[i]=0;
-  MATE[i]=PAIRS&&hash((i>>1)*1.37+.5)<.8?i^1:-1;PALI[i]=sp.sexes?(rnd()<.67?0:1):sp.pals.length>1?(rnd()<.68?0:rnd()<.6?1:2):0;if(sp.sexes&&!PALI[i]){SC[i]*=.66;WB[i]*=1.33;}   // two females to each male, and the females two thirds the size
-  TIRE[i]=-99;ROOT[i]=i;SIDE[i]=0;LEADI[i]=-1;SWT[i]=0;SLOT[i]=0;LEADT[i]=S.time;LEADD[i]=25+rnd()*30;MODE[i]=0;TGT[i]=0;PREV[i]=0;RADP[i]=SOAR.rad[0]+rnd()*SOAR.rad[1];BOLD[i]=rnd();VYa[i]=0;
+  MATE[i]=PAIRS&&hash((i>>1)*1.37+.5)<.8?i^1:-1;PALI[i]=sp.sexes?(rnd()<.67?0:1):sp.pals.length===2?(rnd()<.55?0:1):sp.pals.length>1?(rnd()<.68?0:rnd()<.6?1:2):0;if(sp.sexes&&!PALI[i]){SC[i]*=.66;WB[i]*=1.33;}   // two females to each male, and the females two thirds the size
+  TIRE[i]=-99;ROOT[i]=i;SIDE[i]=0;LEADI[i]=-1;SWT[i]=0;SLOT[i]=0;LEADT[i]=S.time;LEADD[i]=LEAD0+rnd()*LEAD1;MODE[i]=0;TGT[i]=0;PREV[i]=0;RADP[i]=SOAR.rad[0]+rnd()*SOAR.rad[1];BOLD[i]=rnd();VYa[i]=0;
 }
 function spawn(n){
   S.n=0;
@@ -1051,7 +1057,7 @@ function spawn(n){
       P[i3]=th.x+Math.cos(a)*r;P[i3+1]=26+rnd()*50;P[i3+2]=th.z+Math.sin(a)*r;H[i3]=-Math.sin(a)*th.dir;H[i3+1]=0;H[i3+2]=Math.cos(a)*th.dir;
       BETA[i]=.5*th.dir;V[i]=SOAR.vc;FLAP[i]=0;FS[i]=0;}
   }else if(sp.model==='vee'){
-    {const y0=hPref(S.time),K=Math.ceil(n/29);for(let i=0;i<n;i++){const g=i%K;initBird(i,-70-g*55+(rnd()-.5)*30,y0+(g-(K-1)/2)*13+(rnd()-.5)*5,-120+g*30+(rnd()-.5)*24,1,0,.5);}}
+    {const y0=hPref(S.time),K=Math.ceil(n/SKEIN);for(let i=0;i<n;i++){const g=i%K;initBird(i,-70-g*55+(rnd()-.5)*30,y0+(g-(K-1)/2)*13+(rnd()-.5)*5,-120+g*30+(rnd()-.5)*24,1,0,.5);}}
   }else{
     const k=Math.cbrt(n/1000)*SPACE*(n<200?1.6:1),c=sp.start;
     for(let i=0;i<n;i++){let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
@@ -1104,13 +1110,13 @@ function ufFind(i){while(UF[i]!==i){UF[i]=UF[UF[i]];i=UF[i];}return i;}
 // flocks are the connected components of the "who is watching whom" graph
 function finishClusters(n){
   ccnt.fill(0,0,n);for(let i=0;i<n;i++)ccnt[ufFind(i)]++;
-  const roots=[];for(let i=0;i<n;i++)if(ccnt[i]>=8)roots.push(i);
+  const vee=sp.model==='vee',roots=[];for(let i=0;i<n;i++)if(ccnt[i]>=(vee?4:8))roots.push(i);      // a skein of ducks is small, so formation fliers count as a group from four birds up
   roots.sort((a,b)=>ccnt[b]-ccnt[a]);if(roots.length>MAXC)roots.length=MAXC;
   cmap.fill(-1,0,n);NC=roots.length;
   for(let c=0;c<NC;c++){cmap[roots[c]]=c;CLn[c]=CLx[c]=CLy[c]=CLz[c]=CLr[c]=CLhx[c]=CLhy[c]=CLhz[c]=0;}
   for(let i=0;i<n;i++){const c=cmap[ufFind(i)];LAB[i]=c;if(c<0)continue;const i3=i*3;
     CLn[c]++;CLx[c]+=P[i3];CLy[c]+=P[i3+1];CLz[c]+=P[i3+2];CLhx[c]+=H[i3];CLhy[c]+=H[i3+1];CLhz[c]+=H[i3+2];}
-  const thr=Math.max(15,.03*n);let tot=0,all=0,sx=0,sy=0,sz=0,pol=0;
+  const thr=vee?Math.max(5,.03*n):Math.max(15,.03*n);let tot=0,all=0,sx=0,sy=0,sz=0,pol=0;
   for(let c=0;c<NC;c++){const m=CLn[c];pol+=Math.hypot(CLhx[c],CLhy[c],CLhz[c]);all+=m;CLhx[c]/=m;CLhy[c]/=m;CLhz[c]/=m;CLx[c]/=m;CLy[c]/=m;CLz[c]/=m;
     if(m>=thr||!c){tot+=m;sx+=CLx[c]*m;sy+=CLy[c]*m;sz+=CLz[c]*m;}}
   for(let i=0;i<n;i++){const c=LAB[i];if(c<0)continue;const i3=i*3,dx=P[i3]-CLx[c],dy=P[i3+1]-CLy[c],dz=P[i3+2]-CLz[c];CLr[c]+=dx*dx+dy*dy+dz*dz;}
@@ -1273,7 +1279,7 @@ function flyStep(i,h,ax,ay,az){          // shared banked flight: (ax,ay,az) is 
 }
 function stepVee(h){
   const n=S.n,now=S.time;if(!n)return;
-  const K=Math.ceil(n/29);       // a skein here is at most 29 geese; a bigger gathering flies as several, each keeping to itself (goose i belongs to skein i mod K)
+  const K=Math.ceil(n/SKEIN);    // a skein is at most 29 geese, or 11 ducks; a bigger gathering flies as several, each keeping to itself (bird i belongs to skein i mod K)
   const doC=clusterNow;if(doC)for(let i=0;i<n;i++)UF[i]=i;
   const span=.4*SIZE,latS=span*1.06,backS=span*1.4,lam=V0C/WBF,hp=hPref(now),sep2=span*span*1.69;
   GS.fill(0);for(let i=0;i<n;i++){const g=(i%K)*6;GS[g]+=P[i*3];GS[g+1]+=P[i*3+1];GS[g+2]+=P[i*3+2];GS[g+3]+=H[i*3]*V[i];GS[g+4]+=H[i*3+2]*V[i];GS[g+5]++;}
@@ -1307,7 +1313,7 @@ function stepVee(h){
       let sI=SIDE[i]>0?1:0;const o=OCC[lead*2+sI];
       if(o>=0&&o!==i&&TIRE[o]<=now&&LEADI[o]===lead)lead=o;                                   // place taken: queue behind whoever holds it
       const r=ROOT[lead];
-      if(!HASF[i]&&LEADI[i]>=0&&now>SWT[i]&&CNT[r*2+sI]>=CNT[r*2+1-sI]+2){   // last goose of the longer arm crosses to the shorter
+      if(!HASF[i]&&LEADI[i]>=0&&now>SWT[i]&&CNT[r*2+sI]>=CNT[r*2+1-sI]+LOP){   // last bird of the longer arm crosses to the shorter (geese keep their arms even; ducks let one run long)
         const t=TAIL[r*2+1-sI];lead=t>=0&&t!==i?t:r;SIDE[i]=-SIDE[i];SWT[i]=now+10;}
       LEADI[i]=lead;const rt=ROOT[lead];ROOT[i]=rt;
       const side=SIDE[i],l3=lead*3,r3=rt*3,lh=Math.hypot(H[l3],H[l3+2])||1,lfx=H[l3]/lh,lfz=H[l3+2]/lh,lsx=-lfz,lsz=lfx,ox=px-P[l3],oz=pz-P[l3+2];
@@ -1330,7 +1336,7 @@ function stepVee(h){
       const dcx=cx-px,dcz=cz-pz,dc=Math.hypot(dcx,dcz);if(dc>40&&CNT[i*2]+CNT[i*2+1]<2){ax+=dcx/dc*2+fx*3.5;az+=dcz/dc*2+fz*3.5;}   // a stray makes for its skein
       ay+=clamp(.35*(hp+(grp-(K-1)/2)*13-py)-.7*fy*v,-3,3);
       NZ[i3]=NZ[i3]*Math.exp(-h/2)+.5*Math.sqrt(h)*gauss();ax+=rx*NZ[i3];az+=rz*NZ[i3];
-      if(n>3&&now-LEADT[i]>LEADD[i]){TIRE[i]=now+6+rnd()*3;LEADD[i]=25+rnd()*30;S.swaps++;}
+      if(n>3&&now-LEADT[i]>LEADD[i]){TIRE[i]=now+6+rnd()*3;LEADD[i]=LEAD0+rnd()*LEAD1;S.swaps++;}
     }
     flyStep(i,h,ax,ay,az);
   }
@@ -1593,6 +1599,8 @@ void main(){
     col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2))*.9,1.-exp(-length(wp-uCam)*.0035));
   }else if(kind==1){
     wp=t0.xyz;vSharp=1.+aux;
+  }else if(kind==5){
+    wp=t0.xyz;vSharp=-1.;                // one pixel of the dog: a flat square facing the eye
   }else if(kind==3){
     wp=t0.xyz;mip=true;
     float hang=0.;if(aux>7.9){hang=(aux-8.)*.25;aux=.45;}       // willow withies: sway grows down the strand, and whole clumps move together
@@ -1642,6 +1650,7 @@ void main(){
   if(alpha<.004){gl_Position=vec4(0.,0.,2.,1.);return;}
   vec2 dv=abs(b)<1e-6?(a>=c?vec2(1.,0.):vec2(0.,1.)):normalize(vec2(b,l1-a));
   vec2 mj=min(sqrt(2.*l1),1500.)*dv,mn=min(sqrt(2.*l2),1500.)*vec2(dv.y,-dv.x);
+  if(kind==5){float hp=s.x*uFocal*iz*.5;mj=vec2(hp,0.);mn=vec2(0.,hp);}
   vec4 clip=uProj*cam;
   gl_Position=vec4(clip.xy/clip.w+2.*(aQuad.x*mj+aQuad.y*mn)/uViewport,0.,1.);
   if(uAdv.w>.5){                      // show the splats themselves: one flat colour each, or coloured by distance
@@ -1654,7 +1663,8 @@ const FSRC=`#version 300 es
 precision mediump float;in vec4 vColor;in vec2 vPos;in float vSharp;out vec4 o;uniform vec2 uEdge;      // falloff exponent; 1 draws outlines only
 // Each splat fades as exp(-r^(2k)). k = 1 is a true Gaussian; birds, bark, leaves and blades use a larger k, which keeps the
 // middle of the splat solid and tightens its edge, so close things look crisp instead of out of focus.
-void main(){float A=dot(vPos,vPos);if(A>4.)discard;
+void main(){if(vSharp<0.){o=vec4(vColor.rgb*vColor.a,vColor.a);return;}
+  float A=dot(vPos,vPos);if(A>4.)discard;
   float e=vSharp*uEdge.x,g=e==1.?exp(-A):exp(-pow(A,e));
   if(uEdge.y>.5){float r=sqrt(A)-1.;g=exp(-r*r*70.);}
   float al=g*vColor.a;o=vec4(vColor.rgb*al,al);}`;
@@ -1776,7 +1786,7 @@ const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','u
 const BU={};for(const n of['uR','uU','uF','uSun','uCam','uTint','uMapA','uMapB','uTime'])BU[n]=gl.getUniformLocation(BP,n);
 
 const TH0=Math.ceil(nStatic/512),DYN0=TH0*512;
-const DCAP=Math.ceil((MAXB*FARMAX+(NEARCAP+6)*NEARMAX+(HEROCAP+6)*Math.max(HEROMAX,FALCT.length)+160+14*HEROMAX+150*NEARMAX+4200)/512)*512,THD=DCAP/512;
+const DCAP=Math.ceil((MAXB*FARMAX+(NEARCAP+6)*NEARMAX+(HEROCAP+6)*Math.max(HEROMAX,FALCT.length)+160+14*HEROMAX+150*NEARMAX+4500)/512)*512,THD=DCAP/512;
 const DY=new Float32Array(DCAP*16),DK=new Uint16Array(DCAP);
 const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
 gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,2048,TH0+THD,0,gl.RGBA,gl.FLOAT,null);
@@ -2122,7 +2132,7 @@ function updateHud(){
     if(FALS.length){let fd=1e9;for(const F of FALS)fd=Math.min(fd,Math.hypot(F.p[0]-px,F.p[1]-py,F.p[2]-pz));h+=hRow('falcon',fd.toFixed(0)+' m'+(fd<DETECT?' · seen':''));}
     h+='<div class="s">Model</div><div class="c">'+K+' nearest neighbours · separation inside '+RH+' m · weights sep '+WS+', align '+WA+', cohere '+WC+' · copies a turn after '+Math.round(TREACT*1000)+' ms</div>';
   }else if(sp.model==='vee'){
-    const sl=SLOT[i],g=LEADI[i],span=.4*SIZE,Ksk=Math.ceil(S.n/29);
+    const sl=SLOT[i],g=LEADI[i],span=.4*SIZE,Ksk=Math.ceil(S.n/SKEIN);
     h+='<div class="s">Formation</div>';
     h+=hRow('role',sl===-1?'front bird, steering':sl===-2?'resting after leading':'following goose '+(g+1));
     h+=hRow('skein',(i%Ksk+1)+' of '+Ksk);
@@ -2131,7 +2141,7 @@ function updateHud(){
       if(g>=0){let dp=(PH[g]-PH[i])/6.2832;dp-=Math.floor(dp);h+=hRow('wingbeat',Math.round(dp*100)+'% of a beat behind');}
     }else if(sl===-1)h+=hBar('time in front',now-LEADT[i],LEADD[i],(now-LEADT[i]).toFixed(0)+' of '+LEADD[i].toFixed(0)+' s');
     else h+=hRow('rest ends in',Math.max(0,TIRE[i]-now).toFixed(0)+' s');
-    h+='<div class="s">Model</div><div class="c">place: 1.4 wingspans behind the guide and 1.06 to the side · speed matched 55% to the guide, 45% to the front bird · at most 14 to an arm</div>';
+    h+='<div class="s">Model</div><div class="c">place: 1.4 wingspans behind the guide and 1.06 to the side · speed matched 55% to the guide, 45% to the front bird · '+(LOP>2?'arms may be up to '+(LOP-1)+' uneven':'arms kept even')+' · the lead changes every '+LEAD0+' to '+(LEAD0+LEAD1)+' s</div>';
   }else{
     const k=TGT[i],th=TH[k],rho=Math.hypot(px-th.x,pz-th.z),up=updraft(px,py,pz,now);
     h+='<div class="s">Soaring</div>';
@@ -2247,7 +2257,7 @@ const Score=(()=>{
     return on;
   }
   document.addEventListener('visibilitychange',()=>{if(ac&&(on||sfxOn)){if(document.hidden)ac.suspend();else ac.resume();}});
-  /* Sound for Splatterhouse mode. The shots, the pump and the dry click are recordings; each shot adds the top of the crack (which the old
+  /* Sound for Splatterhaus mode. The shots, the pump and the dry click are recordings; each shot adds the top of the crack (which the old
      recording has lost), a thump, three echoes off the barn and the trees, and a roll of reverberation. */
   function sfxInit(){
     if(!ac)start();if(ac.state!=='running')ac.resume();
@@ -2276,6 +2286,8 @@ const Score=(()=>{
     }else if(name==='pump'){const e=smp.pump[b|0],tt=t+(a||0);if(!play(e,tt,.8,1)){nz(tt+.1,'bandpass',1500,900,.03,2,.5,.06);nz(tt+.4,'bandpass',1900,1300,.03,2,.55,.07);}}
     else if(name==='shell'){const e=smp.pump[3]||smp.pump[0];if(!play(e,t,.55,1.22+.1*Math.random(),null,0,.1))nz(t,'bandpass',2200,1500,.02,2,.4,.05);nz(t+.01,'lowpass',420,160,.06,.8,.5,.09);}     // a cartridge going home: the first click of a pump recording, and a soft thump
     else if(name==='dry'){if(!play(smp.dry[0],t,.9,1))nz(t,'bandpass',3000,2000,.01,3,.4,.03);}
+    else if(name==='bark'){const tt=t+(a||0),v=b||.5;[0,.14].forEach((dl,k)=>{const o=osc('square',380),g=ac.createGain();o.frequency.setValueAtTime(k?340:410,tt+dl);o.frequency.exponentialRampToValueAtTime(k?185:225,tt+dl+.075);        // two square-wave yaps, as an 8-bit machine would bark
+      g.gain.setValueAtTime(.0001,tt+dl);g.gain.linearRampToValueAtTime(.2*v,tt+dl+.006);g.gain.exponentialRampToValueAtTime(.001,tt+dl+.1);o.connect(g);send(g,c||0,sfxG);o.start(tt+dl);o.stop(tt+dl+.12);});}
     else if(name==='hit'){const tt=t+(a||0),v=b||.5;nz(tt,'lowpass',900,150,.09,1.1,1.5*v,.16,c);nz(tt,'bandpass',2600,1100,.03,1,.45*v,.07,c);}
   }
   function sfxMode(v){sfxOn=v;if(v)sfxInit();else if(ac&&!on)setTimeout(()=>{if(!on&&!sfxOn)ac.suspend();},3000);}
@@ -2283,7 +2295,7 @@ const Score=(()=>{
 })();
 
 /* --------------------------------------------------------------- input */
-/* ------------------------------------------------------ Splatterhouse mode
+/* ------------------------------------------------------ Splatterhaus mode
    You stand in the fenced barn field with a pump-action shotgun and may walk anywhere inside the fences. The gun is not splats: it is a
    triangle mesh loaded from a glTF model (Quaternius, Survival Pack, CC0), lit by the same sun, and drawn after the splats with its own
    depth buffer, since it is always the nearest thing in view. Everything it does to the world is splats again: blood, feathers, the
@@ -2444,7 +2456,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
           c.st=1;c.t=0;const hh=Math.hypot(c.f[0],c.f[2])||1;c.f=[c.f[0]/hh,0,c.f[2]/hh];const lean=(Math.random()-.5)*1.2;c.u=nrm([-c.f[2]*lean,1,c.f[0]*lean]);
           for(let q=0;q<5;q++)addP(2,c.p[0],c.p[1]+.1,c.p[2],(Math.random()-.5)*2,.6+Math.random(),(Math.random()-.5)*2,(.035+.03*Math.random())*c.sc,5,c.fc[0],c.fc[1],c.fc[2]);
           addP(3,c.p[0],fl-.02*c.sc,c.p[2],0,0,0,.12*c.sc*(1+Math.random()),30,.26,.01,.014);}
-      }else if(c.t>38){c.p[1]-=h*.04;if(c.t>42)DEAD.splice(k,1);}
+      }else if(c.st===1||c.st===3){const life=c.st===3?26:c.claimed?140:70;if(c.t>life){c.p[1]-=h*.04;if(c.t>life+4){DEAD.splice(k,1);}}}
     }
   }
   function emitDead(){
@@ -2452,7 +2464,8 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     for(const c of DEAD){const x=c.p[0],y=c.p[1],z=c.p[2],dz=-(m2*x+m6*y+m10*z+m14);if(dz<.3)continue;
       const mg=.4*c.sc;if(Math.abs(m0*x+m4*y+m8*z+m12)>dz*tanX*1.05+mg||Math.abs(m1*x+m5*y+m9*z+m13)>dz*tanY*1.05+mg)continue;
       const px=.42*c.sc*focal/dz,near=px>14,hero=px>44&&heroes<14,tpl=hero?c.tp.hero:near?c.tp.near:c.tp.far;if(nd+tpl.length>DCAP)break;if(hero)heroes++;
-      if(c.st){WA4[0]=-.05;WA4[1]=.5;WA4[2]=.05;WA4[3]=1.1;WA4[4]=0;}                 // lying where it fell, wings half open
+      if(c.st===2){WA4[0]=-.12;WA4[1]=1.2;WA4[2]=0;WA4[3]=2;WA4[4]=0;}                // in the dog's mouth, wings folded
+      else if(c.st){WA4[0]=-.05;WA4[1]=.5;WA4[2]=.05;WA4[3]=1.1;WA4[4]=0;}            // lying where it fell, wings half open
       else{const s=Math.sin(c.ph);WA4[0]=.75+.35*s;WA4[1]=.25;WA4[2]=.5+.3*Math.sin(c.ph*1.3+1);WA4[3]=.7;WA4[4]=0;}    // falling: the wings trail upward and flail
       WA4[5]=0;frames(c.p,c.f,c.u,c.sc,near);emit(tpl,c.pal,1,c.sc);}
   }
@@ -2468,6 +2481,46 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     st.tally[sp.label]=(st.tally[sp.label]||0)+1;
     if(dist<26&&Math.random()<.8)lens(1+(dist<10?2:0));
     removeBird(i);
+  }
+  /* The dog. A farm collie drawn as 8-bit pixel art: every pixel of the sprite is one square splat, sorted in with the rest, so the
+     grass hides its legs as it would anything else. It waits by you, runs out to each bird that has come down on land, and brings it
+     back. It runs in bounds, as dogs do in long grass, and steers round the barn. */
+  const DOGF={run1:'............................/....................K......./...................KKK....../WW.................KKKKK..../.WKK..............KKKWKKK.../..KKK.............KKBWWKWW../...KKK...........KKKWWWWWWK./....KKKKKKKKKKKKRRKKWWWWWK../....KKKKKKKKKKKKKRRWWWPP..../...KKKKKKKKKKKKKKWRRWW....../...KKKKKKKKKKKKKKWWWW......./..KKKKKKKKKKKKKKWWWWW......./..KKKK.KKKKKKKWWWWWWKK....../.KKK.....GGGGW.....KKKK...../.KK..................KKWW.../WW.....................WW.../W...........................',run2:'............................/......................K...../.....................KKK..../.....................KKKKK../....WW..............KKKWKKK./...WKK..............KKBWWKWW/...KKK.............KKKWWWWWK/....KKKKKKKKKKKKKKRRKWWWWWK./....KKKKKKKKKKKKKKKRRWWW..../....KKKKKKKKKKKKKKWWRRW...../....KKKKKKKKKKKKKWWWWW....../....KKKKKKKKKKKKWWWWW......./.....KKKKKGGGGWWWKKK......../......KKKK....KKKK........../.......KKKW..WKK............/........WW....WW............/............................',sit1:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWW......../............KKKWWRRW......../...........KKKKWWWWW......../..........KKKKKWWWWW......../.........KKKKKKKWWWK......../........KKKKKKKKKWWK......../........KKKKKKKKKKWK......../..KKK..KKKKKKKKKKKKKW......./.WWKKKKKKKKKKGGWWWKKWW......',sit2:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWWPP....../............KKKWWRRW......../...WW......KKKKWWWWW......../...WKK....KKKKKWWWWW......../....KKK..KKKKKKKWWWK......../.....KKKKKKKKKKKKWWK......../......KKKKKKKKKKKKWK......../.......KKKKKKKKKKKKKW......./........KKKKKGGWWWKKWW......',fetch:'............................/............................/............................/WW........................../.WKK......................../..KKK..............K......../...KKK............KKK......./....KKKKKKKKKKKKKKKKKKK...../....KKKKKKKKKKKKKRRKWKKK..../...KKKKKKKKKKKKKKKRRBWWKW.../...KKKKKKKKKKKKKKWWRWWWWWW../..KKKKKKKKKKKKKKWWWWWWWWWK../..KKKK.KKKKKKKWWWWW.WWWW..../..KKK....GGGGW.KK.........../..KK...........KK.........../..WW...........WW.........../............................'},DOGC={K:[.085,.085,.105],W:[.95,.87,.79],G:[.56,.53,.56],R:[.84,.2,.14],P:[.92,.5,.56],B:[.46,.27,.12]},DPX=.046,DOGS={};
+  for(const n in DOGF){const a=[];DOGF[n].split('/').forEach((row,y)=>{for(let x=0;x<row.length;x++)if(row[x]!=='.')a.push([x,y,DOGC[row[x]]]);});DOGS[n]=a;}
+  const dog={on:false,p:[0,0],y:0,dir:[0,-1],mode:'heel',tg:null,t:0,ph:0,spd:0,hop:0,flip:false,fetched:0,wag:0};
+  const dogOK=(x,z)=>{const dx=x-BARN.x,dz=z-BARN.z,lx=dx*bcos-dz*bsin,lz=dx*bsin+dz*bcos;return!((Math.abs(lx)<7.3&&Math.abs(lz)<10.6)||(Math.abs(lx+7.8)<3.9&&Math.abs(lz-3.7)<5.5))&&coastC(x,z)<-1.5;};
+  function dogRun(tx,tz,h,top){                                  // head for a point, going round what is in the way; returns the distance left
+    const dx=tx-dog.p[0],dz=tz-dog.p[1],d=Math.hypot(dx,dz);if(d<.05)return d;
+    dog.spd+=(Math.min(top,2+d*3)-dog.spd)*(1-Math.exp(-h/.25));const st_=dog.spd*h,a0=Math.atan2(dx,dz);
+    for(const da of[0,.6,-.6,1.2,-1.2,1.9,-1.9,2.6]){const a=a0+da,nx=dog.p[0]+Math.sin(a)*st_,nz=dog.p[1]+Math.cos(a)*st_;if(dogOK(nx,nz)||!dogOK(dog.p[0],dog.p[1])){dog.p[0]=nx;dog.p[1]=nz;dog.dir=[Math.sin(a),Math.cos(a)];break;}}
+    dog.ph+=st_/1.25;dog.hop=Math.abs(Math.sin(dog.ph*Math.PI))*.3*Math.min(1,dog.spd/5);return d;}
+  function dogStep(h){
+    if(!dog.on)return;
+    dog.t+=h;dog.wag+=h;const hp=cam.hpos||[GATE[0]+2,GATE[1]-6],me=dog.p,dp=Math.hypot(hp[0]-me[0],hp[1]-me[1]);
+    if(dog.tg&&DEAD.indexOf(dog.tg)<0){dog.tg=null;if(dog.mode!=='idle')dog.mode='heel';}
+    if(dog.mode==='idle'){dog.hop=0;dog.spd=0;
+      if(dp>7)dog.mode='heel';
+      else{let best=null,bd=1e9;for(const c of DEAD)if(c.st===1&&c.t>.3&&!c.claimed&&c.t<60&&dogOK(c.p[0],c.p[2])){const d=Math.hypot(c.p[0]-me[0],c.p[2]-me[1]);if(d<bd){bd=d;best=c;}}
+        if(best){best.claimed=true;dog.tg=best;dog.mode='go';Score.sfx('bark',0,.5,0);}}
+    }else if(dog.mode==='heel'){const fx=Math.sin(cam.hyaw||0),fz=Math.cos(cam.hyaw||0);
+      if(dogRun(hp[0]+fx*2.4+fz*1.5,hp[1]+fz*2.4-fx*1.5,h,7)<.5){dog.mode='idle';dog.t=0;}
+    }else if(dog.mode==='go'){const c=dog.tg;if(dogRun(c.p[0],c.p[2],h,9.5)<.8){dog.mode='grab';dog.t=0;dog.hop=0;}
+    }else if(dog.mode==='grab'){if(dog.t>.4){dog.tg.st=2;dog.mode='bring';}
+    }else if(dog.mode==='bring'){const c=dog.tg,left=dogRun(hp[0],hp[1],h,8.5);
+      if(left<2.2){c.st=3;c.t=0;c.p=[me[0]+dog.dir[0]*.7,groundH(me[0]+dog.dir[0]*.7,me[1]+dog.dir[1]*.7)+.05*c.sc,me[1]+dog.dir[1]*.7];c.f=[dog.dir[1],0,-dog.dir[0]];c.u=[0,1,0];
+        dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;Score.sfx('bark',0,.8,0);sync();}}
+    dog.y=groundH(me[0],me[1]);
+    if(dog.tg&&dog.tg.st===2){const c=dog.tg,mx=me[0]+dog.dir[0]*.52,mz=me[1]+dog.dir[1]*.52;c.p=[mx,dog.y+dog.hop+.44,mz];c.f=[dog.dir[1],0,-dog.dir[0]];c.u=[0,1,0];}     // the bird rides crosswise in its mouth
+  }
+  function emitDog(){
+    if(!dog.on||nd+220>DCAP)return;
+    const f=cam.fwd,r=nrm(cross(f,cam.up)),u=cross(r,f),bx=dog.p[0],by=dog.y+dog.hop,bz=dog.p[1],d0=-(view[2]*bx+view[6]*(by+.4)+view[10]*bz+view[14]);if(d0<.4)return;
+    const moving=dog.mode!=='idle'&&dog.mode!=='grab',sg=dog.dir[0]*r[0]+dog.dir[1]*r[2];
+    if(moving){if(Math.abs(sg)>.15)dog.flip=sg<0;}else if(dog.mode==='idle')dog.flip=(view[0]*bx+view[4]*by+view[8]*bz+view[12])>0;     // running: the way it is going; sitting: turned in toward what you are looking at
+    const fr=DOGS[dog.mode==='grab'?'fetch':moving?(Math.floor(dog.ph*2)%2?'run2':'run1'):(Math.floor(dog.wag*(dog.wag<3?7:1.5))%2?'sit2':'sit1')];
+    const dk=Math.max(.3,d0-1.3),key=dk<40?dk*1500:61600+Math.min(Math.log(dk*.025)*LOGK,3900),fl=dog.flip?-1:1;       // drawn as if a little nearer, so the grass right in front does not bury it
+    for(const[cx,cy,c]of fr){const ox=(cx-13.5)*DPX*fl,oy=(16.5-cy)*DPX+DPX*.5,b=nd*16;
+      DY[b]=bx+r[0]*ox+u[0]*oy;DY[b+1]=by+r[1]*ox+u[1]*oy;DY[b+2]=bz+r[2]*ox+u[2]*oy;DY[b+3]=5;DY[b+4]=DY[b+5]=DY[b+6]=DPX*.52;DY[b+7]=1;DY[b+8]=0;DY[b+9]=0;DY[b+10]=0;DY[b+11]=1;DY[b+12]=c[0];DY[b+13]=c[1];DY[b+14]=c[2];DY[b+15]=0;DK[nd++]=key;}
   }
   const lensEl=document.getElementById('lens');
   function lens(n){for(let k=0;k<n&&lensEl.childElementCount<16;k++){const e=document.createElement('i'),s=30+110*Math.random()*Math.random(),edge=Math.random()<.7;
@@ -2526,10 +2579,11 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
   // ---------------------------------------------------------------- the read-out and the cross-hairs
   const bagEl=document.getElementById('bag'),xh=document.getElementById('xh'),flashEl=document.getElementById('flash'),bHunt=document.getElementById('bHunt');
   function sync(){
-    let h='<h4>Splatterhouse mode</h4><div class="sh">';for(let k=0;k<MAXSH;k++)h+='<i'+(k<st.shells?'':' class="e"')+'></i>';
+    let h='<h4>Splatterhaus mode</h4><div class="sh">';for(let k=0;k<MAXSH;k++)h+='<i'+(k<st.shells?'':' class="e"')+'></i>';
     h+='</div><div class="r"><span>bag</span><span>'+st.bag.toLocaleString()+'</span></div>';
     if(st.shots)h+='<div class="r"><span>last shot</span><span>'+(st.last?'+'+st.last:'missed')+'</span></div><div class="r"><span>best shot</span><span>'+st.best+'</span></div>';
     const ks=Object.keys(st.tally);if(ks.length>1||(ks.length&&ks[0]!==sp.label))h+='<div class="t">'+ks.map(k=>st.tally[k]+' '+k.toLowerCase()).join(' · ')+'</div>';
+    if(dog.fetched)h+='<div class="r"><span>brought back</span><span>'+dog.fetched+'</span></div>';
     if(st.rl)h+='<div class="t">reloading</div>';else if(!st.shells)h+='<div class="t">empty: R to reload</div>';
     if(st.note)h+='<div class="t">'+st.note+'</div>';
     bagEl.innerHTML=h;
@@ -2538,17 +2592,18 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     st.on=true;document.body.classList.add('hunt');bagEl.hidden=false;xh.hidden=false;bHunt.setAttribute('aria-pressed','true');
     if(!cam.hpos||!canStand(cam.hpos[0],cam.hpos[1])){cam.hpos=[GATE[0]+2,GATE[1]-6];cam.hyaw=Math.atan2(RSX-cam.hpos[0],RSZ-cam.hpos[1]);cam.hpitch=.25;cam.hzoom=1.05;cam.hvel=[0,0];cam.hbob=0;}
     aim.x=aim.y=0;if(!gvao)try{build();}catch(e){console.error(e);}
+    {const d=bw([0,0,11]);dog.on=true;dog.p=[d[0],d[2]];dog.mode='heel';dog.tg=null;dog.spd=0;dog.ph=0;}      // the dog comes out from the barn
     Score.sfxMode(true);sync();
   }
-  function leave(){st.on=false;st.rl=null;document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
+  function leave(){st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
   function pointAt(cx,cy){const r=canvas.getBoundingClientRect();aim.x=clamp((cx-r.left)/r.width*2-1,-1,1);aim.y=clamp(1-(cy-r.top)/r.height*2,-1,1);}
   function step(h){
-    stepFx(h);stepDead(h);
+    stepFx(h);stepDead(h);dogStep(h);
     while(SCARES.length&&S.time-SCARES[0][3]>1.5)SCARES.shift();
     if(pend&&S.time>=pend.due){const s=pend;pend=null;resolve(s);}
     if(st.restock&&S.time>st.restock){st.restock=0;st.note='';const n=coarse?sp.n[1]:sp.n[0];LAB.fill(-1);NC=0;spawn(n);cnt.value=n;cntOut.textContent=n;sync();}
   }
-  function clear(){NP=0;DEAD.length=0;SCARES.length=0;pend=null;st.restock=0;st.note='';if(st.on)sync();}
+  function clear(){dog.tg=null;if(dog.mode!=='idle')dog.mode='heel';NP=0;DEAD.length=0;SCARES.length=0;pend=null;st.restock=0;st.note='';if(st.on)sync();}
   // ---------------------------------------------------------------- drawing the gun
   const GF=.86,M=new Float32Array(16),PR4=new Float32Array(16),NM=new Float32Array(9),CM=new Float32Array(9),SM=new Float32Array(16);
   const flying=[];let tPrev=0;
@@ -2609,8 +2664,8 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
       gl.uniform3f(FU.uC,0,muzzle[1],muzzle[2]);gl.uniform2f(FU.uT,Math.cos(st.froll),Math.sin(st.froll));gl.uniform1f(FU.uI,st.flash*1.6);gl.bindVertexArray(fvao);gl.drawArrays(gl.TRIANGLES,0,flashN);gl.depthMask(true);}
     gl.disable(gl.DEPTH_TEST);gl.bindVertexArray(null);
   }
-  return{st,aim,fire,reload,enter,leave,step,clear,draw,pointAt,canStand,emit(){emitDead();emitFx();},fireAt(cx,cy){pointAt(cx,cy);return fire();},
-    recentre(dt){const k=Math.exp(-dt/.12);aim.x*=k;aim.y*=k;},probe:()=>({NP,dead:DEAD.length,gunN,muzzle,port,scares:SCARES.length,flying:flying.length})};
+  return{st,aim,fire,reload,enter,leave,step,clear,draw,pointAt,canStand,emit(){emitDead();emitFx();emitDog();},fireAt(cx,cy){pointAt(cx,cy);return fire();},
+    recentre(dt){const k=Math.exp(-dt/.12);aim.x*=k;aim.y*=k;},dog,probe:()=>({NP,dead:DEAD.length,states:DEAD.map(c=>c.st).join(''),dog:[dog.mode,dog.p[0].toFixed(1),dog.p[1].toFixed(1),dog.fetched],gunN,muzzle,port,scares:SCARES.length,flying:flying.length})};
 })();
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
@@ -2688,7 +2743,7 @@ cnt.oninput=()=>{resizeFlock(+cnt.value);cntOut.textContent=cnt.value;};
 cnt.onchange=()=>cnt.blur();
 const selSp=document.getElementById('species');
 function setSpecies(key){
-  sp=SPECIES[key];K=sp.K||7;V0C=sp.v0;VMIN=V0C*.5;VMAX=V0C*(sp.model==='vee'?1.4:2);RH=sp.rh||.2;SEPW=sp.sepw||.45;WS=sp.ws||7;WA=sp.wa||2.7;WC=sp.wc||2.2;NOISE=sp.noise??1.9;WR=sp.wr||4;SOAR=Object.assign({},SOAR0,sp.soar);
+  sp=SPECIES[key];K=sp.K||7;{const v=sp.vee||{};SKEIN=v.skein||29;LOP=v.lop||2;LEAD0=(v.lead||[25,30])[0];LEAD1=(v.lead||[25,30])[1];}V0C=sp.v0;VMIN=V0C*.5;VMAX=V0C*(sp.model==='vee'?1.4:2);RH=sp.rh||.2;SEPW=sp.sepw||.45;WS=sp.ws||7;WA=sp.wa||2.7;WC=sp.wc||2.2;NOISE=sp.noise??1.9;WR=sp.wr||4;SOAR=Object.assign({},SOAR0,sp.soar);
   WBF=sp.wbf;HEAVE=9.81/Math.pow(6.2832*WBF,2);      // how far the body rides up and down against the wings, in metres
   TREACT=sp.treact||.07;SPACE=sp.space||1;HOPM=2.3*SPACE;RSX=sp.roost[0];RSZ=sp.roost[1];R0=sp.roost[2];SIZE=sp.size;PAIRS=!!sp.pairs;HIER=!!sp.hier;FLAPMODE=sp.flap;BOUNDS=sp.gait.style==='bound';
   FALS.length=0;Hunt.clear();NC=0;S.flocks=[];S.swaps=0;S.inForm=0;S.climb=0;lastCluster=-9;clusterNow=false;S.nextTurn=S.time+6;

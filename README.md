@@ -1,4 +1,4 @@
-# Splatterhouse
+# Splatterhaus
 
 A real-time 3D Gaussian splat demo in one HTML file: birds at dusk over a wildflower meadow with a barn, a silo, fenced fields and a mix of trees, running out through marram dunes to a beach and the sea, where the sun is setting. Seven kinds of flier are on the menu, each with its own rules: starlings in a murmuration, dunlin, jackdaws, pigeons, geese in V formation, white storks circling in thermals, and a speculative reconstruction of *Pteranodon*. Flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
 
@@ -18,16 +18,16 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Ride** (`3`) | Fly behind one bird inside the flock. Click or tap another bird to follow that one. A read-out shows what the bird is doing and what its model is telling it: for flocking birds the pull of separation, alignment and cohesion from its neighbours, its place in the flock and any turn it is riding; for geese its role, arm and distance off station; for soarers the rising air, climb rate and thermal. Click the read-out to fold it, or press `H` to hide it. |
 | **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any of those keys in another view takes off from where you are. On touch: drag to look, pinch to move. |
 | **Arrow keys** | Turn the view, as dragging does, in every view: look around when standing or flying, swing round the flock in Orbit, swing round the bird in Ride (up and down move closer and farther). They start gently, so a tap is a fine adjustment; `Shift` doubles the rate. They never take off. |
-| **Splatterhouse mode** (`B`) | The button under the title. Puts a shotgun in your hands in the fenced barn field. See below. |
-| **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, storks or *Pteranodon*. |
-| **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, storks or *Pteranodon*. |
+| **Splatterhaus mode** (`B`) | The button under the title. Puts a shotgun in your hands in the fenced barn field. See below. |
+| **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, ducks, storks or *Pteranodon*. |
+| **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, ducks, storks or *Pteranodon*. |
 | **Slow-mo** (`T`) | 0.2× time, so the wingbeats can be followed. |
 | **Score** (`M`) | Turn the music on or off. It starts off, because browsers only allow sound after a click. |
-| **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, white storks or *Pteranodon*. Changing species restarts the birds. |
+| **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, ducks, white storks or *Pteranodon*. Changing species restarts the birds. |
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 | **Advanced** (`G`) | The button under the title opens a panel that changes how the Gaussian splats themselves are drawn; see below. |
 
-## Splatterhouse mode
+## Splatterhaus mode
 
 Press `B`, or the button under the title. You are on foot in the barn field with a pump-action shotgun, and that field is the only place you can shoot from: the roadside fence, the two side fences and the edge of the dunes where they stop hold you in, and the barn and the trees are solid. Choosing any other view puts the gun away.
 
@@ -41,6 +41,7 @@ Press `B`, or the button under the title. You are on foot in the barn field with
 - **The shot.** 34 pellets, scattered about 1.2° either side of the aim (the ring is drawn at about twice that). Each pellet stops in the first bird it meets, so in a dense murmuration one shot can take a dozen or more and in a skein of geese one or two. Every pellet counts out to 75 m, fewer and fewer beyond, none past 170 m, which is far more generous than a real shotgun. Dunlin and *Pteranodon* keep to the shore, so walk to the seaward end of the field for those. A falcon inside the pattern dies too.
 - **The birds.** A hit bird is taken out of the flock model that instant and becomes a falling body: the same splats, bloodied, tumbling, trailing drops, landing in the grass or splashing into the sea. It lies where it fell for a while. Around each hit there is a burst of blood, a red mist and a puff of feathers, all splats; some drops leave stains where they land. A kill within about 25 m spatters the lens.
 - **The flock.** The rest flee the shot. For starlings, dunlin, jackdaws and pigeons it works like a falcon appearing in their midst: those near it bolt and the alarm passes from neighbour to neighbour as a wave. Geese near the shot break formation and re-form; soarers flinch away. The count, the slider and the flock statistics all follow the losses. When three birds are left, a fresh flock arrives.
+- **The dog.** A black-and-white farm collie in a red neckerchief, drawn as 8-bit pixel art, comes out from the barn and waits near you. When a bird comes down on land it runs out, picks the bird up and brings it back to your feet, with a square-wave bark at each end; birds that fall in the sea are lost. It runs in bounds, as dogs do in long grass, goes round the barn, and is not kept in by the fence. It fetches one bird at a time, nearest first, so after a big shot most of the fallen sink into the grass before it gets to them. Each pixel of the sprite is one splat drawn as a hard square facing the eye, sorted in with all the others.
 - **The gun.** Not splats. It is a triangle mesh loaded at start-up from a real glTF model embedded in the page, lit by the same low sun and sky as everything else, and drawn after the splats with its own depth buffer, because a gun in your hands is always the nearest thing in view. It follows the cross-hairs, lags a little behind a turn of the head, kicks on firing, and is pumped after every shot with the fore-end sliding back and a spent case thrown clear. To reload it is canted over and cartridges are pushed one at a time into the port under the receiver; if it was empty it is racked at the end. The cartridges and the muzzle flash are small meshes made in code. There are no hands.
 - **The sound.** The shots, the pump and the dry click are recordings. Each shot adds the top of the crack, which the vintage recording has lost, a low thump, three echoes off the barn and the trees, and a roll of reverberation. The pump animation is timed to whichever of four pump recordings is playing. A cartridge going home is the first click of a pump recording with a soft thump under it, since I found no recording of that under a clear licence. Hits are synthesised and arrive late by the speed of sound.
 
@@ -99,8 +100,11 @@ Each species has its own body (built from one parametric splat bird: wingspan, n
 | Jackdaw | 0.70 m | 12 m/s | 5.8 Hz | About 80% of birds have a mate. Mates hold 1.3 m apart and fly each other's course. Each bird attends to 3 neighbours, not 7, and the flock is looser. |
 | Pigeon | 0.68 m | 15 m/s | 7.6 Hz | A small kit circling the barn. Every bird has a rank. A bird weights each neighbour's heading by that neighbour's rank, and high-ranked birds wander more and fly slightly faster, so they end up at the front and the rest follow their turns. Three colour morphs. |
 | Goose | 1.6 m | 16 m/s | 4.1 Hz | V formation, below. |
+| Duck (mallard) | 0.90 m | 19 m/s | 7.2 Hz | The goose model, loosened: small skeins, lopsided lines, a restless lead. Below. |
 | White stork | 2.0 m | 10.5 m/s | soaring (2.8 Hz when it flaps) | Thermal soaring, below. |
 | *Pteranodon* | 3.8 m and 5.8 m | 12 m/s | soaring (1.6 and 2.2 Hz) | Speculative, below. |
+
+**Ducks.** I found no fitted model of how ducks arrange themselves in flight, so this one is the goose model with three settings changed to match how mallards are described in the field, and the settings are my judgement, not measurements. A skein holds at most 11 birds (29 for geese), so 42 mallards fly as four small parties. One arm may run up to four birds longer than the other before anyone crosses over, so the shapes are mostly lopsided Js and single slanting lines where geese make even Vs. The lead changes every 7 to 21 seconds (25 to 55 for geese). The geometry of a place, the queueing and the phase-locked wingbeats are unchanged. Drakes and hens are coloured differently, 55 drakes to 45 hens, both with the blue wing patch. Cruise speed is an approximate field value; the wingbeat comes from the same formula as every other bird here.
 
 **Dunlin.** The short copying delay stands in for Potts's chorus-line account (1984, *Nature* 309:344), in which a bird times its turn from the wave approaching it and so reacts faster than its own reaction time would allow.
 
@@ -162,7 +166,7 @@ The score has been checked for levels and for the key change, but only by measur
 
 ## How the splats work
 
-- **Not everything is a splat.** The shotgun of Splatterhouse mode is a triangle mesh with a depth buffer, drawn last. Nothing else uses depth: the splats are sorted and blended, and the ground, sea and sky are ray-traced behind them.
+- **Not everything is a splat.** The shotgun of Splatterhaus mode is a triangle mesh with a depth buffer, drawn last. (The dog is splats: square ones.) Nothing else uses depth: the splats are sorted and blended, and the ground, sea and sky are ray-traced behind them.
 - **Data.** Each splat is four RGBA32F texels in one data texture. Static splats (grass, barn, trees, hills, clouds) are uploaded once. Bird splats are rebuilt and re-uploaded every frame into a dynamic region of the same texture.
 - **Splat shape.** A splat fades from its centre as exp(−r^2k). With k = 1 that is a true Gaussian, which is right for clouds, haze and far hills. Birds, bark, leaves and grass blades use a larger k (1.3 to 2.4), which keeps the middle of the splat solid and tightens its edge, so things close to the eye look crisp and not out of focus.
 - **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. All the fliers come from one parametric body, drawn at three levels of detail:
