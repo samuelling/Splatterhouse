@@ -20,7 +20,8 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Arrow keys** | Turn the view, as dragging does, in every view: look around when standing or flying, swing round the flock in Orbit, swing round the bird in Ride (up and down move closer and farther). They start gently, so a tap is a fine adjustment; `Shift` doubles the rate. They never take off. |
 | **Hide menus** (`U`) | Hides every menu and line of text and, where the browser allows it, goes full screen, leaving only the birds. `U` or `Esc` brings them back, and so does the Show menus button that appears for a moment whenever the pointer moves. |
 | **Splatterhaus mode** (`B`) | The button under the title. Puts a shotgun in your hands in the fenced barn field. See below. |
-| **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, ducks, storks or *Pteranodon*. |
+| **Full screen** (`F`) | The Full screen button, or `F`, fills the screen and keeps the menus; `F` or `Esc` leaves it. Hide menus goes full screen too, without them. A page shown inside another site may not be allowed full screen, and says so. |
+| **Falcon** (`P`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, ducks, storks or *Pteranodon*. |
 | **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, ducks, storks or *Pteranodon*. |
 | **Slow-mo** (`T`) | 0.2× time, so the wingbeats can be followed. |
 | **Score** (`M`) | Turn the music on or off. It is on from the start, but a browser will not let a page make sound until it has been clicked, tapped or typed at, so it begins at the first of those. |

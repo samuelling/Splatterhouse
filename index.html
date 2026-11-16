@@ -56,9 +56,9 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
 #chips{position:fixed;left:14px;top:96px;display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 28px)}
-#bClean,#bFinger,#bHead{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#bClean,#bFull,#bFinger,#bHead{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bFinger[hidden],#bHead[hidden]{display:none}
-#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
+#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bFull[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bAdv[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #adv{position:fixed;left:14px;top:128px;width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 140px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
@@ -142,7 +142,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button></div>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button></div>
 <button id="bShow" type="button">Show menus</button>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
   <h4>Advanced <small>Gaussian splats</small><button type="button" id="advX" aria-label="Close">×</button></h4>
@@ -3023,6 +3023,17 @@ function setClean(on){
 }
 const toggleClean=()=>setClean(!document.body.classList.contains('clean'));
 document.getElementById('bClean').onclick=e=>{setClean(true);e.currentTarget.blur();};
+// Full screen on its own, menus and all: F or the button. A page shown inside another site may not be allowed it, and says so.
+const bFull=document.getElementById('bFull'),fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function fullNo(){hint.textContent='Full screen is blocked here. Open the page on its own, not inside another site.';hint.classList.remove('off');clearTimeout(hintTimer);hintTimer=setTimeout(()=>hint.classList.add('off'),6000);}
+function toggleFull(){
+  if(fsEl()){try{const pr=(document.exitFullscreen||document.webkitExitFullscreen).call(document);if(pr&&pr.then)pr.then(fullSync,fullSync);}catch(e){}return;}
+  const el=document.documentElement,rq=el.requestFullscreen||el.webkitRequestFullscreen;if(!rq){fullNo();return;}
+  try{const pr=rq.call(el);if(pr&&pr.then)pr.then(fullSync,fullNo);}catch(e){fullNo();}
+}
+bFull.onclick=e=>{toggleFull();e.currentTarget.blur();};
+function fullSync(){bFull.setAttribute('aria-pressed',String(!!fsEl()));}
+for(const ev of['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,fullSync);
 document.getElementById('bShow').onclick=()=>setClean(false);
 addEventListener('pointermove',peek);addEventListener('pointerdown',peek);
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&wentFull&&document.body.classList.contains('clean'))setClean(false);});
@@ -3092,7 +3103,7 @@ addEventListener('keydown',e=>{
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
   if(e.repeat)return;
-  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}else if(c==='KeyG')toggleAdv();else if(c==='KeyB')toggleHunt();else if(c==='KeyL'){ADV.xmas=!ADV.xmas;advSync();}else if(c==='KeyU')toggleClean();else if(c==='Escape'&&Finger.cal)Finger.calCancel();else if(c==='Escape'&&document.body.classList.contains('clean'))setClean(false);
+  if(c==='KeyF')toggleFull();else if(c==='KeyP')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}else if(c==='KeyG')toggleAdv();else if(c==='KeyB')toggleHunt();else if(c==='KeyL'){ADV.xmas=!ADV.xmas;advSync();}else if(c==='KeyU')toggleClean();else if(c==='Escape'&&Finger.cal)Finger.calCancel();else if(c==='Escape'&&document.body.classList.contains('clean'))setClean(false);
   else if(c>='Digit1'&&c<='Digit5')setMode(MODES[+c.slice(5)-1]);
 });
 addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
