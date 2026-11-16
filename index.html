@@ -1369,7 +1369,7 @@ void main(){
     R=mat3(tx,n,cross(tx,n));
     wp=vec3(w0.x,hd+baseH(cc)+.01,w0.y);mip=true;
     col=sandLit(n,w0)*(.93+.14*col.r);
-    vec3 vd=normalize(wp-uCam);float az=dot(normalize(vd.xz+1e-5),normalize(uSun.xz))*.5+.5;
+    vec3 vd=normalize(wp-uCam);float az=clamp(dot(normalize(vd.xz+1e-5),normalize(uSun.xz))*.5+.5,0.,1.);
     col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2))*.9,1.-exp(-length(wp-uCam)*.0035));
   }else if(kind==0){
     float Lp=uField.x,Rf=uField.y,tm=uField.z;
@@ -1439,7 +1439,7 @@ void main(){
     col=col*tint*mb.g+vec3(1.,.6,.25)*mb.a*.25;
     col+=vec3(1.,.55,.26)*pow(max(dot(vd,uSun),0.),6.)*.3*mb.g;
     col=mix(col,canopyC(ma,mb,S)*uTint*mb.g,smoothstep(Rout*.45,Rout,d)*.7);
-    float az=dot(normalize(vd.xz+1e-5),normalize(uSun.xz))*.5+.5;
+    float az=clamp(dot(normalize(vd.xz+1e-5),normalize(uSun.xz))*.5+.5,0.,1.);
     col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2))*.9,1.-exp(-length(wp-uCam)*.0035));
   }else if(kind==1){
     wp=t0.xyz;
@@ -1457,7 +1457,7 @@ void main(){
     col=base*(amb+vec3(1.,.58,.30)*1.35*lam);
     col+=base*vec3(1.6,.85,.3)*tr*pow(max(dot(-v,uSun),0.),3.);
     vec2 hd=normalize(wp.xz-uCam.xz+1e-5);
-    float az=dot(hd,normalize(uSun.xz))*.5+.5;
+    float az=clamp(dot(hd,normalize(uSun.xz))*.5+.5,0.,1.);
     col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2)),1.-exp(-length(uCam-wp)*.0022));
   }else{
     wp=t0.xyz;mip=true;
@@ -1506,15 +1506,15 @@ uniform vec3 uR,uU,uF,uSun,uCam;uniform float uTime;
 ${MEADOW_GLSL}
 vec3 horizon(float az){return mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2));}
 vec3 sky(vec3 rd){
-  float az=dot(normalize(rd.xz+1e-6),normalize(uSun.xz))*.5+.5,h=max(rd.y,0.);
+  float az=clamp(dot(normalize(rd.xz+1e-6),normalize(uSun.xz))*.5+.5,0.,1.),h=max(rd.y,0.);     // clamped: pow() of a value a hair below zero is undefined, and showed as a speckled line opposite the sun
   vec3 c=mix(horizon(az),mix(vec3(.30,.33,.55),vec3(.66,.50,.55),pow(az,3.)),smoothstep(0.,.2,h));
   return mix(c,vec3(.07,.12,.28),smoothstep(.12,.95,h));
 }
 void main(){
   vec3 rd=normalize(uF+vN.x*uR+vN.y*uU);
-  float az=dot(normalize(rd.xz+1e-6),normalize(uSun.xz))*.5+.5;
+  float az=clamp(dot(normalize(rd.xz+1e-6),normalize(uSun.xz))*.5+.5,0.,1.);
   vec3 hz=horizon(az),col;
-  float sd=max(dot(rd,uSun),0.),dn=max(-rd.y,1e-4);
+  float sd=clamp(dot(rd,uSun),0.,1.),dn=max(-rd.y,1e-4);
   if(rd.y>0.){
     col=sky(rd)+vec3(1.,.70,.40)*(pow(sd,2000.)*6.+pow(sd,90.)*.55+pow(sd,10.)*.28);
   }else{
@@ -1542,7 +1542,7 @@ void main(){
       vec3 sand=sandLit(nb,wb)*(.95+.1*texture(uMapA,wb*.11).a);
       float wet=smoothstep(-5.,-1.2,cb);
       vec3 rw=reflect(rd,nb);rw.y=abs(rw.y);
-      sand=mix(sand*mix(1.,.5,wet),sky(rw),wet*(.1+.5*pow(1.-max(dot(-rd,nb),0.),4.)));
+      sand=mix(sand*mix(1.,.5,wet),sky(rw),wet*(.1+.5*pow(clamp(1.-dot(-rd,nb),0.,1.),4.)));
       if(cs>shore){                       // the sea
         dist=ts;
         float fade=1./(1.+dist*.012),fp=dist*dist*.0016/max(uCam.y-SEA,.5);     // fp: how much sea one pixel covers along the view; ripples finer than that are dropped
@@ -1553,11 +1553,11 @@ void main(){
         float dc=.045*cos(p1)*f1+.03*cos(p2)*f2+.028*cos(p3)*f3+.02*cos(p4)*f4+nz.x*.16;
         float dx=.012*cos(p2)*f2-.014*cos(p3)*f3+.026*cos(p4)*f4+nz.y*.16;
         vec3 n=normalize(vec3(-dx,1.,dc));
-        float fr=.04+.82*pow(1.-max(dot(-rd,n),0.),5.);
+        float fr=.04+.82*pow(clamp(1.-dot(-rd,n),0.,1.),5.);
         vec3 rf=reflect(rd,n);rf.y=abs(rf.y)+.07;rf=normalize(rf);
         vec3 deep=mix(vec3(.02,.06,.09),vec3(.06,.17,.17),exp(-max(cs,0.)*.05));
         col=mix(deep,sky(rf),fr);
-        float sr=max(dot(rf,uSun),0.);
+        float sr=clamp(dot(rf,uSun),0.,1.);
         col+=vec3(1.,.66,.36)*(pow(sr,mix(120.,500.,fade))*7.+pow(sr,40.)*.5)*(.55+.9*nz.x+.5);
         float na=texture(uMapA,q1*.17+vec2(0.,t*.02)).a;
         float foam=smoothstep(.76,.99,sin(p1+nz.x*2.))*smoothstep(44.,9.,cs)*smoothstep(.25,.6,na)*f1;          // breakers
@@ -2047,7 +2047,7 @@ addEventListener('blur',()=>keysDown.clear());
 resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__score=Score;window.__sim={S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
+window.__score=Score;window.__sim={dyn:()=>({DY,nd,view,focal}),S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
