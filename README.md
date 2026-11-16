@@ -1,6 +1,6 @@
 # Splatterhouse
 
-A real-time 3D Gaussian splat demo in one HTML file: birds at dusk over a wildflower meadow, above a barn, a silo, fenced fields and a mix of trees. Six species are on the menu, each flying by its own rules: starlings in a murmuration, dunlin, jackdaws, pigeons, geese in V formation and white storks circling in thermals. Flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
+A real-time 3D Gaussian splat demo in one HTML file: birds at dusk over a wildflower meadow, above a barn, a silo, fenced fields and a mix of trees. Seven kinds of flier are on the menu, each with its own rules: starlings in a murmuration, dunlin, jackdaws, pigeons, geese in V formation, white storks circling in thermals, and a speculative reconstruction of *Pteranodon*. Flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
 
 Every splat is generated in the browser and drawn the way trained splat scenes are. Each one is an anisotropic 3D Gaussian (position, rotation, scale, colour, opacity), projected to a 2D covariance in the vertex shader, depth-sorted on the CPU each frame and alpha-blended back to front. There is no mesh and no depth buffer.
 
@@ -16,10 +16,10 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Orbit** (`2`) | Circle all the flocks from below, against the sky. |
 | **Ride** (`3`) | Fly behind one bird inside the flock. |
 | **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any movement key in another view takes off from where you are. On touch: drag to look, pinch to move. |
-| **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese or storks. |
-| **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese or storks. |
+| **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, storks or *Pteranodon*. |
+| **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, storks or *Pteranodon*. |
 | **Slow-mo** (`T`) | 0.2× time, so the 13 Hz wingbeat becomes visible. |
-| **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese or white storks. Changing species restarts the birds. |
+| **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, white storks or *Pteranodon*. Changing species restarts the birds. |
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 
 ## The flight model
@@ -69,6 +69,7 @@ Each species has its own body (built from one parametric splat bird: wingspan, n
 | Pigeon | 0.68 m | 15 m/s | 7 Hz | A small kit circling the barn. Every bird has a rank. A bird weights each neighbour's heading by that neighbour's rank, and high-ranked birds wander more and fly slightly faster, so they end up at the front and the rest follow their turns. Three colour morphs. |
 | Goose | 1.6 m | 16 m/s | 3.8 Hz | V formation, below. |
 | White stork | 2.0 m | 10.5 m/s | soaring | Thermal soaring, below. |
+| *Pteranodon* | 3.8 m and 5.8 m | 12 m/s | soaring | Speculative, below. |
 
 **Dunlin.** The short copying delay stands in for Potts's chorus-line account (1984, *Nature* 309:344), in which a bird times its turn from the wave approaching it and so reacts faster than its own reaction time would allow.
 
@@ -88,10 +89,23 @@ One part is control engineering and not biology. A goose that matches speed only
 
 **White storks.** Three thermals drift across the field, each lasting about 75 to 120 seconds. A stork circles in one, turning the same way as the rest of the kettle, and climbs at the updraft minus its own sink rate, which grows with bank angle. Near the top it leaves and glides to another thermal, losing height on the way. Bold birds leave first and choose the thermal by its strength and distance; followers leave once much of the kettle has gone and head for the thermal with the most storks (Flack et al. 2018, *Science* 360:911, found leaders and followers of this kind in migrating storks). Specks of thistledown rise in each thermal so the air can be seen. Distances are compressed about tenfold so the cycle fits over the field: real thermals carry storks up a kilometre and the glides run for kilometres, so the glides here are much steeper than a real stork's.
 
+***Pteranodon*.** Nobody has seen a pterosaur fly, so this one is a reconstruction with the guesses marked.
+
+| | Basis |
+|---|---|
+| Two sizes, two females to each male, large crest on males only | Fossils. Bennett's survey of the Niobrara Chalk specimens found a small class (3.0–4.8 m span) about twice as common as a large class (4.8–6.7 m), differing in crest and pelvis (Bennett 1992, *Journal of Vertebrate Paleontology* 12:422). |
+| Thermal soaring: circle up, glide on | Flight modelling. Goto et al. (2022, *PNAS Nexus* 1:pgac023) found *Pteranodon* suited to soaring on updrafts over the sea, as frigatebirds do, though earlier work argued for albatross-style dynamic soaring and the answer depends on uncertain wing drag. |
+| Living in groups | Weak, by analogy. Bone beds show some other pterosaurs were gregarious (*Caiuajara*: Manzig et al. 2014, *PLoS ONE* 9:e100005). For *Pteranodon* the skewed sex ratio hints at a colonial, polygynous life like a sea lion's. |
+| Leaving a thermal together and gliding in loose files, each behind and beside the one ahead | A guess. Pelicans and frigatebirds do it, and the saving from a neighbour's wake grows with wingspan. |
+| Speeds, sink rates, circle radius | Rough figures in the range the flight models give; not fitted. |
+| Colours | Invented. Pale below and darker above as in most seabirds, with the male's crest coloured as a display structure. |
+
+The model is the storks' with wider thermals, wider circles and the file-gliding rule added. As with the storks, distances are compressed about tenfold, and there is no sea: a real *Pteranodon* would have been doing this over open water, far from shore.
+
 ## How the splats work
 
 - **Data.** Each splat is four RGBA32F texels in one data texture. Static splats (grass, barn, trees, hills, clouds) are uploaded once. Bird splats are rebuilt and re-uploaded every frame into a dynamic region of the same texture.
-- **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. All six species come from one parametric body. Near birds use 39 to 63 splats depending on species, with separate top and underside wing splats that fade by facing, so a starling's wings look glossy black from above and grey-brown from below, and a dunlin flashes white when it banks. Distant birds collapse to 3 to 7 splats.
+- **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. All the fliers come from one parametric body. Near birds use 39 to 63 splats depending on species, with separate top and underside wing splats that fade by facing, so a starling's wings look glossy black from above and grey-brown from below, and a dunlin flashes white when it banks. Distant birds collapse to 3 to 7 splats.
 - **Barn and silo.** About 36,000 splats. The shell is surface splats laid out on panels, each with its thin axis along the surface normal so the sunset lights it properly. Fine detail is drawn on top with long, thin splats used as lines: board-and-batten strips, white corner boards, rakes and bargeboards, window casings and glazing bars, standing seams and patched sheets on the gambrel roof, gutters and downspouts.
   - *Front:* X-braced sliding doors standing ajar on a steel track, with light inside and a lantern above; a hay hood with a hoist beam, pulley and rope; hay spilling from the loft door; a fieldstone foundation; Virginia creeper turning red up one corner.
   - *Sides:* windows, some lit from inside; a painted barn quilt on the sunlit wall; a ladder left leaning; a lean-to with a tin roof, posts and stacked straw bales.

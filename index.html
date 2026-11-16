@@ -79,7 +79,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
   <div class="row sl">
     <select id="species" aria-label="Species">
       <option value="starling">Starlings</option><option value="dunlin">Dunlin</option><option value="jackdaw">Jackdaws</option>
-      <option value="pigeon">Pigeons</option><option value="goose">Geese</option><option value="stork">White storks</option>
+      <option value="pigeon">Pigeons</option><option value="goose">Geese</option><option value="stork">White storks</option><option value="pteranodon">Pteranodon</option>
     </select>
     <input id="count" type="range" aria-label="Number of birds" min="150" max="2400" step="50" value="1000"><output id="countOut" for="count">1000</output></div>
 </div>
@@ -704,7 +704,7 @@ function buildBird(sh){
   const tipc=sh.tip==='point'?[.022,.018,.014,.009,.005]:sh.tip==='finger'?[.025,.025,.024,.022,.017]:[.023,.022,.019,.015,.009];
   const ox=[.013,.037,.060,.081,.097],oz=[-.016,-.018,-.021,-.025,-.028],os=[.013,.013,.013,.012,.008];
   for(const[sd,pi,po,q,qb]of[[1,1,2,FL,FLB],[-1,3,4,FR,FRB]]){
-    for(const[x,cs0]of[[.014,.026],[.040,.024],[.064,.022]]){const cs=cs0*ch;
+    for(const[x,cs0]of sh.inner||[[.014,.026],[.040,.024],[.064,.022]]){const cs=cs0*ch;
       if(sh.twoTone){     // pale coverts in front, dark flight feathers behind
         N.push(T(pi,[sd*x,.0012,-.016+cs*.42],[.014,cs*.6,.0015],q,2,.97,.75*g,2),T(pi,[sd*x,-.0012,-.016+cs*.42],[.014,cs*.6,.0015],qb,3,.97,.08,2));
         N.push(T(pi,[sd*x,.0012,-.016-cs*.55],[.014,cs*.5,.0015],q,9,.97,.3,2),T(pi,[sd*x,-.0012,-.016-cs*.55],[.014,cs*.5,.0015],qb,10,.97,.08,2));
@@ -759,10 +759,20 @@ const SPECIES={
   stork:{label:'White storks',tag:'Thermal kettle',word:['kettle','kettles'],model:'soar',size:5,n:[36,26],min:8,max:80,step:2,
     v0:10.5,wbf:2.6,amp:.45,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.09,.02,.05,.3],falcon:false,
     shape:{neck:.05,head:.8,bill:.04,billW:1.1,tail:.6,tip:'finger',chord:1.25,twoTone:true,legs:.075,farTip:true},
-    pals:[mkPal({body:[.93,.92,.88],bill:[.80,.18,.09],wing:[.93,.92,.88],under:[.93,.92,.89],tail:[.93,.92,.88],hand:[.04,.04,.05],handUnder:[.07,.07,.08],legs:[.78,.22,.12]})]}
+    pals:[mkPal({body:[.93,.92,.88],bill:[.80,.18,.09],wing:[.93,.92,.88],under:[.93,.92,.89],tail:[.93,.92,.88],hand:[.04,.04,.05],handUnder:[.07,.07,.08],legs:[.78,.22,.12]})]},
+  // Speculative. Size, the two sexes and thermal soaring rest on fossils and flight models; colours and all social rules are guesses (see README).
+  pteranodon:{label:'Pteranodon',tag:'Speculative soaring',word:['squadron','squadrons'],noun:'animals',model:'soar',size:14.5,n:[16,12],min:4,max:40,step:1,
+    v0:12,wbf:1.3,amp:.4,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.06,.03,.07,.3],falcon:false,sexes:true,
+    soar:{vc:12,vg:17,sink:.9,gsink:4.4,rad:[17,13],sep:9,thr:[35,9],files:true},
+    shapes:[{fat:.62,len:.62,neck:.03,head:.75,bill:.075,billW:1.6,tail:.15,tip:'point',chord:.72,inner:[[.014,.032],[.040,.026],[.064,.021]],belly:true,sided:true,legs:.03,farTip:true,
+        accents:[[[0,.015,.061],[.0028,.0045,.008],5]]},
+      {fat:.62,len:.62,neck:.03,head:.75,bill:.075,billW:1.6,tail:.15,tip:'point',chord:.72,inner:[[.014,.032],[.040,.026],[.064,.021]],belly:true,sided:true,legs:.03,farTip:true,
+        accents:[[[0,.017,.058],[.003,.0065,.014],5],[[0,.028,.038],[.0027,.006,.017],5]]}],
+    pals:[mkPal({body:[.62,.60,.56],bill:[.62,.52,.32],wing:[.33,.31,.30],under:[.70,.66,.61],tail:[.5,.48,.45],accent:[.50,.40,.30],far:[.34,.32,.31],belly:[.80,.78,.73],head:[.66,.63,.58],hand:[.20,.19,.19],handUnder:[.52,.49,.46],legs:[.35,.33,.31]}),
+      mkPal({body:[.60,.58,.54],bill:[.78,.62,.28],wing:[.30,.28,.28],under:[.70,.66,.61],tail:[.5,.48,.45],accent:[.82,.30,.10],far:[.31,.29,.29],belly:[.80,.78,.73],head:[.66,.63,.58],hand:[.16,.15,.16],handUnder:[.50,.47,.44],legs:[.35,.33,.31]})]}
 };
 let NEARMAX=0,FARMAX=0;
-for(const k in SPECIES){const s=SPECIES[k];s.tpl=buildBird(s.shape);NEARMAX=Math.max(NEARMAX,s.tpl.near.length);FARMAX=Math.max(FARMAX,s.tpl.far.length);}
+for(const k in SPECIES){const s=SPECIES[k];s.tpls=(s.shapes||[s.shape]).map(buildBird);s.tpl=s.tpls[0];for(const t of s.tpls){NEARMAX=Math.max(NEARMAX,t.near.length);FARMAX=Math.max(FARMAX,t.far.length);}}
 const FALCT=buildBird({gloss:.15,bill:.012,billW:1.5,tail:1.2,tip:'point',belly:true}).near,FPOSE=[.07,.06,.22,1];
 const FALC=mkPal({body:[.26,.27,.30],bill:[.55,.48,.20],wing:[.27,.29,.33],under:[.62,.58,.52],tail:[.24,.25,.29],belly:[.72,.68,.60],head:[.18,.19,.22],hand:[.22,.24,.28],handUnder:[.55,.52,.47]});
 
@@ -774,6 +784,7 @@ const G=9.81,TAUV=1.0,BMAX=1.2;
 const REACT=.1,REFR=1.6,ZIG=.5,DAMP=.985,FLEE=11,DETECT=24;
 const TREFR=3,TPEAK=11,PAIRD=1.3;                    // turning waves; how close a mated pair keeps
 // flight parameters of the current species, set by setSpecies()
+const SOAR0={vc:10.5,vg:15,sink:.85,gsink:4.2,rad:[11,15],sep:8,thr:[26,8],files:false};let SOAR=SOAR0;
 let sp=SPECIES.starling,K=7,V0C=10,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,NOISE=1.9,WR=4,WBF=13.3,TREACT=.07,HOPM=2.3,SPACE=1,RSX=0,RSZ=-70,R0=48,SIZE=1,PAIRS=false,HIER=false,FLAPMODE='mix';
 const MAXC=12,LINK2=49,RVIS=140,WV=1.3,WVS=3.5,WJ=3.2,WO=2.6;       // flocks and the pull between them
 let P=new Float32Array(MAXB*3),H=new Float32Array(MAXB*3),Pn=new Float32Array(MAXB*3),Hn=new Float32Array(MAXB*3);
@@ -799,15 +810,15 @@ function initBird(i,px,py,pz,fx,fy,fz){
   RANK[i]=rnd();V0[i]=V0C*(HIER?.95+.09*RANK[i]:.96+.08*rnd());V[i]=V0[i];BETA[i]=0;UPv[i3]=0;UPv[i3+1]=1;UPv[i3+2]=0;NZ[i3]=NZ[i3+1]=NZ[i3+2]=0;
   SC[i]=SIZE*(.95+.1*rnd());WB[i]=WBF*(sp.model==='vee'?.99+.02*rnd():.95+.1*rnd());PH[i]=rnd()*6.28;FS[i]=1;FLAP[i]=1;FT[i]=rnd();TK[i]=0;DEM[i]=.5;
   ESC[i]=-99;ESCA[i]=0;CEN[i]=0;TT[i]=-99;THop[i]=0;LAB[i]=-1;
-  MATE[i]=PAIRS&&hash((i>>1)*1.37+.5)<.8?i^1:-1;PALI[i]=sp.pals.length>1?(rnd()<.68?0:rnd()<.6?1:2):0;
-  TIRE[i]=-99;ROOT[i]=i;SIDE[i]=0;LEADI[i]=-1;SWT[i]=0;SLOT[i]=0;LEADT[i]=S.time;LEADD[i]=25+rnd()*30;MODE[i]=0;TGT[i]=0;PREV[i]=0;RADP[i]=11+rnd()*15;BOLD[i]=rnd();VYa[i]=0;
+  MATE[i]=PAIRS&&hash((i>>1)*1.37+.5)<.8?i^1:-1;PALI[i]=sp.sexes?(rnd()<.67?0:1):sp.pals.length>1?(rnd()<.68?0:rnd()<.6?1:2):0;if(sp.sexes&&!PALI[i])SC[i]*=.66;   // two females to each male, and the females two thirds the size
+  TIRE[i]=-99;ROOT[i]=i;SIDE[i]=0;LEADI[i]=-1;SWT[i]=0;SLOT[i]=0;LEADT[i]=S.time;LEADD[i]=25+rnd()*30;MODE[i]=0;TGT[i]=0;PREV[i]=0;RADP[i]=SOAR.rad[0]+rnd()*SOAR.rad[1];BOLD[i]=rnd();VYa[i]=0;
 }
 function spawn(n){
   S.n=0;
   if(sp.model==='soar'){initThermals();const th=TH[0];
     for(let i=0;i<n;i++){initBird(i,0,0,0,1,0,0);const a=rnd()*6.2832,r=RADP[i],i3=i*3;
       P[i3]=th.x+Math.cos(a)*r;P[i3+1]=26+rnd()*50;P[i3+2]=th.z+Math.sin(a)*r;H[i3]=-Math.sin(a)*th.dir;H[i3+1]=0;H[i3+2]=Math.cos(a)*th.dir;
-      BETA[i]=.5*th.dir;V[i]=10.5;FLAP[i]=0;FS[i]=0;}
+      BETA[i]=.5*th.dir;V[i]=SOAR.vc;FLAP[i]=0;FS[i]=0;}
   }else if(sp.model==='vee'){
     {const y0=hPref(S.time),K=Math.ceil(n/29);for(let i=0;i<n;i++){const g=i%K;initBird(i,-70-g*55+(rnd()-.5)*30,y0+(g-(K-1)/2)*13+(rnd()-.5)*5,-120+g*30+(rnd()-.5)*24,1,0,.5);}}
   }else{
@@ -1094,7 +1105,7 @@ function thermalEnv(t,now){const a=now-t.t0;return a<0?0:smooth(a/8)*smooth((t.l
 function newThermal(k,now,x,z){
   if(x===undefined){let tries=0,ok;do{const a=rnd()*6.2832,d=30+rnd()*140;x=Math.sin(a)*d;z=-70+Math.cos(a)*d;ok=true;
     for(let q=0;q<3;q++)if(q!==k&&TH[q]&&Math.hypot(TH[q].x-x,TH[q].z-z)<125)ok=false;}while(!ok&&++tries<40);}
-  TH[k]={x,z,r:26+rnd()*8,w:2.7+rnd()*.8,top:80+rnd()*28,t0:now,life:75+rnd()*45,dir:rnd()<.5?1:-1,cnt:0,inb:0,out:0};
+  TH[k]={x,z,r:SOAR.thr[0]+rnd()*SOAR.thr[1],w:2.7+rnd()*.8,top:80+rnd()*28,t0:now,life:75+rnd()*45,dir:rnd()<.5?1:-1,cnt:0,inb:0,out:0};
 }
 function initThermals(){TH.length=0;const now=S.time;newThermal(0,now-12,-15,-80);TH[0].life=72;newThermal(1,now-10);newThermal(2,now+25);}
 function updraft(x,y,z,now){let u=0;for(let k=0;k<3;k++){const t=TH[k],dx=x-t.x,dz=z-t.z;u+=thermalEnv(t,now)*t.w*Math.exp(-(dx*dx+dz*dz)/(t.r*t.r))*smooth((t.top+8-y)/20);}return u;}
@@ -1109,17 +1120,25 @@ function stepSoar(h){
     let desx,desz,vT,vyT,bff=0,flap=0;
     if(!MODE[i]&&rho>th.r*1.7)MODE[i]=1;
     if(MODE[i]){
-      desx=-dx/rho;desz=-dz/rho;vT=15;vyT=up-4.2;
-      if(py<26){vyT=Math.max(vyT,.7);flap=1;vT=12;}
+      desx=-dx/rho;desz=-dz/rho;vT=SOAR.vg;vyT=up-SOAR.gsink;
+      if(SOAR.files){      // glide in file: take station behind and beside the nearest animal ahead that is bound for the same thermal
+        let bj=-1,bd=6400;
+        for(let j=0;j<n;j++){if(j===i||!MODE[j]||TGT[j]!==k)continue;const ex=P[j*3]-px,ez=P[j*3+2]-pz,d2=ex*ex+ez*ez;if(d2<bd&&ex*desx+ez*desz>2){bd=d2;bj=j;}}
+        if(bj>=0){const j3=bj*3,sp2=.4*SIZE;let gx=H[j3],gz=H[j3+2];const gl=Math.hypot(gx,gz)||1;gx/=gl;gz/=gl;
+          const sd=((px-P[j3])*-gz+(pz-P[j3+2])*gx)>=0?1:-1,qx=P[j3]-gx*sp2*1.5-gz*sp2*1.1*sd-px,qz=P[j3+2]-gz*sp2*1.5+gx*sp2*1.1*sd-pz;
+          let ax=qx+gx*22,az=qz+gz*22;const al=Math.hypot(ax,az)||1;desx=ax/al;desz=az/al;            // steer for a point well ahead of the place, so the turn-in is gentle
+          vT=clamp(V[bj]+.6*(qx*gx+qz*gz),SOAR.vg*.7,SOAR.vg*1.5);vyT+=clamp(.4*(P[j3+1]-py),-1.5,1.5);}
+      }
+      if(py<26){vyT=Math.max(vyT,.7);flap=1;vT=SOAR.vg*.8;}
       if(rho<th.r*.75)MODE[i]=0;
     }else{
       const sn=th.dir,e=clamp((rho-RADP[i])/RADP[i]*1.3,-.9,.9);
       desx=-dz/rho*sn-dx/rho*e;desz=dx/rho*sn-dz/rho*e;const dl=Math.hypot(desx,desz)||1;desx/=dl;desz/=dl;
-      vT=10.5;bff=sn*Math.atan(v*v/(G*Math.max(rho,9)));vyT=up-.85/Math.pow(Math.cos(BETA[i]),1.5);
+      vT=SOAR.vc;bff=sn*Math.atan(v*v/(G*Math.max(rho,9)));vyT=up-SOAR.sink/Math.pow(Math.cos(BETA[i]),1.5);
       if(py<20&&up<1.2){vyT=.9;flap=1;}
       climb+=VYa[i];nc++;
       const follower=BOLD[i]<.55,dying=env<.3;
-      if(py>th.top-(follower?2:7)||dying||(follower&&th.out>.4*(th.out+th.cnt)&&rnd()<.5*h)){
+      if(py>th.top-(follower?2:7)||dying||(follower&&th.out>(SOAR.files?.2:.4)*(th.out+th.cnt)&&rnd()<(SOAR.files?1.5:.5)*h)){
         let best=-1,bs=-1e9;
         for(let q=0;q<3;q++){if(q===k)continue;const t=TH[q],a=now-t.t0;if(a<0||t.life-a<25)continue;
           const sc=follower?(t.cnt+t.inb)*2+thermalEnv(t,now):thermalEnv(t,now)*2+(t.life-a)/60-Math.hypot(t.x-px,t.z-pz)/250;if(sc>bs){bs=sc;best=q;}}
@@ -1127,7 +1146,7 @@ function stepSoar(h){
       }
     }
     for(let j=0;j<n;j++){if(j===i)continue;const j3=j*3,ex=P[j3]-px,ey=P[j3+1]-py,ez=P[j3+2]-pz,d2=ex*ex+ey*ey+ez*ez;
-      if(d2<64){const d=Math.sqrt(d2)+1e-6,w=1-d/8;desx-=ex/d*w*.7;desz-=ez/d*w*.7;vyT-=ey/d*w*1.2;}}
+      if(d2<SOAR.sep*SOAR.sep){const d=Math.sqrt(d2)+1e-6,w=1-d/SOAR.sep;desx-=ex/d*w*.7;desz-=ez/d*w*.7;vyT-=ey/d*w*1.2;}}
     const err=Math.atan2(fhx*desz-fhz*desx,fhx*desx+fhz*desz);
     let b=BETA[i];b+=(clamp(bff+1.5*err,-.72,.72)-b)*(1-Math.exp(-h/.6));BETA[i]=b;
     const w=G*Math.tan(b)/Math.max(v,6)*h,cw=Math.cos(w),sw=Math.sin(w),nfx=fhx*cw-fhz*sw,nfz=fhz*cw+fhx*sw;
@@ -1533,7 +1552,7 @@ function genBirds(){
     const fu=u[0]*f[0]+u[1]*f[1]+u[2]*f[2];u=nrm([u[0]-f[0]*fu,u[1]-f[1]*fu,u[2]-f[2]*fu]);
     wingAngles(PH[i],FLAP[i],TK[i],amp*(.75+.25*DEM[i]),pose);
     frames([P[i3],P[i3+1],P[i3+2]],f,u,SC[i],isNear);
-    emit(isNear?tpl.near:tpl.far,pals[PALI[i]],1,SC[i]);
+    const tp=sp.shapes?sp.tpls[PALI[i]]:tpl;emit(isNear?tp.near:tp.far,pals[PALI[i]],1,SC[i]);
   }
   for(const F of FALS){wingAngles(F.ph,F.flap,F.tk,.75,FPOSE);frames(F.p.slice(),F.f,F.u,2.4,true);emit(FALCT,FALC,.15,2.4);}
   if(sp.model==='soar'){      // thistledown carried up in the thermals, so the rising air can be seen
@@ -1615,7 +1634,7 @@ function frame(now){
     st1.textContent=S.n.toLocaleString()+' '+sp.label.toLowerCase()+' · '+drawn.toLocaleString()+' splats · '+Math.round(fpsN/fpsT)+' fps';
     const fl=S.flocks,nf=FALS.length,grp=fl.length>1?fl.length+' '+sp.word[1]+' '+fl.slice(0,4).join('/'):'1 '+sp.word[0];
     st2.textContent=sp.model==='vee'?grp+' · '+Math.round(S.inForm*100)+'% on station · '+S.swaps+' lead changes'
-      :sp.model==='soar'?grp+' · circling birds climbing '+S.climb.toFixed(1)+' m/s'
+      :sp.model==='soar'?grp+' · circling '+(sp.noun||'birds')+' climbing '+S.climb.toFixed(1)+' m/s'
       :grp+' · alignment '+S.pol.toFixed(2)+(nf?' · '+nf+(nf>1?' falcons':' falcon'):'');
     fpsT=fpsN=0;}
 }
@@ -1694,7 +1713,7 @@ cnt.oninput=()=>{resizeFlock(+cnt.value);cntOut.textContent=cnt.value;};
 cnt.onchange=()=>cnt.blur();
 const selSp=document.getElementById('species');
 function setSpecies(key){
-  sp=SPECIES[key];K=sp.K||7;V0C=sp.v0;VMIN=V0C*.5;VMAX=V0C*(sp.model==='vee'?1.4:2);RH=sp.rh||.2;SEPW=sp.sepw||.45;WS=sp.ws||7;WA=sp.wa||2.7;WC=sp.wc||2.2;NOISE=sp.noise??1.9;WR=sp.wr||4;
+  sp=SPECIES[key];K=sp.K||7;V0C=sp.v0;VMIN=V0C*.5;VMAX=V0C*(sp.model==='vee'?1.4:2);RH=sp.rh||.2;SEPW=sp.sepw||.45;WS=sp.ws||7;WA=sp.wa||2.7;WC=sp.wc||2.2;NOISE=sp.noise??1.9;WR=sp.wr||4;SOAR=Object.assign({},SOAR0,sp.soar);
   WBF=sp.wbf;TREACT=sp.treact||.07;SPACE=sp.space||1;HOPM=2.3*SPACE;RSX=sp.roost[0];RSZ=sp.roost[1];R0=sp.roost[2];SIZE=sp.size;PAIRS=!!sp.pairs;HIER=!!sp.hier;FLAPMODE=sp.flap;
   FALS.length=0;NC=0;S.flocks=[];S.swaps=0;S.inForm=0;S.climb=0;lastCluster=-9;clusterNow=false;S.nextTurn=S.time+6;
   const n=coarse?sp.n[1]:sp.n[0];cnt.min=sp.min;cnt.max=sp.max;cnt.step=sp.step;cnt.value=n;cntOut.textContent=n;
