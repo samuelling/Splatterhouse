@@ -55,12 +55,16 @@ button[aria-disabled="true"]{opacity:.42;cursor:default}
 input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
-#bAdv{position:fixed;left:14px;top:96px;height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#chips{position:fixed;left:14px;top:96px;display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 28px)}
+#bClean,#bFinger{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#bFinger[hidden]{display:none}
+#bFinger[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
+#bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bAdv[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #adv{position:fixed;left:14px;top:128px;width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 140px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
   background:rgba(30,23,36,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.3 var(--mono);color:var(--ink);display:grid;gap:7px}
 #adv[hidden]{display:none}
-#bHunt{position:fixed;left:102px;top:96px;height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--hot);border-color:rgba(255,106,74,.5);background:rgba(30,23,36,.35)}
+#bHunt{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--hot);border-color:rgba(255,106,74,.5);background:rgba(30,23,36,.35)}
 #bHunt[aria-pressed="true"]{background:var(--hot);color:#2a0d06;border-color:transparent}
 #bag{position:fixed;right:14px;top:14px;width:214px;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,106,74,.4);background:rgba(30,23,36,.5);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.5 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums;pointer-events:none}
 #bag[hidden],#xh[hidden]{display:none}
@@ -78,7 +82,21 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #lens{position:fixed;inset:0;pointer-events:none;overflow:hidden}
 #lens i{position:absolute;border-radius:50% 44% 56% 42%/46% 56% 44% 54%;background:radial-gradient(ellipse at 42% 36%,rgba(160,10,14,.92),rgba(96,2,6,.86) 52%,rgba(60,0,3,0) 71%);animation:drip 4.5s ease-in forwards}
 @keyframes drip{0%{opacity:0;transform:scale(.3)}5%{opacity:.95;transform:scale(1)}40%{opacity:.9;transform:translateY(8px) scale(1,1.08)}100%{opacity:0;transform:translateY(56px) scale(.96,1.4)}}
+#cam{position:fixed;left:14px;bottom:14px;width:150px;padding:6px;border-radius:12px;border:1px solid var(--edge);background:rgba(30,23,36,.5);font:11px/1.35 var(--mono);color:var(--ink-dim);pointer-events:none}
+#cam[hidden]{display:none}
+#cam div{position:relative;overflow:hidden;border-radius:8px;background:#000;aspect-ratio:4/3}
+#cam video{display:block;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#cam i{position:absolute;width:10px;height:10px;margin:-5px;border-radius:50%;border:2px solid var(--ink-dim)}
+#cam i.g{border-color:var(--hot);background:var(--hot)}
+#cam span{display:block;margin-top:5px}
+@media (max-width:470px){#cam{bottom:auto;top:128px;width:104px}}
 body.hunt canvas{cursor:none}
+/* nothing but the birds: every menu and line of text hidden; a faint button comes back when the pointer moves */
+body.clean #tag,body.clean #chips,body.clean #dock,body.clean #hint,body.clean #hud,body.clean #adv,body.clean #bag,body.clean #cam{display:none!important}
+#bShow{display:none;position:fixed;left:14px;top:14px;height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink);background:rgba(30,23,36,.5);opacity:0;transition:opacity .5s;pointer-events:none}
+body.clean #bShow{display:block}
+body.clean.peek #bShow{opacity:.8;pointer-events:auto}
+body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 @media (max-width:470px){#bag{width:168px;font-size:10px;top:128px}}
 #adv h4 small{font:11px/1 var(--mono);letter-spacing:0;text-transform:none;color:var(--ink-dim);margin:0 auto 0 8px}
 #adv h4{margin:0;display:flex;justify-content:space-between;align-items:center;font:600 15px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
@@ -109,7 +127,8 @@ body.hunt canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button></div>
+<button id="bShow" type="button">Show menus</button>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
   <h4>Advanced <small>Gaussian splats</small><button type="button" id="advX" aria-label="Close">×</button></h4>
   <label>Size <input type="range" data-k="size" min="0.1" max="2.5" step="0.05" value="1"><output></output></label>
@@ -122,9 +141,9 @@ body.hunt canvas{cursor:none}
   <label class="ck"><input type="checkbox" data-k="sort" checked> Depth sort</label>
   <button type="button" id="advR">Reset</button>
 </form>
-<button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button>
 <div id="flash"></div><div id="lens"></div>
 <div id="bag" hidden></div>
+<div id="cam" hidden><div><video playsinline muted></video><i hidden></i></div><span></span></div>
 <div id="xh" hidden><i></i><b></b></div>
 <div id="hint"></div>
 <div id="dock">
@@ -1502,6 +1521,7 @@ uniform highp sampler2D uData;
 uniform mat4 uView,uProj;uniform vec2 uViewport;uniform float uFocal;uniform vec2 uLim;
 uniform vec4 uField;uniform vec2 uScroll;uniform vec3 uSun,uCam;
 uniform vec4 uAdv;      // the advanced panel: splat size, opacity, pixel filter, colour mode
+uniform vec4 uPress;    // a bed of flattened grass where the dog lays the birds: world x, z, radius, how far pressed
 ${MEADOW_GLSL}
 layout(location=0) in vec2 aQuad;layout(location=1) in uint aIndex;
 out vec4 vColor;out vec2 vPos;out float vSharp;
@@ -1560,6 +1580,10 @@ void main(){
     xz+=vec2(.85,.5)*(gust*.07+.03)*hf*hf*hs;
     float tr=smoothstep(.55,.1,d)*step(uCam.y,2.5);
     xz+=xz/max(d,.05)*tr*.22*hf;y*=1.-.45*tr;
+    if(uPress.w>0.){                       // the bed: blades lie down and splay outward, and the flowers in it are gone
+      vec2 pd=w0-uPress.xy;float pl=length(pd),pr=uPress.w*smoothstep(uPress.z,uPress.z*.4,pl);
+      if(pr>0.){if(ty>.5)alpha*=1.-pr;y*=1.-.9*pr;s.y*=1.-.72*pr;s.x*=1.+.8*pr;xz+=pd/max(pl,.05)*pr*.2*hf;}
+    }
     wp=vec3(xz.x+uScroll.x,y+gy,xz.y+uScroll.y);
     alpha*=smoothstep(Rf,Rf*.78,d);
     col=col*tint*mb.g+vec3(1.,.6,.25)*mb.a*.25;
@@ -1782,7 +1806,7 @@ void main(){
 }`;
 let PR,BP;
 try{PR=prog(VS,FSRC);BP=prog(BVS,BFS);}catch(e){const el=document.getElementById('err');el.textContent='Shader error: '+e.message;el.hidden=false;return;}
-const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','uField','uScroll','uSun','uCam','uTint','uMapA','uMapB','uAdv','uEdge'])U[n]=gl.getUniformLocation(PR,n);
+const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','uField','uScroll','uSun','uCam','uTint','uMapA','uMapB','uAdv','uEdge','uPress'])U[n]=gl.getUniformLocation(PR,n);
 const BU={};for(const n of['uR','uU','uF','uSun','uCam','uTint','uMapA','uMapB','uTime'])BU[n]=gl.getUniformLocation(BP,n);
 
 const TH0=Math.ceil(nStatic/512),DYN0=TH0*512;
@@ -2066,6 +2090,7 @@ function advance(dt){
 function frame(now){
   requestAnimationFrame(frame);
   const t=now/1000,rdt=Math.max(0,t-last),dt=Math.min(.05,rdt);last=t;
+  Finger.tick();
   if(!S.frozen)advance(dt*(S.slow?.2:1));
   updateCamera(Math.min(.12,rdt));
   render();
@@ -2100,6 +2125,7 @@ function render(){
   gl.uniformMatrix4fv(U.uView,false,view);gl.uniformMatrix4fv(U.uProj,false,proj);
   gl.uniform2f(U.uViewport,VW,VH);gl.uniform1f(U.uFocal,focal);gl.uniform2f(U.uLim,tanX*1.3,tanY*1.3);
   gl.uniform4f(U.uAdv,ADV.size,ADV.op,ADV.low,ADV.mode);gl.uniform2f(U.uEdge,ADV.sharp,ADV.ring?1:0);
+  {const b=Hunt.bed;gl.uniform4f(U.uPress,b.x,b.z,1.15,b.k);}
   gl.uniform4f(U.uField,L,RF,S.time,1);gl.uniform2f(U.uScroll,cam.pos[0],cam.pos[2]);
   gl.uniform3fv(U.uSun,SUN);gl.uniform3fv(U.uCam,cam.pos);gl.uniform3fv(U.uTint,TINT);
   gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,drawn);
@@ -2443,7 +2469,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
   }
   // ---------------------------------------------------------------- the dead: each falls as the bird it was, tumbling and trailing blood
   const DEAD=[],BLOODY=new Map();
-  const bloody=pal=>{let b=BLOODY.get(pal);if(!b){b=pal.map((c,k)=>k===12||k===14||k===1?c:[c[0]*.6+.2,c[1]*.5+.01,c[2]*.5+.012]);BLOODY.set(pal,b);}return b;};
+  const bloody=pal=>{let b=BLOODY.get(pal);if(!b){b=pal.map((c,k)=>k===12||k===14||k===1?c:[c[0]*.72+.16,c[1]*.62+.01,c[2]*.62+.012]);BLOODY.set(pal,b);}return b;};
   const rot=(v,a,t)=>{const c=Math.cos(t),s=Math.sin(t),d=(a[0]*v[0]+a[1]*v[1]+a[2]*v[2])*(1-c);return[v[0]*c+(a[1]*v[2]-a[2]*v[1])*s+a[0]*d,v[1]*c+(a[2]*v[0]-a[0]*v[2])*s+a[1]*d,v[2]*c+(a[0]*v[1]-a[1]*v[0])*s+a[2]*d];};
   function stepDead(h){
     for(let k=DEAD.length-1;k>=0;k--){const c=DEAD[k];c.t+=h;
@@ -2467,12 +2493,12 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
       if(c.st===2){WA4[0]=-.12;WA4[1]=1.2;WA4[2]=0;WA4[3]=2;WA4[4]=0;}                // in the dog's mouth, wings folded
       else if(c.st){WA4[0]=-.05;WA4[1]=.5;WA4[2]=.05;WA4[3]=1.1;WA4[4]=0;}            // lying where it fell, wings half open
       else{const s=Math.sin(c.ph);WA4[0]=.75+.35*s;WA4[1]=.25;WA4[2]=.5+.3*Math.sin(c.ph*1.3+1);WA4[3]=.7;WA4[4]=0;}    // falling: the wings trail upward and flail
-      WA4[5]=0;frames(c.p,c.f,c.u,c.sc,near);EB=c.st===2?1.9:c.st===3?Math.min(1.3,dz*.6):0;emit(tpl,c.pal,1,c.sc);EB=0;}
+      WA4[5]=0;frames(c.p,c.f,c.u,c.sc,near);EB=c.st===2?1.9:0;emit(tpl,c.pal,1,c.sc);EB=0;}
   }
   function kill(i,dir,dist){
     const i3=i*3,p=[P[i3],P[i3+1],P[i3+2]],v=V[i],sc=SC[i],tp=sp.shapes?sp.tpls[PALI[i]]:sp.tpl,pal=sp.pals[PALI[i]],fc=pal[0],k=Math.sqrt(sc),many=st.last>24?.5:1;
     DEAD.push({p,v:[H[i3]*v*.6+dir[0]*5,H[i3+1]*v*.6+dir[1]*5+1.5,H[i3+2]*v*.6+dir[2]*5],f:[H[i3],H[i3+1],H[i3+2]],u:[UPv[i3],UPv[i3+1],UPv[i3+2]],ax:nrm([Math.random()-.5,Math.random()-.5,Math.random()-.5]),w:(5+7*Math.random())/Math.max(1,Math.pow(sc,.6)),
-      sc,tp,pal:bloody(pal),fc,ph:Math.random()*6,t:0,st:0,bl:0});
+      sc,tp,pal:bloody(pal),fc,ph:Math.random()*6,t:0,st:0,bl:0,shot:st.shots});
     if(DEAD.length>170)DEAD.shift();
     for(let q=0;q<Math.round((9+10*k)*many);q++){const s=2+9*Math.random()*Math.random(),a=Math.random()*6.28,b=Math.random()*1.3,e=nrm(cross(dir,[0,1,0])),e2=cross(dir,e),cs=Math.cos(b),sn=Math.sin(b);
       addP(0,p[0],p[1],p[2],(dir[0]*cs+(e[0]*Math.cos(a)+e2[0]*Math.sin(a))*sn)*s+H[i3]*v*.3,(dir[1]*cs+(e[1]*Math.cos(a)+e2[1]*Math.sin(a))*sn)*s+1.2,(dir[2]*cs+(e[2]*Math.cos(a)+e2[2]*Math.sin(a))*sn)*s+H[i3+2]*v*.3,(.02+.035*Math.random())*k,3.5,.38+.2*Math.random(),.008+.012*Math.random(),.014+.012*Math.random());}
@@ -2487,6 +2513,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
      back. It runs in bounds, as dogs do in long grass, and steers round the barn. */
   const DOGF={run1:'............................/....................K......./...................KKK....../WW.................KKKKK..../.WKK..............KKKWKKK.../..KKK.............KKBWWKWW../...KKK...........KKKWWWWWWK./....KKKKKKKKKKKKRRKKWWWWWK../....KKKKKKKKKKKKKRRWWWPP..../...KKKKKKKKKKKKKKWRRWW....../...KKKKKKKKKKKKKKWWWW......./..KKKKKKKKKKKKKKWWWWW......./..KKKK.KKKKKKKWWWWWWKK....../.KKK.....GGGGW.....KKKK...../.KK..................KKWW.../WW.....................WW.../W...........................',run2:'............................/......................K...../.....................KKK..../.....................KKKKK../....WW..............KKKWKKK./...WKK..............KKBWWKWW/...KKK.............KKKWWWWWK/....KKKKKKKKKKKKKKRRKWWWWWK./....KKKKKKKKKKKKKKKRRWWW..../....KKKKKKKKKKKKKKWWRRW...../....KKKKKKKKKKKKKWWWWW....../....KKKKKKKKKKKKWWWWW......./.....KKKKKGGGGWWWKKK......../......KKKK....KKKK........../.......KKKW..WKK............/........WW....WW............/............................',sit1:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWW......../............KKKWWRRW......../...........KKKKWWWWW......../..........KKKKKWWWWW......../.........KKKKKKKWWWK......../........KKKKKKKKKWWK......../........KKKKKKKKKKWK......../..KKK..KKKKKKKKKKKKKW......./.WWKKKKKKKKKKGGWWWKKWW......',sit2:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWWPP....../............KKKWWRRW......../...WW......KKKKWWWWW......../...WKK....KKKKKWWWWW......../....KKK..KKKKKKKWWWK......../.....KKKKKKKKKKKKWWK......../......KKKKKKKKKKKKWK......../.......KKKKKKKKKKKKKW......./........KKKKKGGWWWKKWW......',fetch:'............................/............................/............................/WW........................../.WKK......................../..KKK..............K......../...KKK............KKK......./....KKKKKKKKKKKKKKKKKKK...../....KKKKKKKKKKKKKRRKWKKK..../...KKKKKKKKKKKKKKKRRBWWKW.../...KKKKKKKKKKKKKKWWRWWWWWW../..KKKKKKKKKKKKKKWWWWWWWWWK../..KKKK.KKKKKKKWWWWW.WWWW..../..KKK....GGGGW.KK.........../..KK...........KK.........../..WW...........WW.........../............................',back1:'............................/..........K......K........../..........KK....KK........../..........KKKKKKKK........../..........KKKKKKKK.....WW.../..........KKKKKKKK....WWK.../..........RRRRRRRR....KK..../.........KKKKKKKKKK..KKK..../.........KKKKKKKKKK.KKK...../........KKKKKKKKKKKKKK....../........KKKKKKKKKKKKK......./........KKKKKKKKKKKK......../........KKKKKKKKKKKK......../........KKKK....KKKK......../.........KKK.....KKK......../.........WWW.....KK........./.................WW.........',back2:'............................/..........K......K........../..........KK....KK........../..........KKKKKKKK........../..........KKKKKKKK......WW../..........KKKKKKKK.....WKK../..........RRRRRRRR....KKK.../.........KKKKKKKKKK..KKK..../.........KKKKKKKKKK.KKK...../........KKKKKKKKKKKKKK....../........KKKKKKKKKKKKK......./........KKKKKKKKKKKK......../........KKKKKKKKKKKK......../........KKKK....KKKK......../........KKK......KKK......../.........KK......WWW......../.........WW.................',front1:'............................/..........K......K........../..........KK....KK........../..........KKKWWKKK........../..........KBKWWKBK........../..........KKWWWWKK........../...........WWKKWW.........../...........WWPPWW.........../..........RRRRRRRR........../.........KKWWWWWWKK........./........KKKWWWWWWKKK......../........KKKWWWWWWKKK......../........KKKKWWWWKKKK......../........KKKK....KKKK......../.........KKK.....KKK......../.........WWW.....KK........./.................WW.........',front2:'............................/..........K......K........../..........KK....KK........../..........KKKWWKKK........../..........KBKWWKBK........../..........KKWWWWKK........../...........WWKKWW.........../...........WWPPWW.........../..........RRRRRRRR........../.........KKWWWWWWKK........./........KKKWWWWWWKKK......../........KKKWWWWWWKKK......../........KKKKWWWWKKKK......../........KKKK....KKKK......../........KKK......KKK......../.........KK......WWW......../.........WW.................'},DOGC={K:[.085,.085,.105],W:[.95,.87,.79],G:[.56,.53,.56],R:[.84,.2,.14],P:[.92,.5,.56],B:[.46,.27,.12]},DPX=.062,DOGS={};        // DPX: the size of one pixel of the dog, in metres. It stands about a metre tall, bigger than life
   for(const n in DOGF){const a=[];DOGF[n].split('/').forEach((row,y)=>{for(let x=0;x<row.length;x++)if(row[x]!=='.')a.push([x,y,DOGC[row[x]]]);});DOGS[n]=a;}
+  const served=new Set(),bed={x:0,z:0,k:0,on:false};
   const dog={on:false,p:[0,0],y:0,dir:[0,-1],mode:'heel',tg:null,t:0,ph:0,spd:0,hop:0,flip:false,view:0,fetched:0,wag:0};
   const dogOK=(x,z)=>{const dx=x-BARN.x,dz=z-BARN.z,lx=dx*bcos-dz*bsin,lz=dx*bsin+dz*bcos;return!((Math.abs(lx)<7.3&&Math.abs(lz)<10.6)||(Math.abs(lx+7.8)<3.9&&Math.abs(lz-3.7)<5.5))&&coastC(x,z)<-1.5;};
   function dogRun(tx,tz,h,top){                                  // head for a point, going round what is in the way; returns the distance left
@@ -2500,16 +2527,20 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     if(dog.tg&&DEAD.indexOf(dog.tg)<0){dog.tg=null;if(dog.mode!=='idle')dog.mode='heel';}
     if(dog.mode==='idle'){dog.hop=0;dog.spd=0;
       if(dp>7)dog.mode='heel';
-      else{let best=null,bd=1e9;for(const c of DEAD)if(c.st===1&&c.t>.3&&!c.claimed&&c.t<60&&dogOK(c.p[0],c.p[2])){const d=Math.hypot(c.p[0]-me[0],c.p[2]-me[1]);if(d<bd){bd=d;best=c;}}
-        if(best){best.claimed=true;dog.tg=best;dog.mode='go';Score.sfx('bark',0,.5,0);}}
+      else{let best=null,bd=1e9;for(const c of DEAD)if(c.st===1&&c.t>.3&&!c.claimed&&c.shot!==undefined&&!served.has(c.shot)&&c.t<60&&dogOK(c.p[0],c.p[2])){const d=Math.hypot(c.p[0]-me[0],c.p[2]-me[1]);if(d<bd){bd=d;best=c;}}
+        if(best){best.claimed=true;served.add(best.shot);dog.tg=best;dog.mode='go';Score.sfx('bark',0,.5,0);}}      // one bird from each shot is enough
     }else if(dog.mode==='heel'){const fx=Math.sin(cam.hyaw||0),fz=Math.cos(cam.hyaw||0);
       if(dogRun(hp[0]+fx*2.4+fz*1.5,hp[1]+fz*2.4-fx*1.5,h,7)<.5){dog.mode='idle';dog.t=0;}
     }else if(dog.mode==='go'){const c=dog.tg;if(dogRun(c.p[0],c.p[2],h,9.5)<1){dog.mode='grab';dog.t=0;dog.hop=0;}
     }else if(dog.mode==='grab'){if(dog.t>.4){dog.tg.st=2;dog.mode='bring';}
     }else if(dog.mode==='bring'){const c=dog.tg,fx=Math.sin(cam.hyaw||0),fz=Math.cos(cam.hyaw||0);        // right up to you, to a spot just in front of where you are facing
-      if(dogRun(hp[0]+fx*2.4,hp[1]+fz*2.4,h,8.5)<.6){
-        const k=dog.fetched%5,ox=(k-2)*.34+(Math.random()-.5)*.1,dx=hp[0]+fx*(1.25+.12*(k%2))-fz*ox,dz=hp[1]+fz*(1.25+.12*(k%2))+fx*ox;     // laid in a row at your feet
-        c.st=3;c.t=0;c.p=[dx,groundH(dx,dz)+.06*c.sc+.02,dz];c.f=[-fz,0,fx];c.u=[0,1,0];
+      // The bed is a patch of grass pressed flat, just in front of where you stood when the first bird came back. It stays put while you stay near it.
+      let laid=0;for(const q of DEAD)if(q.st===3)laid++;
+      const fresh=!bed.on||!laid||Math.hypot(bed.x-hp[0],bed.z-hp[1])>5,gx=fresh?hp[0]+fx*1.45:bed.x,gz=fresh?hp[1]+fz*1.45:bed.z,ux=gx-hp[0],uz=gz-hp[1],ul=Math.hypot(ux,uz)||1;
+      if(dogRun(gx+ux/ul*1.3,gz+uz/ul*1.3,h,8.5)<.6){
+        if(fresh){for(const q of DEAD)if(q.st===3)q.t=1e3;bed.x=gx;bed.z=gz;bed.on=true;laid=0;}
+        const a=laid*2.4,rr=laid?.16+.11*Math.sqrt(laid):0,dx=bed.x+Math.cos(a)*rr,dz=bed.z+Math.sin(a)*rr;                              // laid in a small heap on the bed
+        c.st=3;c.t=0;c.p=[dx,groundH(dx,dz)+.05*c.sc+.03+.012*laid,dz];c.f=[Math.cos(a*1.7),0,Math.sin(a*1.7)];c.u=[0,1,0];
         let nlaid=0;for(const q of DEAD)if(q.st===3)nlaid++;if(nlaid>10)for(const q of DEAD)if(q.st===3&&q!==c){q.t=1e3;break;}
         dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;dog.dir=[-fx,-fz];Score.sfx('bark',0,.8,0);sync();}}
     dog.y=groundH(me[0],me[1]);
@@ -2599,17 +2630,18 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     if(!cam.hpos||!canStand(cam.hpos[0],cam.hpos[1])){cam.hpos=[GATE[0]+2,GATE[1]-6];cam.hyaw=Math.atan2(RSX-cam.hpos[0],RSZ-cam.hpos[1]);cam.hpitch=.25;cam.hzoom=1.05;cam.hvel=[0,0];cam.hbob=0;}
     aim.x=aim.y=0;if(!gvao)try{build();}catch(e){console.error(e);}
     {const d=bw([0,0,11]);dog.on=true;dog.p=[d[0],d[2]];dog.mode='heel';dog.tg=null;dog.spd=0;dog.ph=0;}      // the dog comes out from the barn
-    Score.sfxMode(true);sync();
+    document.getElementById('bFinger').hidden=false;Score.sfxMode(true);sync();
   }
-  function leave(){st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
+  function leave(){Finger.stop();document.getElementById('bFinger').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
   function pointAt(cx,cy){const r=canvas.getBoundingClientRect();aim.x=clamp((cx-r.left)/r.width*2-1,-1,1);aim.y=clamp(1-(cy-r.top)/r.height*2,-1,1);}
   function step(h){
     stepFx(h);stepDead(h);dogStep(h);
+    {let laid=0;for(const q of DEAD)if(q.st===3&&q.t<75)laid++;if(!laid&&bed.k<.01)bed.on=false;bed.k+=((laid?1:0)-bed.k)*(1-Math.exp(-h/(laid?.25:1.2)));}
     while(SCARES.length&&S.time-SCARES[0][3]>1.5)SCARES.shift();
     if(pend&&S.time>=pend.due){const s=pend;pend=null;resolve(s);}
     if(st.restock&&S.time>st.restock){st.restock=0;st.note='';const n=coarse?sp.n[1]:sp.n[0];LAB.fill(-1);NC=0;spawn(n);cnt.value=n;cntOut.textContent=n;sync();}
   }
-  function clear(){dog.tg=null;if(dog.mode!=='idle')dog.mode='heel';NP=0;DEAD.length=0;SCARES.length=0;pend=null;st.restock=0;st.note='';if(st.on)sync();}
+  function clear(){served.clear();bed.on=false;bed.k=0;dog.tg=null;if(dog.mode!=='idle')dog.mode='heel';NP=0;DEAD.length=0;SCARES.length=0;pend=null;st.restock=0;st.note='';if(st.on)sync();}
   // ---------------------------------------------------------------- drawing the gun
   const GF=.86,M=new Float32Array(16),PR4=new Float32Array(16),NM=new Float32Array(9),CM=new Float32Array(9),SM=new Float32Array(16);
   const flying=[];let tPrev=0;
@@ -2670,8 +2702,65 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
       gl.uniform3f(FU.uC,0,muzzle[1],muzzle[2]);gl.uniform2f(FU.uT,Math.cos(st.froll),Math.sin(st.froll));gl.uniform1f(FU.uI,st.flash*1.6);gl.bindVertexArray(fvao);gl.drawArrays(gl.TRIANGLES,0,flashN);gl.depthMask(true);}
     gl.disable(gl.DEPTH_TEST);gl.bindVertexArray(null);
   }
-  return{st,aim,fire,reload,enter,leave,step,clear,draw,pointAt,canStand,emit(){emitDead();emitFx();emitDog();},fireAt(cx,cy){pointAt(cx,cy);return fire();},
+  return{st,aim,fire,reload,enter,leave,step,clear,draw,pointAt,canStand,bed,emit(){emitDead();emitFx();emitDog();},fireAt(cx,cy){pointAt(cx,cy);return fire();},
     recentre(dt){const k=Math.exp(-dt/.12);aim.x*=k;aim.y*=k;},dog,probe:()=>({NP,dead:DEAD.length,states:DEAD.map(c=>c.st).join(''),dog:[dog.mode,dog.p[0].toFixed(1),dog.p[1].toFixed(1),dog.fetched,dog.view],laid:DEAD.filter(c=>c.st===3).map(c=>[(c.p[0]-(cam.hpos||[0,0])[0]).toFixed(2),(c.p[2]-(cam.hpos||[0,0])[1]).toFixed(2)]),gunN,muzzle,port,scares:SCARES.length,flying:flying.length})};
+})();
+/* ------------------------------------------------------------ finger gun
+   Aim with your hand. The webcam picture is read in the browser by MediaPipe's hand tracker, which gives 21 points on the hand; nothing
+   leaves the computer. A finger gun is: index finger out straight, the other three fingers folded, thumb up. The tip of the index finger,
+   mirrored, steers the cross-hairs, and dropping the thumb, like a hammer falling, fires. The tracker is not part of this file: it is
+   fetched from its public home the first time this is switched on, so it needs a network, and a page that is allowed to use the camera. */
+const Finger=(()=>{
+  const SRC=window.__fgBase||{mjs:'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/vision_bundle.mjs',wasm:'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm',
+    model:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'};
+  const F={on:false,gun:false,cocked:false,x:0,y:0,seen:0,fires:0,err:''},hist=[];
+  const box=document.getElementById('cam'),video=box.querySelector('video'),note=box.querySelector('span'),dot=box.querySelector('i'),btn=document.getElementById('bFinger');
+  let lm=null,stream=null,lastT=-1,starting=false;
+  const sub=(a,b)=>[a.x-b.x,a.y-b.y,a.z-b.z],len=v=>Math.hypot(v[0],v[1],v[2]);
+  // One hand, as 21 points in the picture (l) and in metres (w). Returns whether it is a finger gun, where it points, and how far up the thumb is.
+  function read(l,w){
+    const size=len(sub(w[9],w[0]))+1e-6;                                                    // wrist to middle knuckle: the size of the hand
+    const u=sub(w[6],w[5]),v=sub(w[8],w[6]),idx=(u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/(len(u)*len(v)+1e-9),ext=len(sub(w[8],w[5]))/size;      // index finger: straight, and long
+    const curl=k=>len(sub(w[k+3],w[0]))/(len(sub(w[k+1],w[0]))+1e-6);                        // a folded finger's tip is nearer the wrist than its middle joint
+    const mid=curl(9),rng=curl(13),pky=curl(17),thumb=len(sub(w[4],w[5]))/size;             // the hammer: thumb tip to the index knuckle
+    return{gun:idx>.8&&ext>.7&&mid<1.1&&rng<1.1&&pky<1.15,thumb,x:l[8].x,y:l[8].y,idx,ext,mid,rng,pky};
+  }
+  function feed(l,w){
+    const now=performance.now()/1000;
+    if(!l||!w){F.gun=false;if(now-F.seen>.5)note.textContent='show the camera a finger gun';dot.hidden=true;return;}
+    const r=read(l,w);F.last=r;dot.hidden=false;dot.style.left=((1-r.x)*100).toFixed(1)+'%';dot.style.top=(r.y*100).toFixed(1)+'%';dot.className=r.gun?'g':'';
+    if(!r.gun){F.gun=false;F.cocked=false;F.hi=0;if(now-F.seen>.5)note.textContent='index out, other fingers folded';return;}
+    // the middle of the picture covers the whole screen, so the hand need not travel far; mirrored, as in a mirror
+    const tx=clamp((.5-r.x)/.3,-1,1),ty=clamp((.5-r.y)/.27,-1,1),d=Math.hypot(tx-F.x,ty-F.y),a=F.gun?clamp(.22+d*3.5,.22,.9):1;       // steadier when still, quicker when moving
+    F.x+=(tx-F.x)*a;F.y+=(ty-F.y)*a;F.gun=true;F.seen=now;hist.push([F.x,F.y]);if(hist.length>5)hist.shift();
+    if(cam.mode==='hunt'){Hunt.aim.x=F.x;Hunt.aim.y=F.y;}
+    // The thumb is judged against how high this hand has lately held it, so the size of the hand and the angle of the camera do not matter.
+    F.hi=Math.max(r.thumb,(F.hi||0)-.0015);
+    if(F.hi>.4&&r.thumb>F.hi*.85){F.cocked=true;note.textContent='aiming · drop your thumb to fire';}
+    else if(F.cocked&&r.thumb<F.hi*.62){F.cocked=false;F.fires++;note.textContent='bang';
+      if(cam.mode==='hunt'){const h=hist[0];Hunt.aim.x=h[0];Hunt.aim.y=h[1];Hunt.fire();Hunt.aim.x=F.x;Hunt.aim.y=F.y;}}       // fired from where it pointed a moment ago, before the thumb jogged the hand
+  }
+  async function start(){
+    if(F.on||starting)return;starting=true;F.err='';box.hidden=false;note.textContent='asking for the camera';btn.setAttribute('aria-pressed','true');
+    try{
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('no camera access in this browser or page');
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:30}},audio:false});
+      video.srcObject=stream;await video.play();
+      if(!lm){note.textContent='fetching the hand tracker';const vis=await import(SRC.mjs),fs=await vis.FilesetResolver.forVisionTasks(SRC.wasm);
+        const mk=dg=>vis.HandLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:SRC.model,delegate:dg},runningMode:'VIDEO',numHands:1});
+        try{lm=await mk('GPU');}catch(e){lm=await mk('CPU');}}
+      F.on=true;note.textContent='show the camera a finger gun';
+    }catch(e){F.err=String(e&&e.message||e);stop();box.hidden=false;
+      note.textContent=/denied|NotAllowed|Permission/i.test(F.err+(e&&e.name||''))?'The camera is blocked on this page. Open the page on its own, not inside another site.':/import|fetch|module|network|load/i.test(F.err)?'Could not fetch the hand tracker. It needs a network connection.':'No finger gun here: '+F.err;}
+    starting=false;
+  }
+  function stop(){F.on=false;F.gun=false;if(stream){for(const t of stream.getTracks())t.stop();stream=null;}video.srcObject=null;box.hidden=true;btn.setAttribute('aria-pressed','false');}
+  function tick(){
+    if(!F.on||!lm||video.readyState<2||video.currentTime===lastT)return;lastT=video.currentTime;
+    try{const r=lm.detectForVideo(video,performance.now());feed(r.landmarks&&r.landmarks[0],r.worldLandmarks&&r.worldLandmarks[0]);}catch(e){F.err=String(e);}
+  }
+  btn.onclick=e=>{if(F.on||starting)stop();else start();e.currentTarget.blur();};
+  return{F,read,feed,start,stop,tick,toggle:()=>{if(F.on)stop();else start();}};
 })();
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
@@ -2716,10 +2805,25 @@ function zoomBy(k,isPinch){
 }
 const up=e=>{if(e.type==='pointerup'&&tapOK&&pts.size===1&&performance.now()-tapT<400&&Math.hypot(e.clientX-tapX,e.clientY-tapY)<7){if(cam.mode==='ride')pickBird(e.clientX,e.clientY);else if(cam.mode==='hunt')Hunt.fireAt(e.clientX,e.clientY);}
   pts.delete(e.pointerId);pinch=0;};
-addEventListener('pointermove',e=>{if(cam.mode==='hunt'&&e.pointerType==='mouse'&&!pts.size&&e.target===canvas)Hunt.pointAt(e.clientX,e.clientY);});      // the cross-hairs follow the mouse
+addEventListener('pointermove',e=>{if(cam.mode==='hunt'&&e.pointerType==='mouse'&&!pts.size&&e.target===canvas&&!Finger.F.gun)Hunt.pointAt(e.clientX,e.clientY);});      // the cross-hairs follow the mouse
 canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
 canvas.addEventListener('wheel',e=>{e.preventDefault();zoomBy(Math.exp(e.deltaY*.0012),false);touched();},{passive:false});
 const MODES=['meadow','orbit','ride','fly','shore'];
+// Hide every menu and line of text and, where the browser allows it, go full screen. U or Escape brings them back, and so does the
+// button that shows for a moment whenever the pointer moves.
+let peekT=0,wentFull=false;
+function peek(){if(!document.body.classList.contains('clean'))return;document.body.classList.add('peek');clearTimeout(peekT);peekT=setTimeout(()=>document.body.classList.remove('peek'),2400);}
+function setClean(on){
+  document.body.classList.toggle('clean',on);document.body.classList.remove('peek');
+  if(on){peek();const el=document.documentElement,rq=el.requestFullscreen||el.webkitRequestFullscreen;wentFull=false;
+    if(rq&&!document.fullscreenElement)try{const pr=rq.call(el);wentFull=true;if(pr&&pr.catch)pr.catch(()=>{wentFull=false;});}catch(e){wentFull=false;}}
+  else if(document.fullscreenElement&&wentFull){try{(document.exitFullscreen||document.webkitExitFullscreen).call(document);}catch(e){}}
+}
+const toggleClean=()=>setClean(!document.body.classList.contains('clean'));
+document.getElementById('bClean').onclick=e=>{setClean(true);e.currentTarget.blur();};
+document.getElementById('bShow').onclick=()=>setClean(false);
+addEventListener('pointermove',peek);addEventListener('pointerdown',peek);
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&wentFull&&document.body.classList.contains('clean'))setClean(false);});
 function toggleHunt(){if(cam.mode==='hunt')setMode(Hunt.st.prev);else{Hunt.st.prev=cam.mode==='ride'?'meadow':cam.mode;setMode('hunt');}}
 document.getElementById('bHunt').onclick=e=>{toggleHunt();e.currentTarget.blur();};
 const VB={meadow:document.getElementById('vMeadow'),orbit:document.getElementById('vOrbit'),ride:document.getElementById('vRide'),fly:document.getElementById('vFly'),shore:document.getElementById('vShore')};
@@ -2774,7 +2878,7 @@ addEventListener('keydown',e=>{
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
   if(e.repeat)return;
-  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}else if(c==='KeyG')toggleAdv();else if(c==='KeyB')toggleHunt();
+  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}else if(c==='KeyG')toggleAdv();else if(c==='KeyB')toggleHunt();else if(c==='KeyU')toggleClean();else if(c==='Escape'&&document.body.classList.contains('clean'))setClean(false);
   else if(c>='Digit1'&&c<='Digit5')setMode(MODES[+c.slice(5)-1]);
 });
 addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
@@ -2783,7 +2887,7 @@ addEventListener('blur',()=>keysDown.clear());
 resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__score=Score;window.__sim={dyn:()=>({DY,nd,view,focal}),S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Hunt,removeBird,keysDown,
+window.__score=Score;window.__sim={dyn:()=>({DY,nd,view,focal}),S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
