@@ -23,7 +23,7 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, ducks, storks or *Pteranodon*. |
 | **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, ducks, storks or *Pteranodon*. |
 | **Slow-mo** (`T`) | 0.2× time, so the wingbeats can be followed. |
-| **Score** (`M`) | Turn the music on or off. It starts off, because browsers only allow sound after a click. |
+| **Score** (`M`) | Turn the music on or off. It is on from the start, but a browser will not let a page make sound until it has been clicked, tapped or typed at, so it begins at the first of those. |
 | **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, ducks, white storks or *Pteranodon*. Changing species restarts the birds. |
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 | **Advanced** (`G`) | The button under the title opens a panel that changes how the Gaussian splats themselves are drawn; see below. |

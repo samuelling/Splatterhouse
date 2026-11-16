@@ -2327,7 +2327,7 @@ const Score=(()=>{
     else if(name==='hit'){const tt=t+(a||0),v=b||.5;nz(tt,'lowpass',900,150,.09,1.1,1.5*v,.16,c);nz(tt,'bandpass',2600,1100,.03,1,.45*v,.07,c);}
   }
   function sfxMode(v){sfxOn=v;if(v)sfxInit();else if(ac&&!on)setTimeout(()=>{if(!on&&!sfxOn)ac.suspend();},3000);}
-  return{toggle,sfx,sfxMode,get on(){return on;},probe:()=>({ac,tap:tapN,minor,deg,pv:pv.slice(),smp:smp&&[smp.shot.filter(Boolean).length,smp.pump.filter(Boolean).length,smp.dry.filter(Boolean).length,smp.shot.map(e=>e&&+e.off.toFixed(3))]})};
+  return{toggle,sfx,sfxMode,nudge(){if(ac&&(on||sfxOn)&&ac.state==='suspended'&&!document.hidden)ac.resume();},get on(){return on;},probe:()=>({ac,tap:tapN,minor,deg,pv:pv.slice(),smp:smp&&[smp.shot.filter(Boolean).length,smp.pump.filter(Boolean).length,smp.dry.filter(Boolean).length,smp.shot.map(e=>e&&+e.off.toFixed(3))]})};
 })();
 
 /* --------------------------------------------------------------- input */
@@ -2901,7 +2901,18 @@ bFalcon.onclick=e=>{launchFalcon();e.currentTarget.blur();};
 bSplit.onclick=e=>{forceSplit();e.currentTarget.blur();};
 bSlow.onclick=e=>{toggleSlow();e.currentTarget.blur();};
 const bScore=document.getElementById('bScore');
-function toggleScore(){bScore.setAttribute('aria-pressed',Score.toggle());}
+function toggleScore(){if(eatScore){eatScore=false;return;}bScore.setAttribute('aria-pressed',Score.toggle());}
+// The score is on from the start. A browser will not let a page make sound until it has been clicked, tapped or typed at, so it begins
+// at the first of those. If that first act is the Score button or M itself, it is taken to mean "off", since the button already shows on.
+let scoreArmed=true,eatScore=false;bScore.setAttribute('aria-pressed','true');
+function armScore(e){
+  if(scoreArmed){scoreArmed=false;
+    if(e&&(e.target===bScore||(e.type==='keydown'&&e.code==='KeyM'))){eatScore=true;bScore.setAttribute('aria-pressed','false');setTimeout(()=>{eatScore=false;},600);}
+    else if(!Score.on)bScore.setAttribute('aria-pressed',Score.toggle());}
+  else Score.nudge();
+}
+for(const ev of['pointerdown','pointerup','keydown','touchend','click'])addEventListener(ev,armScore,true);
+try{if(navigator.userActivation&&navigator.userActivation.hasBeenActive)armScore();}catch(e){}
 bScore.onclick=e=>{toggleScore();e.currentTarget.blur();};
 const cnt=document.getElementById('count'),cntOut=document.getElementById('countOut');
 cnt.oninput=()=>{resizeFlock(+cnt.value);cntOut.textContent=cnt.value;};
