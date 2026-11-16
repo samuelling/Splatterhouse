@@ -1,6 +1,6 @@
 # Splatterhouse
 
-A real-time 3D Gaussian splat demo in one HTML file: birds at dusk over a wildflower meadow, above a barn, a silo, fenced fields and a mix of trees. Seven kinds of flier are on the menu, each with its own rules: starlings in a murmuration, dunlin, jackdaws, pigeons, geese in V formation, white storks circling in thermals, and a speculative reconstruction of *Pteranodon*. Flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
+A real-time 3D Gaussian splat demo in one HTML file: birds at dusk over a wildflower meadow with a barn, a silo, fenced fields and a mix of trees, running out through marram dunes to a beach and the sea, where the sun is setting. Seven kinds of flier are on the menu, each with its own rules: starlings in a murmuration, dunlin, jackdaws, pigeons, geese in V formation, white storks circling in thermals, and a speculative reconstruction of *Pteranodon*. Flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
 
 Every splat is generated in the browser and drawn the way trained splat scenes are. Each one is an anisotropic 3D Gaussian (position, rotation, scale, colour, opacity), projected to a 2D covariance in the vertex shader, depth-sorted on the CPU each frame and alpha-blended back to front. There is no mesh and no depth buffer.
 
@@ -13,12 +13,13 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | | |
 |---|---|
 | **Meadow** (`1`) | Stand in the grass. The view follows the largest flock and keeps the horizon in shot while the birds are low. Drag to look, scroll or pinch to zoom, tap Meadow again to re-track. |
+| **Shore** (`5`) | Stand at the top of the beach, looking out to sea. Press again to follow the birds from there. Choosing dunlin or *Pteranodon* in Meadow view moves you here, since they fly over the shore. |
 | **Orbit** (`2`) | Circle all the flocks from below, against the sky. |
 | **Ride** (`3`) | Fly behind one bird inside the flock. |
 | **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any movement key in another view takes off from where you are. On touch: drag to look, pinch to move. |
 | **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, storks or *Pteranodon*. |
 | **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, storks or *Pteranodon*. |
-| **Slow-mo** (`T`) | 0.2× time, so the 13 Hz wingbeat becomes visible. |
+| **Slow-mo** (`T`) | 0.2× time, so the wingbeats can be followed. |
 | **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, white storks or *Pteranodon*. Changing species restarts the birds. |
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 
@@ -34,7 +35,7 @@ The flock follows StarDisplay (Hildenbrandt, Carere & Hemelrijk 2010, *Behaviora
 - **Aerodynamics.** Cruise speed is 10 m/s, with relaxation back toward it. Lift scales with v² along the bird's up vector, and gravity acts throughout.
 - **Turning only by banking.** Social and roost forces never yaw a bird directly. Their sideways component sets a target roll angle, and the tilted lift vector does the turning. Banked birds lose height in turns, as real ones do.
 - **Roost attraction.** Birds turn back toward the roost (the barn and the trees around it) once they stray more than 48 m from it. The preferred altitude drifts slowly, and birds climb over the barn, silo and treetops.
-- **Wings.** Each bird flaps at about 13.3 Hz, the wind-tunnel value for European starlings, with wrist flex on the upstroke, flap-glide bursts and tucked wings in dives.
+- **Wings.** See [How the animals move](#how-the-animals-move).
 
 ## Splitting and rejoining
 
@@ -63,13 +64,13 @@ Each species has its own body (built from one parametric splat bird: wingspan, n
 
 | Species | Span | Cruise | Wingbeat | What is different |
 |---|---|---|---|---|
-| Starling | 0.40 m | 10 m/s | 13 Hz | The model above. |
-| Dunlin | 0.36 m | 14 m/s | 12 Hz | Tighter, faster, lower. Turns start every few seconds and pass through the flock with less than half the starlings' copying delay. Brown above, white below, so the flock changes shade as it banks. |
-| Jackdaw | 0.70 m | 12 m/s | 5.5 Hz | About 80% of birds have a mate. Mates hold 1.3 m apart and fly each other's course. Each bird attends to 3 neighbours, not 7, and the flock is looser. |
-| Pigeon | 0.68 m | 15 m/s | 7 Hz | A small kit circling the barn. Every bird has a rank. A bird weights each neighbour's heading by that neighbour's rank, and high-ranked birds wander more and fly slightly faster, so they end up at the front and the rest follow their turns. Three colour morphs. |
-| Goose | 1.6 m | 16 m/s | 3.8 Hz | V formation, below. |
-| White stork | 2.0 m | 10.5 m/s | soaring | Thermal soaring, below. |
-| *Pteranodon* | 3.8 m and 5.8 m | 12 m/s | soaring | Speculative, below. |
+| Starling | 0.40 m | 10 m/s | 10.4 Hz | The model above. |
+| Dunlin | 0.36 m | 14 m/s | 9.6 Hz | Tighter, faster, lower, and over the beach and surf. Turns start every few seconds and pass through the flock with less than half the starlings' copying delay. Brown above, white below, so the flock changes shade as it banks. |
+| Jackdaw | 0.70 m | 12 m/s | 5.8 Hz | About 80% of birds have a mate. Mates hold 1.3 m apart and fly each other's course. Each bird attends to 3 neighbours, not 7, and the flock is looser. |
+| Pigeon | 0.68 m | 15 m/s | 7.6 Hz | A small kit circling the barn. Every bird has a rank. A bird weights each neighbour's heading by that neighbour's rank, and high-ranked birds wander more and fly slightly faster, so they end up at the front and the rest follow their turns. Three colour morphs. |
+| Goose | 1.6 m | 16 m/s | 4.1 Hz | V formation, below. |
+| White stork | 2.0 m | 10.5 m/s | soaring (2.8 Hz when it flaps) | Thermal soaring, below. |
+| *Pteranodon* | 3.8 m and 5.8 m | 12 m/s | soaring (1.6 and 2.2 Hz) | Speculative, below. |
 
 **Dunlin.** The short copying delay stands in for Potts's chorus-line account (1984, *Nature* 309:344), in which a bird times its turn from the wave approaching it and so reacts faster than its own reaction time would allow.
 
@@ -102,6 +103,20 @@ One part is control engineering and not biology. A goose that matches speed only
 
 The model is the storks' with wider thermals, wider circles and the file-gliding rule added. As with the storks, distances are compressed about tenfold, and there is no sea: a real *Pteranodon* would have been doing this over open water, far from shore.
 
+## How the animals move
+
+The flight paths come from the flocking and soaring models above. This section is about each animal's own body: how its wings beat. The wing has two segments (arm and hand) with a shoulder and a wrist, and the same kinematic model drives every species with different numbers.
+
+- **Wingbeat frequency** is computed, not chosen: Pennycuick's formula (1996, *Journal of Experimental Biology* 199:1613) gives it from body mass, wingspan and wing area, f = m^3/8 g^1/2 b^-23/24 S^-1/3 ρ^-3/8. That gives the values in the table above, and 5.3 Hz for the peregrine. Female *Pteranodon*, being smaller, beat a third faster than males.
+- **Stroke timing.** The downstroke takes a set share of each beat (47% in the starling, 55% in the goose), so the wing does not move as a plain sine wave.
+- **Upstroke folding.** Birds cut drag on the upstroke by flexing the wrist. How much is measured as the span ratio: wingspan at mid-upstroke over wingspan at mid-downstroke. Small round-winged birds fold a long way in and large birds hardly at all. Here: starling 0.40, pigeon 0.45, jackdaw 0.50, dunlin 0.60, goose 0.75, stork 0.80, *Pteranodon* 0.88. The model solves for the wrist angle that produces each ratio.
+- **Wing path and twist.** The arm swings forward on the downstroke and back on the upstroke, the hand wing trails the arm by a fraction of a beat, and it twists leading edge up on the upstroke.
+- **Body heave.** The body is pushed up through the downstroke and falls back through the upstroke, so it rides lowest at mid-downstroke. For a wingbeat force that swings by about the bird's weight, the amplitude is g/(2πf)²: 2 mm for a starling, 15 mm for a goose, 10 cm for a flapping *Pteranodon*.
+- **Intermittent flight.** Tobalske (1995, *Journal of Experimental Biology* 198:1259) found that starlings pause between bursts of flapping, gliding with wings spread at low speed and bounding with wings folded at high speed. The starlings here do the same: below about cruise speed a pause is a glide, above it a bound, during which the bird follows a short ballistic arc a few centimetres high. Jackdaws flap and glide. Pigeons flap almost continuously with short glides on partly flexed wings and never bound (Tobalske & Dial 1996, *Journal of Experimental Biology* 199:263). Dunlin and geese flap without pause. Storks and *Pteranodon* hold their wings out and flap only when low.
+- **Geese** also lock their wingbeat phase to the bird ahead, as described above.
+
+What rests on what: the frequency formula and the flap-glide-bound pattern are published models and measurements. The stroke shares, span ratios, sweep and twist are typical figures from the bird-flight kinematics literature set by hand for each species, not fitted to tracked recordings. For *Pteranodon* every one of them is a guess scaled from large soaring birds, with a body mass of 35 kg for males that is itself disputed.
+
 ## How the splats work
 
 - **Data.** Each splat is four RGBA32F texels in one data texture. Static splats (grass, barn, trees, hills, clouds) are uploaded once. Bird splats are rebuilt and re-uploaded every frame into a dynamic region of the same texture.
@@ -115,6 +130,10 @@ The model is the storks' with wider thermals, wider circles and the file-gliding
 - **Meadow.** The meadow covers the whole field in three nested rings that tile around the camera. Within 17 m every blade, seed head and flower is its own splat. From 14 to 68 m each splat is a tussock or a patch of flowers, and from 55 to 272 m a larger one. Beyond that, and underneath everything, is a ray-traced ground plane in the same colours.
 - **World maps.** Two 512 m textures drive all three rings and the ground plane, so they always agree: one holds dryness, flower density, dominant species and grass vigour; the other holds short grass, shade, bare earth and lamplight. Flower splats carry random numbers instead of a colour. The shader turns each into a poppy, oxeye daisy, cornflower, buttercup, knapweed or clover from the species map at its world position, or hides it where the density map is low. That is what makes the flowers grow in drifts.
 - **Track, paddock and shadows.** A two-rut farm track runs from the barn doors through a field gate and across the meadow. The white-fenced paddock beside the barn is grazed short. The long sunset shadows of the barn, silo and every tree are painted into the shade map, so they fall across grass, flowers and ground alike.
-- **Fences.** Post-and-rail fences enclose the barn field and run off toward the horizon, with a five-bar gate where the track crosses and shrubs along the lines, some with berries.
+- **Fences.** Post-and-rail fences enclose the barn field and run down to where the dunes begin, with a five-bar gate where the track crosses and shrubs along the lines, some with berries.
 - **Trees.** Eight kinds, each with its own generator: spreading oaks, orange maples, white-barked birches in clumps, conical spruces with drooping sprays, a row of Lombardy poplars, a weeping willow with hanging withies, a small apple orchard behind the barn, and one dead snag. Leaves are translucent splats that glow when backlit and sway slightly.
+- **Coast.** The shoreline, the beach profile and the dune heights are plain functions of position, written once in JavaScript and once in GLSL, so the coast runs on without repeating. Going seaward the flowers stop, the sward thins into clumps of marram, and the ground rises into two ridges of dunes up to about 4 m with a low gap where the sea shows through from the field.
+- **Dunes.** The dune surface is splats: three rings of overlapping sand discs, like the meadow rings, each laid on the dune by the shader and tilted to the slope, so dunes hide what is behind them. Marram blades and tussocks are the meadow's own splats, recoloured, made taller and lifted onto the dune.
+- **Beach and sea.** These are not splats. Like the far meadow, they are shaded in the background pass: the pass finds where each view ray meets the beach or the water. The sea has travelling swell and ripples, reflects the sky more strongly at grazing angles, carries the sun's glitter path, breaks into foam lines near the shore and washes up and down the sand, leaving it wet and reflective. Ripples finer than a pixel are dropped with distance to avoid shimmer.
+- **On the beach.** Two rows of groyne posts, driftwood, and a wrack line of weed, pebbles and shells (splats).
 - **Sort.** Each meadow ring is stored in a 12×12 grid of cells, so cells outside the ring or the view are skipped without reading their splats. What survives is ordered with a 16-bit counting sort, linear in depth out to 40 m and logarithmic beyond.

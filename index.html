@@ -56,6 +56,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){#hint{transition:none}}
+@media (max-width:470px){.seg button{padding:0 9px;font-size:15px;letter-spacing:.05em}}
 </style>
 </head>
 <body>
@@ -66,6 +67,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
   <div class="row">
     <div class="seg" role="group" aria-label="Camera">
       <button id="vMeadow" type="button" aria-pressed="true">Meadow</button>
+      <button id="vShore" type="button" aria-pressed="false">Shore</button>
       <button id="vOrbit" type="button" aria-pressed="false">Orbit</button>
       <button id="vRide" type="button" aria-pressed="false">Ride</button>
       <button id="vFly" type="button" aria-pressed="false">Fly</button>
@@ -113,7 +115,7 @@ function quatFromBasis(x,y,z){
 }
 const qmul=(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],
   a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
-const qZ=a=>[0,0,Math.sin(a/2),Math.cos(a/2)],qY=a=>[0,Math.sin(a/2),0,Math.cos(a/2)];
+const qZ=a=>[0,0,Math.sin(a/2),Math.cos(a/2)],qY=a=>[0,Math.sin(a/2),0,Math.cos(a/2)],qX=a=>[Math.sin(a/2),0,0,Math.cos(a/2)];
 function q2m(q,m){const x=q[0],y=q[1],z=q[2],w=q[3];
   m[0]=1-2*(y*y+z*z);m[1]=2*(x*y+w*z);m[2]=2*(x*z-w*y);m[3]=2*(x*y-w*z);m[4]=1-2*(x*x+z*z);m[5]=2*(y*z+w*x);
   m[6]=2*(x*z+w*y);m[7]=2*(y*z-w*x);m[8]=1-2*(x*x+y*y);}
@@ -124,6 +126,24 @@ const horizonJS=az=>mix3([.50,.42,.56],[1.0,.56,.28],Math.pow(az,2.2));
 const azOf=(x,z)=>{const l=Math.hypot(x,z)||1;return(x/l*SUNH[0]+z/l*SUNH[2])*.5+.5;};
 const TINT=[.62,.56,.46];
 
+/* --------------------------------------------------------------- coast
+   The sea lies toward the sunset. c is the distance seaward of the mean waterline (negative inland):
+   meadow, c<-80 · thinning grass and low hummocks, -80..-50 · marram dunes, -50..-14 · beach, -14..0 · sea.
+   The same functions are written again in GLSL below; the two must agree. */
+const ZC=-212,SEA=-1.2;
+const ss=(a,b,x)=>smooth((x-a)/(b-a));
+const wig=x=>10*Math.sin(x*.011+.7)+5*Math.sin(x*.027+2);
+const coastC=(x,z)=>ZC+wig(x)-z;
+const baseH=c=>-1.2*ss(-14,-3,c)-1.8*ss(4,40,c);
+function duneH(x,c){
+  const E=ss(-52,-34,c)*(1-ss(-17,-7,c)),E2=ss(-80,-48,c)*(1-ss(-17,-8,c));
+  const gap=1-.88*ss(.90,.985,.5+.5*Math.sin(x*.02+.37));                       // low passes where the sea shows through
+  const r=.5+.5*Math.sin(c*.26+1.7*Math.sin(x*.021+.4)+.8*Math.sin(x*.047)),l=.5+.5*Math.sin(x*.09+c*.05+2)*Math.sin(x*.037-c*.08+.7);
+  return E*gap*(1.1+2.6*r*(.5+.5*l))+E2*.55*(.5+.5*Math.sin(x*.19+1)*Math.sin(c*.23+2));
+}
+function groundH(x,z){const c=coastC(x,z);return c<-82?0:duneH(x,c)+baseH(c);}
+let rseed=977;const rs=()=>((rseed=(Math.imul(rseed,1664525)+1013904223)>>>0)/4294967296);     // a second random stream, so adding the coast leaves the farm as it was
+
 /* ------------------------------------------------------ static splats
    kind 0 near meadow (blades and flowers, tiled round the camera) · 1 unlit world · 2 birds
    3 lit world surfaces · 4 far meadow (tussocks and flower patches in two wider rings)
@@ -132,7 +152,7 @@ const coarse=matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHe
 const L=36,RF=17,D0SQ=36,FMIN=0.12,LEAFK=coarse?.65:1;
 const DENS=coarse?96:132;
 const nTuft=Math.round(DENS*L*L/144)*144,N1=coarse?36000:60048,N2=coarse?21600:36000;
-const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?120000:165000))/512)*512;
+const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?150000:205000))/512)*512;
 const D=new Float32Array(CAP*16);let N=0;
 function add(px,py,pz,kind,sx,sy,sz,op,q,r,g,b,aux){
   if(N>=CAP)return N;
@@ -195,6 +215,16 @@ function farRing(lv,count,cells){
   cells[144]=N;
 }
 farRing(1,N1,cell1);farRing(2,N2,cell2);
+// the sand of the dunes: sheets of overlapping discs in the same three rings. The shader lays each one on the dune surface and hides those not on a dune.
+const cellS=[new Int32Array(145),new Int32Array(145),new Int32Array(145)];
+function sandRing(lv,g,sig){
+  const sc=lv===0?1:lv===1?4:16,Lp=L*sc,cs=Lp/12,st=cellS[lv];
+  for(let c=0;c<144;c++){st[c]=N;const x0=-Lp/2+(c%12)*cs,z0=-Lp/2+((c/12)|0)*cs;
+    for(let a=0;a<g;a++)for(let b=0;b<g;b++){const r=sig*(.9+.25*rs());
+      add(x0+(a+.5+(rs()-.5)*.6)*cs/g,0,z0+(b+.5+(rs()-.5)*.6)*cs/g,lv?4:0,r,r*.03,r,.97,QID,rs(),rs(),rs(),lv?lv+8:6.5);}}
+  st[144]=N;
+}
+sandRing(0,4,.56);sandRing(1,5,1.8);sandRing(2,6,5.6);
 const nMeadow=N;
 
 /* ---- the lie of the land: barn, trees, fences, track ---- */
@@ -256,11 +286,11 @@ const MA=512,MB=1024,MPT=MB/512,mapA=new Uint8Array(MA*MA*4),mapB=new Uint8Array
 const qYa=a=>[0,Math.sin(a/2),0,Math.cos(a/2)];
 for(let i=0;i<34;i++){const a=i/34*6.2832+rnd()*.2,d=900+rnd()*400,h=14+rnd()*30,x=Math.sin(a)*d,z=Math.cos(a)*d;
   const c=mix3([.16,.15,.22],horizonJS(azOf(x,z)),.55+.15*rnd());
-  add(x,h*.3,z,1,90+rnd()*120,h,60,.97,qYa(a),c[0],c[1],c[2],0);}
+  add(x,h*.3,z,1,90+rnd()*120,h,60,coastC(x,z)<-60?.97:0,qYa(a),c[0],c[1],c[2],0);}
 for(let i=0;i<130;i++){const a=rnd()*6.2832,d=300+rnd()*240,cx=Math.sin(a)*d,cz=Math.cos(a)*d,m=3+(rnd()*6|0);
   const c=mix3([.035,.05,.035],horizonJS(azOf(cx,cz)),1-Math.exp(-d*.0022));
   for(let k=0;k<m;k++){const h=1.6+rnd()*2.6,j=.8+.4*rnd(),x=cx+(rnd()-.5)*14,z=cz+(rnd()-.5)*14;
-    add(x,h*.9,z,1,1.4+rnd()*2.4,h,1.8,.95,qYa(rnd()*6.28),c[0]*j,c[1]*j,c[2]*j,0);}}
+    add(x,h*.9,z,1,1.4+rnd()*2.4,h,1.8,coastC(cx,cz)<-95?.95:0,qYa(rnd()*6.28),c[0]*j,c[1]*j,c[2]*j,0);}}
 for(let i=0;i<16;i++){const a=rnd()*6.2832,d=900+rnd()*900,y=330+rnd()*420,cx=Math.sin(a)*d,cz=Math.cos(a)*d;
   const base=mix3([.42,.36,.52],[1.0,.60,.40],Math.pow(azOf(cx,cz),1.6));
   for(let k=0;k<12;k++){const w=30+rnd()*55,j=.88+.14*rnd(),lift=(rnd()-.5)*24;
@@ -543,9 +573,10 @@ function fence(pts,o){
       if(i===n&&k<pts.length-2)break;
       const px=a[0]+dx*i,pz=a[1]+dz*i,g=o.white?.74+.1*rnd():.30+.13*rnd(),ln=o.white?0:(rnd()-.5)*.09;
       const open=(x,z)=>o.gap&&Math.hypot(x-o.gap[0],z-o.gap[1])<o.gap[2];
-      if(!open(px,pz))add(px+ln,hgt/2,pz+ln*.6,3,.055,hgt*.52,.055,.97,QID,g,g*(o.white?1:.93),g*(o.white?.95:.84),4);
+      const vis=coastC(px,pz)<-66?.97:0;       // fences stop where the dunes begin
+      if(!open(px,pz))add(px+ln,hgt/2,pz+ln*.6,3,.055,hgt*.52,.055,vis,QID,g,g*(o.white?1:.93),g*(o.white?.95:.84),4);
       if(i<n&&!open(px+dx/2,pz+dz/2))for(const y of o.rails)
-        add(px+dx/2,y+(o.white?0:(rnd()-.5)*.06),pz+dz/2,3,sl*.47,o.white?.055:.034,.03,.97,q,g*1.04,g*(o.white?1.03:.97),g*(o.white?.98:.88),4);
+        add(px+dx/2,y+(o.white?0:(rnd()-.5)*.06),pz+dz/2,3,sl*.47,o.white?.055:.034,.03,vis,q,g*1.04,g*(o.white?1.03:.97),g*(o.white?.98:.88),4);
     }
   }
 }
@@ -677,8 +708,18 @@ for(const[ty,x,z,h]of TREES){
 for(const line of FENCES)for(let k=0;k<line.length-1;k++){
   const a=line[k],b=line[k+1],len=Math.hypot(b[0]-a[0],b[1]-a[1]);
   for(let s=4+rnd()*6;s<len;s+=5+rnd()*11){const x=lerp(a[0],b[0],s/len),z=lerp(a[1],b[1],s/len);
-    if(Math.hypot(x-GATE[0],z-GATE[1])<6||(Math.abs(x)<24&&z>-30))continue;
+    if(Math.hypot(x-GATE[0],z-GATE[1])<6||(Math.abs(x)<24&&z>-30)||coastC(x,z)>-70)continue;
     bush(x+(rnd()-.5),z-.8-rnd(),1+rnd()*.9,rnd()<.4);}}
+/* ---- the beach: groynes, driftwood, the wrack line ---- */
+for(const gx of[92,-74]){                       // rows of weathered posts running down the beach into the sea
+  for(let k=0;k<34;k++){const x=gx+(rs()-.5)*.12,c=-11+k*1.12,z=ZC+wig(x)-c,g=Math.max(groundH(x,z),SEA-.5),top=Math.max(g+1.25-.02*k,SEA+.3+.25*rs()),h=top-g+.4;
+    add(x,g-.4+h*.5,z,3,.085,h*.36,.085,.97,QID,.15,.125,.11,4);add(x,top-.05,z,3,.08,.06,.08,.95,QID,.2,.17,.15,4);}}
+for(let k=0;k<7;k++){const x=-160+k*62+rs()*30,c=-9.5+rs()*3,z=ZC+wig(x)-c,g=groundH(x,z),a=rs()*3.14,len=.7+rs()*1.2,q=qYa(a);
+  for(let m=-1;m<=1;m++)add(x+Math.cos(a)*m*len*.6,g+.09,z-Math.sin(a)*m*len*.6,3,len*.42,.085+.02*rs(),.1,.96,q,.50,.46,.41,4);}
+for(let k=0;k<1100;k++){const x=-330+rs()*760,c=-7.2+(rs()-.5)*(rs()<.8?1.6:6),z=ZC+wig(x)-c,g=groundH(x,z),r=.025+.05*rs(),w=rs();
+  if(w<.6)add(x,g+.02,z,3,r*1.5,.014,r*.8,.8,qYa(rs()*3.14),.13,.13,.08,4);       // dried weed
+  else if(w<.85)add(x,g+.025,z,3,r,.02,r,.95,QID,.33,.31,.30,4);                      // pebbles
+  else add(x,g+.02,z,3,r*.8,.014,r*.6,.95,qYa(rs()*3.14),.72,.68,.62,4);}             // shells
 const nStatic=N;
 
 /* ------------------------------------------------------ bird bodies
@@ -728,42 +769,42 @@ const mkPal=o=>[o.body,o.bill,o.wing,o.under,o.tail,o.accent||o.body,o.far||o.wi
 /* Each species: how big, how fast, how it flaps, which rules it flies by. Figures are approximate field values.
    roost: [x, z, radius]. alt: preferred height = max(alt[3], alt[0] + slow swings of alt[1] and alt[2]). pose: glide dihedral, sweep, wrist, upstroke flex. */
 const SPECIES={
-  starling:{label:'Starlings',tag:'Murmuration',word:['flock','flocks'],model:'flock',size:1,n:[1000,600],min:150,max:2400,step:50,
-    v0:10,wbf:13.3,amp:.82,flap:'mix',K:7,rh:.2,sepw:.45,ws:7,wa:2.7,wc:2.2,noise:1.9,space:1,roost:[0,-70,48],alt:[24,13,7,9],start:[-40,27,-70],
+  starling:{gait:{morph:[.078,.385,.0192],tau:.47,th0:.10,sr:.40,sw:.14,tw:.35,style:'bound'},label:'Starlings',tag:'Murmuration',word:['flock','flocks'],model:'flock',size:1,n:[1000,600],min:150,max:2400,step:50,
+    v0:10,amp:.82,flap:'mix',K:7,rh:.2,sepw:.45,ws:7,wa:2.7,wc:2.2,noise:1.9,space:1,roost:[0,-70,48],alt:[24,13,7,9],start:[-40,27,-70],
     treact:.07,turnEvery:[5,7],partial:.5,pose:[.07,.06,.22,1],falcon:true,
     shape:{gloss:1,bill:.018,billW:1,tail:1,tip:'point',spots:true},
     pals:[mkPal({body:[.032,.031,.037],bill:[.30,.26,.13],wing:[.028,.028,.033],under:[.20,.18,.16],tail:[.035,.034,.04],accent:[.70,.62,.48],far:[.045,.043,.046]})]},
-  dunlin:{label:'Dunlin',tag:'Flashing flock',word:['flock','flocks'],model:'flock',size:.9,n:[1200,700],min:150,max:2400,step:50,
-    v0:14,wbf:12,amp:.85,flap:'always',K:7,rh:.16,sepw:.36,ws:7,wa:3.2,wc:2.8,noise:1.5,space:.8,roost:[0,-62,58],alt:[15,6,3,7],start:[-40,14,-66],
+  dunlin:{gait:{morph:[.048,.38,.0145],tau:.50,th0:.08,sr:.60,sw:.12,tw:.30,style:'steady'},label:'Dunlin',tag:'Flashing flock',word:['flock','flocks'],model:'flock',size:.9,n:[1200,700],min:150,max:2400,step:50,
+    v0:14,amp:.85,flap:'always',K:7,rh:.16,sepw:.36,ws:7,wa:3.2,wc:2.8,noise:1.5,space:.8,roost:[30,-236,46],alt:[12,5,3,6],wr:5.5,shore:true,start:[-10,12,-226],
     treact:.03,turnEvery:[2.5,3.5],partial:.2,pose:[.07,.06,.22,1],falcon:true,
     shape:{gloss:.1,bill:.03,billW:.8,tail:.7,tip:'point',belly:true,sided:true,chord:.9},
     pals:[mkPal({body:[.33,.30,.26],bill:[.05,.05,.05],wing:[.27,.25,.22],under:[.93,.93,.91],tail:[.20,.19,.18],far:[.28,.26,.23],belly:[.95,.95,.93],head:[.36,.33,.29],hand:[.16,.15,.14],handUnder:[.86,.86,.85]})]},
-  jackdaw:{label:'Jackdaws',tag:'Flock of pairs',word:['flock','flocks'],model:'flock',size:1.75,n:[240,160],min:40,max:600,step:20,
-    v0:12,wbf:5.5,amp:.7,flap:'mix',K:3,rh:.35,sepw:.8,ws:7,wa:2.0,wc:1.8,noise:2.4,space:1.7,roost:[0,-70,55],alt:[30,10,6,14],start:[-40,30,-70],
+  jackdaw:{gait:{morph:[.23,.70,.068],tau:.52,th0:.10,sr:.50,sw:.12,tw:.30,style:'glide'},label:'Jackdaws',tag:'Flock of pairs',word:['flock','flocks'],model:'flock',size:1.75,n:[240,160],min:40,max:600,step:20,
+    v0:12,amp:.7,flap:'mix',K:3,rh:.35,sepw:.8,ws:7,wa:2.0,wc:1.8,noise:2.4,space:1.7,roost:[0,-70,55],alt:[30,10,6,14],start:[-40,30,-70],
     treact:.09,turnEvery:[7,9],partial:.4,pairs:true,pose:[.09,.05,.16,.8],falcon:true,
     shape:{gloss:.5,bill:.016,billW:1.4,tail:1.25,tailW:1.2,tip:'round',chord:1.2,
       accents:[[[0,.012,.058],[.011,.008,.01],5],[[.0088,.012,.076],[.0022,.0022,.0022],12],[[-.0088,.012,.076],[.0022,.0022,.0022],12]]},
     pals:[mkPal({body:[.04,.04,.046],bill:[.03,.03,.03],wing:[.032,.032,.038],under:[.09,.09,.10],tail:[.03,.03,.035],accent:[.40,.41,.45],belly:[.07,.07,.08],handUnder:[.11,.11,.12],eye:[.85,.88,.92]})]},
-  pigeon:{label:'Pigeons',tag:'Kit with leaders',word:['kit','kits'],model:'flock',size:1.7,n:[40,30],min:10,max:150,step:5,
-    v0:15,wbf:7,amp:.95,flap:'always',K:7,rh:.3,sepw:.6,ws:8,wa:3.0,wc:2.4,noise:1.2,wr:6.5,space:1.4,roost:[BARN.x,BARN.z,40],alt:[26,8,4,13],start:[BARN.x-22,24,BARN.z+6],
+  pigeon:{gait:{morph:[.40,.67,.063],tau:.52,th0:.22,sr:.45,sw:.16,tw:.35,style:'glide'},label:'Pigeons',tag:'Kit with leaders',word:['kit','kits'],model:'flock',size:1.7,n:[40,30],min:10,max:150,step:5,
+    v0:15,amp:.95,flap:'mostly',K:7,rh:.3,sepw:.6,ws:8,wa:3.0,wc:2.4,noise:1.2,wr:6.5,space:1.4,roost:[BARN.x,BARN.z,40],alt:[26,8,4,13],start:[BARN.x-22,24,BARN.z+6],
     treact:.07,turnEvery:null,partial:0,hier:true,pose:[.10,.05,.2,.9],falcon:true,
     shape:{gloss:.25,fat:1.15,bill:.012,billW:1.2,tail:1.1,tailW:1.2,tip:'round',chord:1.1,rump:true,bars:true,sided:true,accents:[[[0,.004,.052],[.0125,.012,.012],8,2.2]]},
     pals:[mkPal({body:[.40,.44,.50],bill:[.18,.16,.16],wing:[.52,.55,.60],under:[.82,.84,.86],tail:[.26,.29,.34],accent:[.93,.93,.93],far:[.48,.51,.56],belly:[.44,.47,.53],head:[.26,.30,.36],hand:[.20,.22,.26],handUnder:[.62,.64,.67],bar:[.06,.06,.07]}),
       mkPal({body:[.20,.22,.26],bill:[.18,.16,.16],wing:[.22,.24,.28],under:[.60,.62,.65],tail:[.14,.15,.18],accent:[.85,.85,.85],belly:[.22,.24,.28],head:[.14,.16,.20],hand:[.12,.13,.15],handUnder:[.50,.52,.55],bar:[.05,.05,.06]}),
       mkPal({body:[.90,.89,.86],bill:[.6,.4,.4],wing:[.88,.87,.84],under:[.93,.93,.91],tail:[.85,.84,.82],accent:[.95,.95,.95],belly:[.93,.92,.9],hand:[.55,.56,.60],handUnder:[.9,.9,.9],bar:[.5,.5,.55]})]},
-  goose:{label:'Geese',tag:'V formation',word:['skein','skeins'],model:'vee',size:4,n:[45,33],min:7,max:120,step:1,
-    v0:16,wbf:3.8,amp:.5,flap:'always',roost:[0,-70,85],alt:[58,10,5,40],pose:[.05,.04,.1,.45],falcon:false,
+  goose:{gait:{morph:[4.5,1.6,.50],tau:.55,th0:.05,sr:.75,sw:.08,tw:.20,style:'steady'},label:'Geese',tag:'V formation',word:['skein','skeins'],model:'vee',size:4,n:[45,33],min:7,max:120,step:1,
+    v0:16,amp:.5,flap:'always',roost:[0,-70,85],alt:[58,10,5,40],pose:[.05,.04,.1,.45],falcon:false,
     shape:{fat:1.15,len:1.05,neck:.055,head:.8,bill:.016,billW:1.5,tail:.6,tailW:1.3,tip:'round',chord:1.1,belly:true,sided:true,
       accents:[[[0,.002,.1265],[.0105,.006,.006],5],[[0,.006,-.068],[.012,.004,.008],5]]},
     pals:[mkPal({body:[.34,.27,.20],bill:[.03,.03,.03],wing:[.27,.22,.17],under:[.38,.33,.28],tail:[.04,.04,.04],accent:[.94,.93,.90],belly:[.70,.66,.58],head:[.035,.035,.035],hand:[.13,.11,.10],handUnder:[.27,.24,.22]})]},
-  stork:{label:'White storks',tag:'Thermal kettle',word:['kettle','kettles'],model:'soar',size:5,n:[36,26],min:8,max:80,step:2,
-    v0:10.5,wbf:2.6,amp:.45,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.09,.02,.05,.3],falcon:false,
+  stork:{gait:{morph:[3.4,2.0,.58],tau:.55,th0:.08,sr:.80,sw:.06,tw:.15,style:'soar'},label:'White storks',tag:'Thermal kettle',word:['kettle','kettles'],model:'soar',size:5,n:[36,26],min:8,max:80,step:2,
+    v0:10.5,amp:.45,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.09,.02,.05,.3],falcon:false,
     shape:{neck:.05,head:.8,bill:.04,billW:1.1,tail:.6,tip:'finger',chord:1.25,twoTone:true,legs:.075,farTip:true},
     pals:[mkPal({body:[.93,.92,.88],bill:[.80,.18,.09],wing:[.93,.92,.88],under:[.93,.92,.89],tail:[.93,.92,.88],hand:[.04,.04,.05],handUnder:[.07,.07,.08],legs:[.78,.22,.12]})]},
   // Speculative. Size, the two sexes and thermal soaring rest on fossils and flight models; colours and all social rules are guesses (see README).
-  pteranodon:{label:'Pteranodon',tag:'Speculative soaring',word:['squadron','squadrons'],noun:'animals',model:'soar',size:14.5,n:[16,12],min:4,max:40,step:1,
-    v0:12,wbf:1.3,amp:.4,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.06,.03,.07,.3],falcon:false,sexes:true,
-    soar:{vc:12,vg:17,sink:.9,gsink:4.4,rad:[17,13],sep:9,thr:[35,9],files:true},
+  pteranodon:{gait:{morph:[35,5.8,2.0],tau:.55,th0:.06,sr:.88,sw:.05,tw:.12,style:'soar'},label:'Pteranodon',tag:'Speculative soaring',word:['squadron','squadrons'],noun:'animals',model:'soar',size:14.5,n:[16,12],min:4,max:40,step:1,
+    v0:12,amp:.4,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.06,.03,.07,.3],falcon:false,sexes:true,
+    soar:{vc:12,vg:17,sink:.9,gsink:4.4,rad:[17,13],sep:9,thr:[35,9],files:true,cx:20,cz:-215},shore:true,
     shapes:[{fat:.62,len:.62,neck:.03,head:.75,bill:.075,billW:1.6,tail:.15,tip:'point',chord:.72,inner:[[.014,.032],[.040,.026],[.064,.021]],belly:true,sided:true,legs:.03,farTip:true,
         accents:[[[0,.015,.061],[.0028,.0045,.008],5]]},
       {fat:.62,len:.62,neck:.03,head:.75,bill:.075,billW:1.6,tail:.15,tip:'point',chord:.72,inner:[[.014,.032],[.040,.026],[.064,.021]],belly:true,sided:true,legs:.03,farTip:true,
@@ -771,9 +812,20 @@ const SPECIES={
     pals:[mkPal({body:[.62,.60,.56],bill:[.62,.52,.32],wing:[.33,.31,.30],under:[.70,.66,.61],tail:[.5,.48,.45],accent:[.50,.40,.30],far:[.34,.32,.31],belly:[.80,.78,.73],head:[.66,.63,.58],hand:[.20,.19,.19],handUnder:[.52,.49,.46],legs:[.35,.33,.31]}),
       mkPal({body:[.60,.58,.54],bill:[.78,.62,.28],wing:[.30,.28,.28],under:[.70,.66,.61],tail:[.5,.48,.45],accent:[.82,.30,.10],far:[.31,.29,.29],belly:[.80,.78,.73],head:[.66,.63,.58],hand:[.16,.15,.16],handUnder:[.50,.47,.44],legs:[.35,.33,.31]})]}
 };
+/* How each animal moves its own body. Wingbeat frequency comes from Pennycuick's formula (1996) for a bird of that mass, span and wing area.
+   tau: the share of each beat spent on the downstroke. th0: mean wing elevation. sr: span ratio, the span at mid-upstroke over the span at mid-downstroke
+   (small round-winged birds fold the wing far in on the upstroke, large birds hardly at all). sw: how far the wing swings forward on the downstroke.
+   tw: twist of the hand wing. style: what the bird does between bouts of flapping. */
+const wingbeatHz=(m,b,S)=>Math.pow(m,3/8)*Math.sqrt(9.81)*Math.pow(b,-23/24)*Math.pow(S,-1/3)*Math.pow(1.23,-3/8);
+function prepGait(g){
+  g.hz=wingbeatHz(g.morph[0],g.morph[1],g.morph[2]);
+  const span=k=>.018+.082*Math.cos(.06+.3*k)+.105*Math.cos(.22+1.3*k);let lo=0,hi=2.2;       // how much flex gives that span ratio
+  for(let i=0;i<30;i++){const k=(lo+hi)/2;if(span(k)/span(0)>g.sr)lo=k;else hi=k;}g.fk=(lo+hi)/2;return g;
+}
+const FGAIT=prepGait({morph:[.9,1.05,.13],tau:.5,th0:.08,sr:.5,sw:.1,tw:.3,style:'glide',pose:[.07,.06,.22]});
 let NEARMAX=0,FARMAX=0;
-for(const k in SPECIES){const s=SPECIES[k];s.tpls=(s.shapes||[s.shape]).map(buildBird);s.tpl=s.tpls[0];for(const t of s.tpls){NEARMAX=Math.max(NEARMAX,t.near.length);FARMAX=Math.max(FARMAX,t.far.length);}}
-const FALCT=buildBird({gloss:.15,bill:.012,billW:1.5,tail:1.2,tip:'point',belly:true}).near,FPOSE=[.07,.06,.22,1];
+for(const k in SPECIES){const s=SPECIES[k];prepGait(s.gait);s.gait.pose=s.pose;s.wbf=s.gait.hz;s.tpls=(s.shapes||[s.shape]).map(buildBird);s.tpl=s.tpls[0];for(const t of s.tpls){NEARMAX=Math.max(NEARMAX,t.near.length);FARMAX=Math.max(FARMAX,t.far.length);}}
+const FALCT=buildBird({gloss:.15,bill:.012,billW:1.5,tail:1.2,tip:'point',belly:true}).near,FPOSE=FGAIT.pose;
 const FALC=mkPal({body:[.26,.27,.30],bill:[.55,.48,.20],wing:[.27,.29,.33],under:[.62,.58,.52],tail:[.24,.25,.29],belly:[.72,.68,.60],head:[.18,.19,.22],hand:[.22,.24,.28],handUnder:[.55,.52,.47]});
 
 /* ---------------------------------------------------------- flock model
@@ -784,8 +836,8 @@ const G=9.81,TAUV=1.0,BMAX=1.2;
 const REACT=.1,REFR=1.6,ZIG=.5,DAMP=.985,FLEE=11,DETECT=24;
 const TREFR=3,TPEAK=11,PAIRD=1.3;                    // turning waves; how close a mated pair keeps
 // flight parameters of the current species, set by setSpecies()
-const SOAR0={vc:10.5,vg:15,sink:.85,gsink:4.2,rad:[11,15],sep:8,thr:[26,8],files:false};let SOAR=SOAR0;
-let sp=SPECIES.starling,K=7,V0C=10,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,NOISE=1.9,WR=4,WBF=13.3,TREACT=.07,HOPM=2.3,SPACE=1,RSX=0,RSZ=-70,R0=48,SIZE=1,PAIRS=false,HIER=false,FLAPMODE='mix';
+const SOAR0={vc:10.5,vg:15,sink:.85,gsink:4.2,rad:[11,15],sep:8,thr:[26,8],files:false,cx:0,cz:-70};let SOAR=SOAR0;
+let sp=SPECIES.starling,K=7,V0C=10,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,NOISE=1.9,WR=4,WBF=10.4,HEAVE=0,TREACT=.07,HOPM=2.3,SPACE=1,RSX=0,RSZ=-70,R0=48,SIZE=1,PAIRS=false,HIER=false,FLAPMODE='mix',BOUNDS=false;
 const MAXC=12,LINK2=49,RVIS=140,WV=1.3,WVS=3.5,WJ=3.2,WO=2.6;       // flocks and the pull between them
 let P=new Float32Array(MAXB*3),H=new Float32Array(MAXB*3),Pn=new Float32Array(MAXB*3),Hn=new Float32Array(MAXB*3);
 const V=new Float32Array(MAXB),V0=new Float32Array(MAXB),BETA=new Float32Array(MAXB),UPv=new Float32Array(MAXB*3);
@@ -797,6 +849,7 @@ const TT=new Float32Array(MAXB).fill(-99),TD=new Float32Array(MAXB),TAc=new Floa
 const UF=new Int32Array(MAXB),LAB=new Int16Array(MAXB).fill(-1),ccnt=new Int32Array(MAXB),cmap=new Int16Array(MAXB);
 const CLn=new Float32Array(MAXC),CLx=new Float32Array(MAXC),CLy=new Float32Array(MAXC),CLz=new Float32Array(MAXC),CLr=new Float32Array(MAXC);
 const CLq=new Float32Array(MAXC),CLhx=new Float32Array(MAXC),CLhy=new Float32Array(MAXC),CLhz=new Float32Array(MAXC);
+const BND=new Float32Array(MAXB),BOF=new Float32Array(MAXB),FD=new Float32Array(MAXB),FSB=new Uint8Array(MAXB);       // bounding: how folded, how far up the arc, how long the bound, whether this pause is a bound
 const RANK=new Float32Array(MAXB),MATE=new Int16Array(MAXB).fill(-1),PALI=new Uint8Array(MAXB);                           // pecking order, mates, colour morph
 const SLOT=new Float32Array(MAXB),OM=new Float32Array(MAXB),ROOT=new Int16Array(MAXB),SIDE=new Int8Array(MAXB),LEADI=new Int16Array(MAXB).fill(-1),SWT=new Float32Array(MAXB),
   OCC=new Int16Array(MAXB*2),CNT=new Int16Array(MAXB*2),TAIL=new Int16Array(MAXB*2),HASF=new Uint8Array(MAXB),GS=new Float32Array(48),TIRE=new Float32Array(MAXB).fill(-99),LEADT=new Float32Array(MAXB),LEADD=new Float32Array(MAXB);                        // geese: leading and resting
@@ -809,8 +862,8 @@ function initBird(i,px,py,pz,fx,fy,fz){
   const i3=i*3;P[i3]=px;P[i3+1]=py;P[i3+2]=pz;const f=nrm([fx,fy,fz]);H[i3]=f[0];H[i3+1]=f[1];H[i3+2]=f[2];
   RANK[i]=rnd();V0[i]=V0C*(HIER?.95+.09*RANK[i]:.96+.08*rnd());V[i]=V0[i];BETA[i]=0;UPv[i3]=0;UPv[i3+1]=1;UPv[i3+2]=0;NZ[i3]=NZ[i3+1]=NZ[i3+2]=0;
   SC[i]=SIZE*(.95+.1*rnd());WB[i]=WBF*(sp.model==='vee'?.99+.02*rnd():.95+.1*rnd());PH[i]=rnd()*6.28;FS[i]=1;FLAP[i]=1;FT[i]=rnd();TK[i]=0;DEM[i]=.5;
-  ESC[i]=-99;ESCA[i]=0;CEN[i]=0;TT[i]=-99;THop[i]=0;LAB[i]=-1;
-  MATE[i]=PAIRS&&hash((i>>1)*1.37+.5)<.8?i^1:-1;PALI[i]=sp.sexes?(rnd()<.67?0:1):sp.pals.length>1?(rnd()<.68?0:rnd()<.6?1:2):0;if(sp.sexes&&!PALI[i])SC[i]*=.66;   // two females to each male, and the females two thirds the size
+  ESC[i]=-99;ESCA[i]=0;CEN[i]=0;TT[i]=-99;THop[i]=0;LAB[i]=-1;BND[i]=0;BOF[i]=0;FD[i]=0;FSB[i]=0;
+  MATE[i]=PAIRS&&hash((i>>1)*1.37+.5)<.8?i^1:-1;PALI[i]=sp.sexes?(rnd()<.67?0:1):sp.pals.length>1?(rnd()<.68?0:rnd()<.6?1:2):0;if(sp.sexes&&!PALI[i]){SC[i]*=.66;WB[i]*=1.33;}   // two females to each male, and the females two thirds the size
   TIRE[i]=-99;ROOT[i]=i;SIDE[i]=0;LEADI[i]=-1;SWT[i]=0;SLOT[i]=0;LEADT[i]=S.time;LEADD[i]=25+rnd()*30;MODE[i]=0;TGT[i]=0;PREV[i]=0;RADP[i]=SOAR.rad[0]+rnd()*SOAR.rad[1];BOLD[i]=rnd();VYa[i]=0;
 }
 function spawn(n){
@@ -942,7 +995,7 @@ function stepFlock(h){
     ax+=NZ[i3];ay+=NZ[i3+1]*.4;az+=NZ[i3+2];
     ay+=clamp(.35*(hp-py)-.7*fy*v,-4,4);
     // stay clear of the ground, the barn and the treetops
-    {let fl=4;for(let q=0;q<nob;q+=4){const dx=px-OBST[q],dz=pz-OBST[q+1],r=OBST[q+2]+7,d2=dx*dx+dz*dz;
+    {let fl=pz<-125?4+Math.max(groundH(px,pz),0):4;for(let q=0;q<nob;q+=4){const dx=px-OBST[q],dz=pz-OBST[q+1],r=OBST[q+2]+7,d2=dx*dx+dz*dz;
         if(d2<r*r){const hh=OBST[q+3]*Math.min(1,(1-Math.sqrt(d2)/r)*2.2)+2;if(hh>fl)fl=hh;}}
       if(py<fl)ay+=Math.min((fl-py)*5,26);}
     for(let q=0;q<nf;q++){const fp=FALS[q].p,rx=px-fp[0],ry=py-fp[1],rz=pz-fp[2],d=Math.hypot(rx,ry,rz)+1e-6;
@@ -969,9 +1022,17 @@ function stepFlock(h){
     // flap–glide: starlings mix wingbeat bursts with short glides
     const dem=clamp(.45+(V0[i]-v2)*.35+ay*.10+(1-cb)*1.2,0,1);DEM[i]=dem;
     FT[i]-=h;
+    // Intermittent flight. Small birds pause between bursts of flapping: with wings spread (a glide) when slow, with wings folded (a bound) when fast.
+    // Pigeons flap almost without pause; waders and geese never stop.
     if(FLAPMODE==='always')FS[i]=1;
-    else if(FT[i]<=0){if(FS[i]){if(dem<.7){FS[i]=0;FT[i]=.12+.35*rnd();}else FT[i]=.25+.5*rnd();}else{FS[i]=1;FT[i]=.35+.8*rnd();}}
-    else if(!FS[i]&&dem>.85){FS[i]=1;FT[i]=.3+.5*rnd();}
+    else if(FT[i]<=0){
+      if(FS[i]){
+        if(dem<(FLAPMODE==='mostly'?.4:.7)){FS[i]=0;FSB[i]=BOUNDS&&v2>V0[i]*1.03?1:0;FT[i]=FSB[i]?.07+.13*rnd():.12+.35*rnd();FD[i]=FT[i];}
+        else FT[i]=.25+.5*rnd();
+      }else{FS[i]=1;FT[i]=FLAPMODE==='mostly'?1.5+3*rnd():FSB[i]?.2+.35*rnd():.35+.8*rnd();}
+    }else if(!FS[i]&&dem>.85){FS[i]=1;FT[i]=.3+.5*rnd();}
+    {const bd=!FS[i]&&FSB[i]?1:0,tb=FD[i]-FT[i];BND[i]+=(bd-BND[i])*(1-Math.exp(-h/.03));
+      BOF[i]+=((bd?.5*G*Math.max(tb,0)*Math.max(FD[i]-tb,0):0)-BOF[i])*(1-Math.exp(-h/.04));}       // a bound is a little ballistic arc
     FLAP[i]+=(FS[i]-FLAP[i])*(1-Math.exp(-h/.05));
     PH[i]+=6.2832*WB[i]*h;
     TK[i]+=(smooth((-nfy*v2-2.5)/6)-TK[i])*(1-Math.exp(-h/.2));
@@ -1103,11 +1164,11 @@ function stepVee(h){
 const TH=[];
 function thermalEnv(t,now){const a=now-t.t0;return a<0?0:smooth(a/8)*smooth((t.life-a)/12);}
 function newThermal(k,now,x,z){
-  if(x===undefined){let tries=0,ok;do{const a=rnd()*6.2832,d=30+rnd()*140;x=Math.sin(a)*d;z=-70+Math.cos(a)*d;ok=true;
+  if(x===undefined){let tries=0,ok;do{const a=rnd()*6.2832,d=30+rnd()*140;x=SOAR.cx+Math.sin(a)*d;z=SOAR.cz+Math.cos(a)*d;ok=true;
     for(let q=0;q<3;q++)if(q!==k&&TH[q]&&Math.hypot(TH[q].x-x,TH[q].z-z)<125)ok=false;}while(!ok&&++tries<40);}
   TH[k]={x,z,r:SOAR.thr[0]+rnd()*SOAR.thr[1],w:2.7+rnd()*.8,top:80+rnd()*28,t0:now,life:75+rnd()*45,dir:rnd()<.5?1:-1,cnt:0,inb:0,out:0};
 }
-function initThermals(){TH.length=0;const now=S.time;newThermal(0,now-12,-15,-80);TH[0].life=72;newThermal(1,now-10);newThermal(2,now+25);}
+function initThermals(){TH.length=0;const now=S.time;newThermal(0,now-12,SOAR.cx-15,SOAR.cz-10);TH[0].life=72;newThermal(1,now-10);newThermal(2,now+25);}
 function updraft(x,y,z,now){let u=0;for(let k=0;k<3;k++){const t=TH[k],dx=x-t.x,dz=z-t.z;u+=thermalEnv(t,now)*t.w*Math.exp(-(dx*dx+dz*dz)/(t.r*t.r))*smooth((t.top+8-y)/20);}return u;}
 function stepSoar(h){
   const n=S.n,now=S.time;if(!n)return;
@@ -1203,7 +1264,7 @@ function stepFalcon(F,h){
   p[0]+=nf[0]*F.v*h;p[1]=Math.max(2,p[1]+nf[1]*F.v*h);p[2]+=nf[2]*F.v*h;F.f=nf;
   const cb=Math.cos(F.b),sb=Math.sin(F.b);F.u=[u0[0]*cb+sd[0]*sb,u0[1]*cb+sd[1]*sb,u0[2]*cb+sd[2]*sb];
   const stoop=F.phase==='stoop'?1:0;
-  F.tk+=(stoop-F.tk)*(1-Math.exp(-h/.3));F.flap+=((1-stoop)-F.flap)*(1-Math.exp(-h/.2));F.ph+=6.2832*5.5*h;
+  F.tk+=(stoop-F.tk)*(1-Math.exp(-h/.3));F.flap+=((1-stoop)-F.flap)*(1-Math.exp(-h/.2));F.ph+=6.2832*FGAIT.hz*h;
 }
 
 /* ------------------------------------------------------------------ GL */
@@ -1228,7 +1289,25 @@ vec3 canopy(vec4 a,vec4 b){              // the meadow as seen from far enough a
   g=mix(g,flowerMix(a.b),a.g*(1.-b.r)*.4);
   g=mix(g,vec3(.27,.33,.13),b.r*.65);
   return mix(g,vec3(.38,.30,.21),b.b);
-}`;
+}
+// the coast; the same functions as in the script above
+const float ZC=-212.,SEA=-1.2;
+float wig(float x){return 10.*sin(x*.011+.7)+5.*sin(x*.027+2.);}
+float coastC(vec2 w){return ZC+wig(w.x)-w.y;}
+float baseH(float c){return -1.2*smoothstep(-14.,-3.,c)-1.8*smoothstep(4.,40.,c);}
+float duneH(float x,float c){
+  float E=smoothstep(-52.,-34.,c)*(1.-smoothstep(-17.,-7.,c)),E2=smoothstep(-80.,-48.,c)*(1.-smoothstep(-17.,-8.,c));
+  float gap=1.-.88*smoothstep(.90,.985,.5+.5*sin(x*.02+.37));
+  float r=.5+.5*sin(c*.26+1.7*sin(x*.021+.4)+.8*sin(x*.047)),l=.5+.5*sin(x*.09+c*.05+2.)*sin(x*.037-c*.08+.7);
+  return E*gap*(1.1+2.6*r*(.5+.5*l))+E2*.55*(.5+.5*sin(x*.19+1.)*sin(c*.23+2.));
+}
+float groundH(vec2 w){float c=coastC(w);return c<-82.?0.:duneH(w.x,c)+baseH(c);}
+float sandy(float c){return smoothstep(-74.,-36.,c);}
+vec3 sandLit(vec3 n,vec2 w){           // sand under the low sun: slopes facing it glow, the rest take the colour of the sky
+  vec3 base=vec3(.80,.67,.48)*(.93+.07*sin(w.x*.9+2.*sin(w.y*.7)));
+  return base*(vec3(.30,.30,.41)*(.7+.3*n.y)+vec3(1.,.58,.30)*1.8*max(dot(n,uSun),0.));
+}
+vec3 canopyC(vec4 a,vec4 b,float S){return mix(canopy(a,b),vec3(.50,.53,.33),S*.8);}`;
 const VS=`#version 300 es
 precision highp float;precision highp int;
 uniform highp sampler2D uData;
@@ -1244,11 +1323,31 @@ void main(){
   vec4 t0=texelFetch(uData,tc,0),t1=texelFetch(uData,tc+ivec2(1,0),0),t2=texelFetch(uData,tc+ivec2(2,0),0),t3=texelFetch(uData,tc+ivec2(3,0),0);
   int kind=int(t0.w+.5);vec3 s=t1.xyz;float alpha=t1.w;vec3 col=t3.rgb;float aux=t3.a;
   mat3 R=qmat(t2);vec3 wp;bool mip=false;
-  if(kind==0){
+  if((kind==0&&aux>6.)||(kind==4&&aux>8.)){        // a disc of dune sand
+    float sc=kind==0?1.:(aux<9.5?4.:16.),Lp=uField.x*sc,Rout=uField.y*sc;
+    vec2 xz=t0.xz-uScroll;xz-=Lp*floor(xz/Lp+.5);float d=length(xz);vec2 w0=xz+uScroll;
+    float cc=coastC(w0);
+    if(cc<-82.||cc>-3.){gl_Position=vec4(0.,0.,2.,1.);return;}
+    float hd=duneH(w0.x,cc);
+    alpha*=smoothstep(.05,.3,hd)*(kind==0?smoothstep(Rout,Rout*.78,d):smoothstep(Rout*.18,Rout*.3,d)*smoothstep(Rout,Rout*.72,d));
+    float e=s.x*.6,hx=groundH(w0+vec2(e,0.))-groundH(w0-vec2(e,0.)),hz=groundH(w0+vec2(0.,e))-groundH(w0-vec2(0.,e));
+    vec3 n=normalize(vec3(-hx,2.*e,-hz)),tx=normalize(vec3(2.*e,hx,0.));
+    R=mat3(tx,n,cross(tx,n));
+    wp=vec3(w0.x,hd+baseH(cc)+.01,w0.y);mip=true;
+    col=sandLit(n,w0)*(.93+.14*col.r);
+    vec3 vd=normalize(wp-uCam);float az=dot(normalize(vd.xz+1e-5),normalize(uSun.xz))*.5+.5;
+    col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2))*.9,1.-exp(-length(wp-uCam)*.0035));
+  }else if(kind==0){
     float Lp=uField.x,Rf=uField.y,tm=uField.z;
     vec2 xz=t0.xz-uScroll;xz-=Lp*floor(xz/Lp+.5);
     float d=length(xz),y=t0.y;vec2 w0=xz+uScroll;
     vec4 ma=textureLod(uMapA,w0*MAPS,0.),mb=textureLod(uMapB,w0*MAPS,0.);
+    float cc=coastC(w0),gy=0.,S=0.;
+    if(cc>-82.){                         // toward the sea the sward thins to clumps of marram, then stops at the beach
+      S=sandy(cc);float cl=textureLod(uMapA,w0*MAPS*23.,0.).a;
+      if(cc>-10.-5.*cl||cl<S*.62){gl_Position=vec4(0.,0.,2.,1.);return;}
+      gy=duneH(w0.x,cc)+baseH(cc);
+    }
     float ty=floor(aux*.5+.01),hf=aux-2.*ty;
     float f=clamp(pow(${D0SQ}./max(d*d,1.),.75),${FMIN},1.);
     s.xz*=min(inversesqrt(f),2.6);
@@ -1258,9 +1357,10 @@ void main(){
     if(ty<.5){
       hs*=mix(1.,.3,mb.r);
       col=mix(col,dot(col,vec3(.3,.6,.1))*vec3(1.55,1.3,.6),ma.r*.85);
+      col=mix(col,vec3(.52,.56,.35)*(.75+.5*fract(t0.x*7.31+t0.z*3.17)),S*.85);hs*=1.+.9*S;
       alpha*=1.-mb.b*.93;
     }else{
-      if(col.r>ma.g*(1.-mb.r)*(1.-mb.b)){gl_Position=vec4(0.,0.,2.,1.);return;}
+      if(col.r>ma.g*(1.-mb.r)*(1.-mb.b)*(1.-smoothstep(-80.,-52.,cc))){gl_Position=vec4(0.,0.,2.,1.);return;}
       if(ty<1.5){float k=floor(fract(ma.b*2.3+(col.g-.5)*.4)*6.);
         if(k>.5&&k<1.5)s*=1.45;
         col=spc(k)*(.78+.4*col.b);tint=mix(uTint,vec3(1.),.42);
@@ -1270,11 +1370,11 @@ void main(){
     xz+=vec2(.85,.5)*(gust*.07+.03)*hf*hf*hs;
     float tr=smoothstep(.55,.1,d)*step(uCam.y,2.5);
     xz+=xz/max(d,.05)*tr*.22*hf;y*=1.-.45*tr;
-    wp=vec3(xz.x+uScroll.x,y,xz.y+uScroll.y);
+    wp=vec3(xz.x+uScroll.x,y+gy,xz.y+uScroll.y);
     alpha*=smoothstep(Rf,Rf*.78,d);
     col=col*tint*mb.g+vec3(1.,.6,.25)*mb.a*.25;
     col+=vec3(1.,.55,.26)*pow(max(dot(normalize(wp-uCam),uSun),0.),6.)*hf*hf*.55*mb.g;
-    col=mix(col,canopy(ma,mb)*uTint*mb.g,smoothstep(Rf*.45,Rf,d)*.6);
+    col=mix(col,canopyC(ma,mb,S)*uTint*mb.g,smoothstep(Rf*.45,Rf,d)*.6);
   }else if(kind==4){
     float ty=floor(aux*.25+.01),lv=aux-4.*ty,sc=lv<1.5?4.:16.;
     float Lp=uField.x*sc,Rout=uField.y*sc,Rin=Rout*.2,tm=uField.z;
@@ -1282,22 +1382,29 @@ void main(){
     float d=length(xz),y=t0.y;vec2 w0=xz+uScroll;
     vec4 ma=textureLod(uMapA,w0*MAPS,0.),mb=textureLod(uMapB,w0*MAPS,0.);
     alpha*=smoothstep(Rin*.9,Rin*1.5,d)*smoothstep(Rout,Rout*.72,d);
+    float cc=coastC(w0),gy=0.,S=0.;
+    if(cc>-82.){
+      S=sandy(cc);float cl=textureLod(uMapA,w0*MAPS*7.,0.).a;
+      if(cc>-10.-5.*cl||cl<S*.58){gl_Position=vec4(0.,0.,2.,1.);return;}
+      gy=duneH(w0.x,cc)+baseH(cc);
+    }
     float hs=.72+.56*ma.a;vec3 tint=uTint;
     if(ty<.5){
       hs*=mix(1.,.3,mb.r);
       col=mix(col,dot(col,vec3(.3,.6,.1))*vec3(1.55,1.3,.6),ma.r*.85);
+      col=mix(col,vec3(.52,.56,.35)*(.75+.5*fract(t0.x*7.31+t0.z*3.17)),S*.85);hs*=1.+.7*S;
       alpha*=(1.-mb.b*.95)*(1.-mb.r*.7);
     }else{
-      if(col.r>ma.g*(1.-mb.r)*(1.-mb.b)){gl_Position=vec4(0.,0.,2.,1.);return;}
+      if(col.r>ma.g*(1.-mb.r)*(1.-mb.b)*(1.-smoothstep(-80.,-52.,cc))){gl_Position=vec4(0.,0.,2.,1.);return;}
       col=spc(floor(fract(ma.b*2.3+(col.g-.5)*.4)*6.))*(.8+.35*col.b);tint=mix(uTint,vec3(1.),.35);
     }
     y*=hs;s.y*=hs;
     xz+=vec2(.85,.5)*sin(dot(t0.xz,vec2(.31,.17))+tm*1.3)*.015*sc;
-    wp=vec3(xz.x+uScroll.x,y,xz.y+uScroll.y);mip=true;
+    wp=vec3(xz.x+uScroll.x,y+gy,xz.y+uScroll.y);mip=true;
     vec3 vd=normalize(wp-uCam);
     col=col*tint*mb.g+vec3(1.,.6,.25)*mb.a*.25;
     col+=vec3(1.,.55,.26)*pow(max(dot(vd,uSun),0.),6.)*.3*mb.g;
-    col=mix(col,canopy(ma,mb)*uTint*mb.g,smoothstep(Rout*.45,Rout,d)*.7);
+    col=mix(col,canopyC(ma,mb,S)*uTint*mb.g,smoothstep(Rout*.45,Rout,d)*.7);
     float az=dot(normalize(vd.xz+1e-5),normalize(uSun.xz))*.5+.5;
     col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2))*.9,1.-exp(-length(wp-uCam)*.0035));
   }else if(kind==1){
@@ -1353,36 +1460,81 @@ const BVS=`#version 300 es
 out vec2 vN;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2))*2.-1.;vN=p;gl_Position=vec4(p,0.,1.);}`;
 const BFS=`#version 300 es
 precision highp float;in vec2 vN;out vec4 o;
-uniform vec3 uR,uU,uF,uSun,uCam;
+uniform vec3 uR,uU,uF,uSun,uCam;uniform float uTime;
 ${MEADOW_GLSL}
 vec3 horizon(float az){return mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2));}
+vec3 sky(vec3 rd){
+  float az=dot(normalize(rd.xz+1e-6),normalize(uSun.xz))*.5+.5,h=max(rd.y,0.);
+  vec3 c=mix(horizon(az),mix(vec3(.30,.33,.55),vec3(.66,.50,.55),pow(az,3.)),smoothstep(0.,.2,h));
+  return mix(c,vec3(.07,.12,.28),smoothstep(.12,.95,h));
+}
 void main(){
   vec3 rd=normalize(uF+vN.x*uR+vN.y*uU);
   float az=dot(normalize(rd.xz+1e-6),normalize(uSun.xz))*.5+.5;
   vec3 hz=horizon(az),col;
-  float sd=max(dot(rd,uSun),0.);
-  float dist=min(uCam.y/max(-rd.y,1e-4),8000.);
-  vec2 w=uCam.xz+rd.xz*dist;
-  vec4 ma=texture(uMapA,w*MAPS),mb=texture(uMapB,w*MAPS);
+  float sd=max(dot(rd,uSun),0.),dn=max(-rd.y,1e-4);
   if(rd.y>0.){
-    float h=rd.y;
-    vec3 mid=mix(vec3(.30,.33,.55),vec3(.66,.50,.55),pow(az,3.));
-    col=mix(hz,mid,smoothstep(0.,.2,h));
-    col=mix(col,vec3(.07,.12,.28),smoothstep(.12,.95,h));
-    col+=vec3(1.,.70,.40)*(pow(sd,2000.)*6.+pow(sd,90.)*.55+pow(sd,10.)*.28);
+    col=sky(rd)+vec3(1.,.70,.40)*(pow(sd,2000.)*6.+pow(sd,90.)*.55+pow(sd,10.)*.28);
   }else{
-    vec3 g=canopy(ma,mb);
-    g=mix(g*vec3(.40,.38,.34),g,smoothstep(2.,15.,length(rd.xz)*dist));   // thatch under the blades close by
-    g=g*uTint*mb.g+vec3(1.,.6,.25)*mb.a*.25;
-    col=mix(g,hz*.9,1.-exp(-dist*.0035));
-    col+=vec3(1.,.6,.3)*pow(sd,8.)*.06;
+    bool high=uCam.y>.05;
+    float dist=high?min(uCam.y/dn,8000.):0.;
+    vec2 w=uCam.xz+rd.xz*dist;float c=coastC(w);
+    if(high&&c<-14.){                    // meadow, and the dunes seen flat from far off
+      vec4 ma=texture(uMapA,w*MAPS),mb=texture(uMapB,w*MAPS);
+      vec3 g=canopy(ma,mb);
+      g=mix(g*vec3(.40,.38,.34),g,smoothstep(2.,15.,length(rd.xz)*dist));   // thatch under the blades close by
+      g=g*uTint*mb.g+vec3(1.,.6,.25)*mb.a*.25;
+      float S=sandy(c);
+      if(S>0.){float hx=groundH(w+vec2(1.5,0.))-groundH(w-vec2(1.5,0.)),hzz=groundH(w+vec2(0.,1.5))-groundH(w-vec2(0.,1.5));
+        g=mix(g,mix(sandLit(normalize(vec3(-hx,3.,-hzz)),w),vec3(.50,.53,.33)*uTint,.3),S*.9);}
+      col=mix(g,hz*.9,1.-exp(-dist*.0035));
+      col+=vec3(1.,.6,.3)*pow(sd,8.)*.06;
+    }else{
+      float ts=min((uCam.y-SEA)/dn,8000.);vec2 ws=uCam.xz+rd.xz*ts;float cs=coastC(ws),t=uTime;
+      float shore=1.2+2.2*sin(t*.55+ws.x*.03)+1.1*sin(t*.33+ws.x*.071+1.);       // where the edge of the water is at this moment
+      // the beach under this ray, found by bisection between the level of the field and the level of the sea
+      float ta=dist,tb=ts;
+      if(cs<=shore){for(int k=0;k<9;k++){float tm=.5*(ta+tb);vec2 wm=uCam.xz+rd.xz*tm;if(uCam.y-dn*tm>baseH(coastC(wm)))ta=tm;else tb=tm;}}
+      vec2 wb=uCam.xz+rd.xz*tb;float cb=coastC(wb);
+      float sl=(baseH(cb+.5)-baseH(cb-.5));vec3 nb=normalize(vec3(0.,1.,sl));
+      vec3 sand=sandLit(nb,wb)*(.95+.1*texture(uMapA,wb*.11).a);
+      float wet=smoothstep(-5.,-1.2,cb);
+      vec3 rw=reflect(rd,nb);rw.y=abs(rw.y);
+      sand=mix(sand*mix(1.,.5,wet),sky(rw),wet*(.1+.5*pow(1.-max(dot(-rd,nb),0.),4.)));
+      if(cs>shore){                       // the sea
+        dist=ts;
+        float fade=1./(1.+dist*.012),fp=dist*dist*.0016/max(uCam.y-SEA,.5);     // fp: how much sea one pixel covers along the view; ripples finer than that are dropped
+        float f1=smoothstep(1.6,.5,.33*fp),f2=smoothstep(1.6,.5,.95*fp),f3=smoothstep(1.6,.5,2.5*fp),f4=smoothstep(1.6,.5,4.1*fp);
+        float p1=cs*.33+t*1.05+.6*sin(ws.x*.021),p2=cs*.9+ws.x*.31+t*1.7,p3=cs*2.3-ws.x*1.1+t*2.6,p4=ws.x*3.7+cs*1.9+t*3.4;
+        vec2 q1=mat2(.80,.60,-.60,.80)*ws,q2=mat2(.34,-.94,.94,.34)*ws;       // two turned copies of a fine-grained map, so no grid shows
+        vec2 nz=vec2(texture(uMapA,q1*.019+vec2(t*.011,-t*.017)).a+texture(uMapA,q2*.057-vec2(t*.02,t*.009)).a,texture(uMapA,q2*.023+vec2(-t*.013,t*.008)).a+texture(uMapA,q1*.067+vec2(t*.016,t*.021)).a)-1.;
+        float dc=.045*cos(p1)*f1+.03*cos(p2)*f2+.028*cos(p3)*f3+.02*cos(p4)*f4+nz.x*.16;
+        float dx=.012*cos(p2)*f2-.014*cos(p3)*f3+.026*cos(p4)*f4+nz.y*.16;
+        vec3 n=normalize(vec3(-dx,1.,dc));
+        float fr=.04+.82*pow(1.-max(dot(-rd,n),0.),5.);
+        vec3 rf=reflect(rd,n);rf.y=abs(rf.y)+.07;rf=normalize(rf);
+        vec3 deep=mix(vec3(.02,.06,.09),vec3(.06,.17,.17),exp(-max(cs,0.)*.05));
+        col=mix(deep,sky(rf),fr);
+        float sr=max(dot(rf,uSun),0.);
+        col+=vec3(1.,.66,.36)*(pow(sr,mix(120.,500.,fade))*7.+pow(sr,40.)*.5)*(.55+.9*nz.x+.5);
+        float na=texture(uMapA,q1*.17+vec2(0.,t*.02)).a;
+        float foam=smoothstep(.76,.99,sin(p1+nz.x*2.))*smoothstep(44.,9.,cs)*smoothstep(.25,.6,na)*f1;          // breakers
+        foam+=smoothstep(1.8,0.,cs-shore)*(.45+.55*na)+.35*smoothstep(.55,.8,texture(uMapA,q2*.31+vec2(0.,t*.05)).a)*smoothstep(13.,0.,cs);   // the lacy edge and the wash behind it
+        col=mix(col,vec3(.74,.68,.72)+vec3(.24,.10,.02)*pow(az,2.),clamp(foam,0.,1.));
+        col=mix(sand,col,.3+.7*smoothstep(0.,3.,cs-shore));        // shallow water over the sand
+        col=mix(col,hz*.9,1.-exp(-dist*.0016));
+      }else{
+        dist=tb;col=mix(sand,hz*.9,1.-exp(-dist*.0035));
+      }
+      col+=vec3(1.,.6,.3)*pow(sd,8.)*.06;
+    }
   }
   o=vec4(col,1.);
 }`;
 let PR,BP;
 try{PR=prog(VS,FSRC);BP=prog(BVS,BFS);}catch(e){const el=document.getElementById('err');el.textContent='Shader error: '+e.message;el.hidden=false;return;}
 const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','uField','uScroll','uSun','uCam','uTint','uMapA','uMapB'])U[n]=gl.getUniformLocation(PR,n);
-const BU={};for(const n of['uR','uU','uF','uSun','uCam','uTint','uMapA','uMapB'])BU[n]=gl.getUniformLocation(BP,n);
+const BU={};for(const n of['uR','uU','uF','uSun','uCam','uTint','uMapA','uMapB','uTime'])BU[n]=gl.getUniformLocation(BP,n);
 
 const TH0=Math.ceil(nStatic/512),DYN0=TH0*512;
 const DCAP=Math.ceil((MAXB*FARMAX+(NEARCAP+6)*NEARMAX+160)/512)*512,THD=DCAP/512;
@@ -1418,6 +1570,8 @@ const cam={mode:'meadow',track:true,autoZoom:true,yaw:Math.PI,pitch:.3,zoom:.8,
   fpos:[0,1.6,0],fyaw:Math.PI,fpitch:.2,fvel:[0,0,0],fspeed:12,
   pos:[0,1.55,0],fwd:[0,0,-1],up:[0,1,0],Cs:null};
 const keysDown=new Set();
+const standing=()=>cam.mode==='meadow'||cam.mode==='shore';
+const SHOREP=(()=>{const x=46,z=ZC+wig(x)+10.5;return[x,groundH(x,z)+1.6,z];})(),SUNYAW=Math.atan2(SUN[0],SUN[2]);     // a place to stand at the top of the beach
 const view=new Float32Array(16),proj=new Float32Array(16);
 let VW=1,VH=1,ASP=1,scale=1,tanX=1,tanY=1,focal=1;
 function resize(){
@@ -1455,9 +1609,9 @@ function updateCamera(dt){
   const C=S.cen;if(!cam.Cs)cam.Cs=C.slice();
   const kc=1-Math.exp(-dt/.5);for(let k=0;k<3;k++)cam.Cs[k]+=(C[k]-cam.Cs[k])*kc;
   const Cs=cam.Cs;
-  if(cam.mode==='meadow'){
+  if(standing()){
     // frame every flock, and keep the horizon in shot whenever the birds are low enough
-    const p=cam.pos=[0,1.55,0],fr=frameFlock(p,pickFlock()),bot=Math.min(fr.bot,Math.max(-.2,fr.top-.9));
+    const p=cam.pos=cam.mode==='shore'?SHOREP.slice():[0,1.55,0],fr=frameFlock(p,pickFlock()),bot=Math.min(fr.bot,Math.max(-.2,fr.top-.9));
     if(cam.track){const k=1-Math.exp(-dt/.45);cam.yaw+=wrapA(fr.yaw-cam.yaw)*k;cam.pitch+=((fr.top+bot)/2-cam.pitch)*k;}
     if(cam.autoZoom){const ty=Math.max(Math.tan(Math.min((fr.top-bot)/2,1.2)),Math.tan(Math.min(fr.hh,1.2))/ASP);
       const zt=clamp(2*Math.atan(ASP>=1?ty:ty*ASP),.16,1.15);cam.zoom+=(zt-cam.zoom)*(1-Math.exp(-dt/1.2));}
@@ -1468,7 +1622,7 @@ function updateCamera(dt){
     if(cam.oautoDist){const t=clamp(S.rad*1.9+14,32,170);cam.odist+=(t-cam.odist)*(1-Math.exp(-dt/1.5));}
     const cp=Math.cos(cam.opitch);
     const p=[Cs[0]+cam.odist*Math.sin(cam.oyaw)*cp,Cs[1]+cam.odist*Math.sin(cam.opitch),Cs[2]+cam.odist*Math.cos(cam.oyaw)*cp];
-    p[1]=Math.max(p[1],1.3);cam.pos=p;cam.fwd=nrm([Cs[0]-p[0],Cs[1]-p[1],Cs[2]-p[2]]);cam.up=[0,1,0];cam.zoom=.95;
+    p[1]=Math.max(p[1],Math.max(groundH(p[0],p[2]),SEA)+1.3);cam.pos=p;cam.fwd=nrm([Cs[0]-p[0],Cs[1]-p[1],Cs[2]-p[2]]);cam.up=[0,1,0];cam.zoom=.95;
   }else if(cam.mode==='ride'){
     const b=cam.rideBird*3,f=[H[b],H[b+1],H[b+2]],bp=[P[b],P[b+1],P[b+2]];
     let u=[UPv[b],UPv[b+1],UPv[b+2]];const fu=u[0]*f[0]+u[1]*f[1]+u[2]*f[2];u=nrm([u[0]-f[0]*fu,u[1]-f[1]*fu,u[2]-f[2]*fu]);
@@ -1489,7 +1643,7 @@ function updateCamera(dt){
     const sp=cam.fspeed*(kd_.has('Shift')?2.5:1),k=1-Math.exp(-dt/.14);
     if(ml>1e-3){mx*=sp/ml;my*=sp/ml;mz*=sp/ml;}
     cam.fvel[0]+=(mx-cam.fvel[0])*k;cam.fvel[1]+=(my-cam.fvel[1])*k;cam.fvel[2]+=(mz-cam.fvel[2])*k;
-    cam.fpos[0]=clamp(cam.fpos[0]+cam.fvel[0]*dt,-700,700);cam.fpos[1]=clamp(cam.fpos[1]+cam.fvel[1]*dt,.5,400);cam.fpos[2]=clamp(cam.fpos[2]+cam.fvel[2]*dt,-700,700);
+    cam.fpos[0]=clamp(cam.fpos[0]+cam.fvel[0]*dt,-700,700);cam.fpos[2]=clamp(cam.fpos[2]+cam.fvel[2]*dt,-700,700);cam.fpos[1]=clamp(cam.fpos[1]+cam.fvel[1]*dt,Math.max(groundH(cam.fpos[0],cam.fpos[2]),SEA)+.5,400);
     cam.pos=cam.fpos.slice();cam.fwd=f;cam.up=[0,1,0];cam.zoom=1.0;
   }
 }
@@ -1505,20 +1659,25 @@ function lookAt(){
 /* -------------------------------------------------------- bird splats */
 const LOGK=3900/Math.log(150);
 const qp=[0,0,0,0,0],mp=[0,1,2,3,4].map(()=>new Float32Array(9)),op=[0,0,0,0,0];
-const WA4=[0,0,0,0];
-function wingAngles(ph,fl,tk,A,po){
-  const s=Math.sin(ph),c=Math.cos(ph),up=c>0?c:0;
-  WA4[0]=lerp(po[0]+.22*tk,.10+A*s,fl);WA4[1]=lerp(po[1]+.42*tk,.06+.22*up,fl);
-  WA4[2]=lerp(-.03+.1*tk,.30*A*Math.sin(ph-.7),fl);WA4[3]=lerp(po[2]+.95*tk,.16+.85*po[3]*up*up,fl);
+const WA4=[0,0,0,0,0,0];
+function wingAngles(ph,fl,tk,bn,A,g){
+  const u=ph*.15915494-Math.floor(ph*.15915494),td=g.tau,psi=u<td?Math.PI*u/td:Math.PI*(1+(u-td)/(1-td));    // the downstroke takes the share tau of each beat
+  const c=Math.cos(psi),sn=Math.sin(psi),dn=sn>0?sn:0,up=sn<0?-sn:0,up2=up*up,po=g.pose;
+  // flapping: the arm beats from above the back to below the belly, swings forward on the way down, and on the way up the wrist folds
+  // to cut the span to the species' span ratio while the hand wing twists leading edge up and trails the arm
+  let th=g.th0+A*c,s1=.06-g.sw*dn+.3*g.fk*up2,th2=.3*A*Math.cos(psi-.7),s2=.16+g.fk*up2,tw=g.tw*(up-.35*dn);
+  th=lerp(po[0]+.22*tk,th,fl);s1=lerp(po[1]+.42*tk,s1,fl);th2=lerp(-.03+.1*tk,th2,fl);s2=lerp(po[2]+.95*tk,s2,fl);tw*=fl;     // gliding, and tucking in a dive
+  if(bn>.001){th=lerp(th,-.12,bn);s1=lerp(s1,1.2,bn);th2=lerp(th2,0,bn);s2=lerp(s2,2.0,bn);}                                // bounding: wings folded against the body
+  WA4[0]=th;WA4[1]=s1;WA4[2]=th2;WA4[3]=s2;WA4[4]=tw;WA4[5]=fl*(1-bn)*sn;
 }
 const mv=(m,x,y,z)=>[m[0]*x+m[3]*y+m[6]*z,m[1]*x+m[4]*y+m[7]*z,m[2]*x+m[5]*y+m[8]*z];
 function frames(p,f,u,sc,near){
   const qB=quatFromBasis(cross(u,f),u,f);qp[0]=qB;q2m(qB,mp[0]);op[0]=p;
-  const th=WA4[0],s1=WA4[1],th2=WA4[2],s2=WA4[3];
+  const th=WA4[0],s1=WA4[1],th2=WA4[2],s2=WA4[3],tw=WA4[4];
   for(const sd of[1,-1]){
-    const ii=sd>0?1:3,oo=sd>0?2:4,qi=qmul(qB,qmul(qZ(sd*th),qY(sd*s1)));
+    const ii=sd>0?1:3,oo=sd>0?2:4,qi=qmul(qB,qmul(qZ(sd*th),qmul(qY(sd*s1),qX(-.4*tw))));
     qp[ii]=qi;q2m(qi,mp[ii]);const o=mv(mp[0],sd*.018*sc,.012*sc,.022*sc);op[ii]=[p[0]+o[0],p[1]+o[1],p[2]+o[2]];
-    if(near){const qo=qmul(qi,qmul(qZ(sd*th2),qY(sd*s2)));qp[oo]=qo;q2m(qo,mp[oo]);
+    if(near){const qo=qmul(qi,qmul(qZ(sd*th2),qmul(qY(sd*s2),qX(-.6*tw))));qp[oo]=qo;q2m(qo,mp[oo]);
       const w=mv(mp[ii],sd*.082*sc,0,0);op[oo]=[op[ii][0]+w[0],op[ii][1]+w[1],op[ii][2]+w[2]];}
   }
 }
@@ -1537,7 +1696,7 @@ function emit(tpl,pal,specK,sc){
 }
 const PX=new Float32Array(MAXB);
 function genBirds(){
-  nd=0;const n=S.n,tpl=sp.tpl,pals=sp.pals,amp=sp.amp,pose=sp.pose;
+  nd=0;const n=S.n,tpl=sp.tpl,pals=sp.pals,amp=sp.amp,gait=sp.gait;
   const m0=view[0],m4=view[4],m8=view[8],m12=view[12],m1=view[1],m5=view[5],m9=view[9],m13=view[13],m2=view[2],m6=view[6],m10=view[10],m14=view[14];
   let near=0;
   for(let i=0;i<n;i++){const i3=i*3,x=P[i3],y=P[i3+1],z=P[i3+2],dz=-(m2*x+m6*y+m10*z+m14);
@@ -1550,11 +1709,12 @@ function genBirds(){
     if(PX[i]<0)continue;const i3=i*3,isNear=PX[i]>thr||(cam.mode==='ride'&&i===cam.rideBird);
     const f=[H[i3],H[i3+1],H[i3+2]];let u=[UPv[i3],UPv[i3+1],UPv[i3+2]];
     const fu=u[0]*f[0]+u[1]*f[1]+u[2]*f[2];u=nrm([u[0]-f[0]*fu,u[1]-f[1]*fu,u[2]-f[2]*fu]);
-    wingAngles(PH[i],FLAP[i],TK[i],amp*(.75+.25*DEM[i]),pose);
-    frames([P[i3],P[i3+1],P[i3+2]],f,u,SC[i],isNear);
+    wingAngles(PH[i],FLAP[i],TK[i],BND[i],amp*(.75+.25*DEM[i]),gait);
+    const hb=-HEAVE*WA4[5];          // the body is driven up through the downstroke and falls back through the upstroke, so it sits lowest at mid-downstroke
+    frames([P[i3]+u[0]*hb,P[i3+1]+u[1]*hb+BOF[i],P[i3+2]+u[2]*hb],f,u,SC[i],isNear);
     const tp=sp.shapes?sp.tpls[PALI[i]]:tpl;emit(isNear?tp.near:tp.far,pals[PALI[i]],1,SC[i]);
   }
-  for(const F of FALS){wingAngles(F.ph,F.flap,F.tk,.75,FPOSE);frames(F.p.slice(),F.f,F.u,2.4,true);emit(FALCT,FALC,.15,2.4);}
+  for(const F of FALS){wingAngles(F.ph,F.flap,F.tk,0,.75,FGAIT);frames(F.p.slice(),F.f,F.u,2.4,true);emit(FALCT,FALC,.15,2.4);}
   if(sp.model==='soar'){      // thistledown carried up in the thermals, so the rising air can be seen
     const now=S.time;
     for(let k=0;k<3;k++){const t=TH[k],env=thermalEnv(t,now);if(env<.05)continue;
@@ -1568,23 +1728,29 @@ function genBirds(){
 
 /* ---------------------------------------------------------------- sort
    Each meadow ring is stored cell by cell, so whole cells outside the ring or the view are skipped unread. */
-const RINGS=[{L:L,R:RF,Rin:0,st:cell0,ym:.3,mg:.9},{L:L*4,R:RF*4,Rin:RF*4*.18,st:cell1,ym:.3,mg:1},{L:L*16,R:RF*16,Rin:RF*16*.18,st:cell2,ym:.5,mg:2.5}];
+const RINGS=[{L:L,R:RF,Rin:0,st:cell0,ym:.3,mg:.9},{L:L*4,R:RF*4,Rin:RF*4*.18,st:cell1,ym:.3,mg:1},{L:L*16,R:RF*16,Rin:RF*16*.18,st:cell2,ym:.5,mg:2.5},
+  {L:L,R:RF,Rin:0,st:cellS[0],ym:0,mg:1.4,sand:1},{L:L*4,R:RF*4,Rin:RF*4*.18,st:cellS[1],ym:0,mg:4,sand:1},{L:L*16,R:RF*16,Rin:RF*16*.18,st:cellS[2],ym:0,mg:12,sand:1}];
 function buildOrder(){
   const m0=view[0],m4=view[4],m8=view[8],m12=view[12],m1=view[1],m5=view[5],m9=view[9],m13=view[13],m2=view[2],m6=view[6],m10=view[10],m14=view[14];
   const sx=cam.pos[0],sz=cam.pos[2],secX=Math.sqrt(1+tanX*tanX),secY=Math.sqrt(1+tanY*tanY);let n=0;
-  for(let l=0;l<3;l++){
-    const rg=RINGS[l],Lp=rg.L,iL=1/Lp,cs=Lp/12,cr=cs*.7072,br=cr+rg.mg+.6,R=rg.R,R2=R*R,Rin2=rg.Rin*rg.Rin,st=rg.st,ym=rg.ym,mg=rg.mg,lod=l===0;
+  for(let l=0;l<6;l++){
+    const rg=RINGS[l],Lp=rg.L,iL=1/Lp,cs=Lp/12,cr=cs*.7072,R=rg.R,R2=R*R,Rin2=rg.Rin*rg.Rin,st=rg.st,lod=l===0,sandR=!!rg.sand;
     for(let c=0;c<144;c++){
       const ccx=-Lp/2+((c%12)+.5)*cs,ccz=-Lp/2+(((c/12)|0)+.5)*cs;
       const ox=-Lp*Math.floor((ccx-sx)*iL+.5),oz=-Lp*Math.floor((ccz-sz)*iL+.5),rx=ccx-sx+ox,rz=ccz-sz+oz,dc=Math.hypot(rx,rz);
       if(dc>R+cr||dc<rg.Rin-cr)continue;
-      const wx=rx+sx,wz=rz+sz,cvz=m2*wx+m6*ym+m10*wz+m14;if(cvz>br)continue;
+      const wx=rx+sx,wz=rz+sz,cc=coastC(wx,wz);let ym=rg.ym,mg=rg.mg,br=cr+mg+.6,dune=false,h00=0,h10=0,h01=0,h11=0;const cx0=wx-cs*.5,cz0=wz-cs*.5;
+      if(cc-cr*1.5>(sandR?0:-4))continue;                              // beach or open water: nothing grows there
+      if(cc+cr*1.5>-84){dune=true;h00=groundH(cx0,cz0);h10=groundH(cx0+cs,cz0);h01=groundH(cx0,cz0+cs);h11=groundH(cx0+cs,cz0+cs);ym+=(h00+h10+h01+h11)*.25;br+=2.5;mg+=1.5;}
+      else if(sandR)continue;
+      const cvz=m2*wx+m6*ym+m10*wz+m14;if(cvz>br)continue;
       if(cvz<-br){if(Math.abs(m0*wx+m4*ym+m8*wz+m12)>-cvz*tanX+br*secX)continue;if(Math.abs(m1*wx+m5*ym+m9*wz+m13)>-cvz*tanY+br*secY)continue;}
       for(let i=st[c],e=st[c+1];i<e;i++){
         const o=i<<4,x=D[o]+ox,z=D[o+2]+oz,dx=x-sx,dz=z-sz,d2=dx*dx+dz*dz;
         if(d2>R2||d2<Rin2)continue;
         if(lod&&fLodQ[i]*d2>D0SQ&&fLod[i]>FMIN)continue;
-        const y=D[o+1],d=-(m2*x+m6*y+m10*z+m14);if(d<.25)continue;
+        let y=D[o+1];if(dune){const u=(x-cx0)/cs,v=(z-cz0)/cs;y+=(h00*(1-u)+h10*u)*(1-v)+(h01*(1-u)+h11*u)*v;}
+        const d=-(m2*x+m6*y+m10*z+m14);if(d<.25)continue;
         const lx=d*tanX+mg,vx=m0*x+m4*y+m8*z+m12;if(vx>lx||vx<-lx)continue;
         const ly=d*tanY+mg,vy=m1*x+m5*y+m9*z+m13;if(vy>ly||vy<-ly)continue;
         tmpIdx[n]=i;keys[n++]=d<40?d*1500:61600+Math.min(Math.log(d*.025)*LOGK,3900);
@@ -1646,7 +1812,7 @@ function render(){
   gl.viewport(0,0,VW,VH);
   gl.disable(gl.BLEND);gl.useProgram(BP);gl.bindVertexArray(bvao);
   gl.uniform3f(BU.uR,r[0]*tanX,r[1]*tanX,r[2]*tanX);gl.uniform3f(BU.uU,u[0]*tanY,u[1]*tanY,u[2]*tanY);gl.uniform3f(BU.uF,f[0],f[1],f[2]);
-  gl.uniform3fv(BU.uSun,SUN);gl.uniform3fv(BU.uCam,cam.pos);gl.uniform3fv(BU.uTint,TINT);gl.uniform1i(BU.uMapA,1);gl.uniform1i(BU.uMapB,2);
+  gl.uniform3fv(BU.uSun,SUN);gl.uniform3fv(BU.uCam,cam.pos);gl.uniform3fv(BU.uTint,TINT);gl.uniform1i(BU.uMapA,1);gl.uniform1i(BU.uMapB,2);gl.uniform1f(BU.uTime,S.time);
   gl.drawArrays(gl.TRIANGLES,0,3);
   gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
   gl.useProgram(PR);gl.bindVertexArray(vao);
@@ -1663,9 +1829,9 @@ function render(){
 
 /* --------------------------------------------------------------- input */
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
-const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',orbit:'Drag to orbit · pinch to zoom',
+const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
     ride:'Drag to swing around your bird · pinch to move closer',fly:'Drag to look · pinch to fly forward or back'}
-  :{meadow:'Drag to look · scroll to zoom · press W A S D to take off and fly',orbit:'Drag to orbit · scroll to zoom',
+  :{meadow:'Drag to look · scroll to zoom · press W A S D to take off and fly',shore:'Drag to look · scroll to zoom · press Shore again to follow the birds · W A S D to fly',orbit:'Drag to orbit · scroll to zoom',
     ride:'Drag to swing around your bird · scroll to move closer',fly:'W A S D to fly · Space up · C down · Shift faster · drag to look · scroll sets speed'};
 function showHint(){hint.textContent=HINTS[cam.mode];hint.classList.remove('off');clearTimeout(hintTimer);hintTimer=setTimeout(()=>hint.classList.add('off'),cam.mode==='fly'?12000:7000);}
 function touched(){if(cam.mode!=='fly')hint.classList.add('off');}
@@ -1674,7 +1840,7 @@ canvas.addEventListener('pointermove',e=>{
   const p=pts.get(e.pointerId);if(!p)return;const dx=e.clientX-p[0],dy=e.clientY-p[1];p[0]=e.clientX;p[1]=e.clientY;
   if(pts.size===1){
     const k=cam.zoom/Math.min(canvas.clientWidth,canvas.clientHeight);
-    if(cam.mode==='meadow'){cam.track=false;cam.yaw+=dx*k;cam.pitch=clamp(cam.pitch+dy*k,-.25,1.5);}
+    if(standing()){cam.track=false;cam.yaw+=dx*k;cam.pitch=clamp(cam.pitch+dy*k,-.25,1.5);}
     else if(cam.mode==='orbit'){cam.oauto=false;cam.oyaw-=dx*.0075;cam.opitch=clamp(cam.opitch+dy*.006,-.4,1.4);}
     else if(cam.mode==='ride')cam.rideYaw-=dx*.008;
     else{const sgn=e.pointerType==='mouse'?-1:1;     // mouse turns the head, a finger drags the scene
@@ -1682,19 +1848,21 @@ canvas.addEventListener('pointermove',e=>{
   }else if(pts.size===2){const[a,b]=[...pts.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch)zoomBy(pinch/d,true);pinch=d;}
 });
 function zoomBy(k,isPinch){
-  if(cam.mode==='meadow'){cam.autoZoom=false;cam.zoom=clamp(cam.zoom*k,.06,1.5);}
+  if(standing()){cam.autoZoom=false;cam.zoom=clamp(cam.zoom*k,.06,1.5);}
   else if(cam.mode==='orbit'){cam.oautoDist=false;cam.odist=clamp(cam.odist*k,8,260);}
   else if(cam.mode==='ride')cam.rideDist=clamp(cam.rideDist*k,.8,45);
-  else if(isPinch){const d=-Math.log(k)*30,f=cam.fwd;cam.fpos[0]+=f[0]*d;cam.fpos[1]=Math.max(.5,cam.fpos[1]+f[1]*d);cam.fpos[2]+=f[2]*d;}
+  else if(isPinch){const d=-Math.log(k)*30,f=cam.fwd;cam.fpos[0]+=f[0]*d;cam.fpos[2]+=f[2]*d;cam.fpos[1]=Math.max(Math.max(groundH(cam.fpos[0],cam.fpos[2]),SEA)+.5,cam.fpos[1]+f[1]*d);}
   else cam.fspeed=clamp(cam.fspeed/k,3,60);
 }
 const up=e=>{pts.delete(e.pointerId);pinch=0;};
 canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
 canvas.addEventListener('wheel',e=>{e.preventDefault();zoomBy(Math.exp(e.deltaY*.0012),false);touched();},{passive:false});
-const MODES=['meadow','orbit','ride','fly'];
-const VB={meadow:document.getElementById('vMeadow'),orbit:document.getElementById('vOrbit'),ride:document.getElementById('vRide'),fly:document.getElementById('vFly')};
-function setMode(m){
+const MODES=['meadow','orbit','ride','fly','shore'];
+const VB={meadow:document.getElementById('vMeadow'),orbit:document.getElementById('vOrbit'),ride:document.getElementById('vRide'),fly:document.getElementById('vFly'),shore:document.getElementById('vShore')};
+function setMode(m,follow){
   if(m==='meadow'){cam.track=true;cam.autoZoom=true;}
+  if(m==='shore'){            // first the view out to sea; press again to follow the birds from the beach
+    if(follow||cam.mode==='shore'){cam.track=true;cam.autoZoom=true;}else{cam.track=false;cam.autoZoom=false;cam.yaw=SUNYAW-.3;cam.pitch=.05;cam.zoom=1.0;}}
   if(m==='orbit'&&cam.mode==='orbit'){cam.oautoDist=true;cam.oauto=true;}
   if(m==='ride'){let best=0,bc=9;for(let i=0;i<S.n;i++)if(CEN[i]<bc){bc=CEN[i];best=i;}cam.rideBird=best;cam.rpos=null;cam.rideYaw=0;}
   if(m==='fly'&&cam.mode!=='fly'){cam.fpos=cam.pos.slice();cam.fyaw=Math.atan2(cam.fwd[0],cam.fwd[2]);cam.fpitch=Math.asin(clamp(cam.fwd[1],-1,1));cam.fvel=[0,0,0];}
@@ -1714,7 +1882,8 @@ cnt.onchange=()=>cnt.blur();
 const selSp=document.getElementById('species');
 function setSpecies(key){
   sp=SPECIES[key];K=sp.K||7;V0C=sp.v0;VMIN=V0C*.5;VMAX=V0C*(sp.model==='vee'?1.4:2);RH=sp.rh||.2;SEPW=sp.sepw||.45;WS=sp.ws||7;WA=sp.wa||2.7;WC=sp.wc||2.2;NOISE=sp.noise??1.9;WR=sp.wr||4;SOAR=Object.assign({},SOAR0,sp.soar);
-  WBF=sp.wbf;TREACT=sp.treact||.07;SPACE=sp.space||1;HOPM=2.3*SPACE;RSX=sp.roost[0];RSZ=sp.roost[1];R0=sp.roost[2];SIZE=sp.size;PAIRS=!!sp.pairs;HIER=!!sp.hier;FLAPMODE=sp.flap;
+  WBF=sp.wbf;HEAVE=9.81/Math.pow(6.2832*WBF,2);      // how far the body rides up and down against the wings, in metres
+  TREACT=sp.treact||.07;SPACE=sp.space||1;HOPM=2.3*SPACE;RSX=sp.roost[0];RSZ=sp.roost[1];R0=sp.roost[2];SIZE=sp.size;PAIRS=!!sp.pairs;HIER=!!sp.hier;FLAPMODE=sp.flap;BOUNDS=sp.gait.style==='bound';
   FALS.length=0;NC=0;S.flocks=[];S.swaps=0;S.inForm=0;S.climb=0;lastCluster=-9;clusterNow=false;S.nextTurn=S.time+6;
   const n=coarse?sp.n[1]:sp.n[0];cnt.min=sp.min;cnt.max=sp.max;cnt.step=sp.step;cnt.value=n;cntOut.textContent=n;
   LAB.fill(-1);spawn(n);
@@ -1722,6 +1891,7 @@ function setSpecies(key){
   document.getElementById('tagline').textContent=sp.tag;selSp.value=key;
   if(sp.model==='flock')bSplit.removeAttribute('aria-disabled');else bSplit.setAttribute('aria-disabled','true');
   syncFalconUI();advance(1.5);
+  if(sp.shore&&cam.mode==='meadow')setMode('shore',true);else if(!sp.shore&&cam.mode==='shore'&&cam.track)setMode('meadow');     // shore birds are watched from the beach
 }
 selSp.onchange=()=>{setSpecies(selSp.value);selSp.blur();};
 const MOVE=new Set(['KeyW','KeyA','KeyS','KeyD','KeyC','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
@@ -1732,7 +1902,7 @@ addEventListener('keydown',e=>{
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
   if(e.repeat)return;
   if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();
-  else if(c>='Digit1'&&c<='Digit4')setMode(MODES[+c.slice(5)-1]);
+  else if(c>='Digit1'&&c<='Digit5')setMode(MODES[+c.slice(5)-1]);
 });
 addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
 addEventListener('blur',()=>keysDown.clear());
@@ -1740,7 +1910,7 @@ addEventListener('blur',()=>keysDown.clear());
 resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__sim={S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,getP:()=>P,getH:()=>H,getV:()=>V,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
+window.__sim={S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
