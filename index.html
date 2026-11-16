@@ -675,21 +675,54 @@ function poplar(x,z,Ht){
   }
 }
 function willow(x,z,Ht){
-  const top=[x+.2,Ht*.32,z-.1];limb([x,-.1,z],top,Ht*.055,Ht*.042);
-  for(let k=0;k<8;k++){
-    const a=k/8*6.2832+rnd()*.5,R=Ht*(.36+.12*rnd()),end=[x+Math.cos(a)*R,Ht*(.72+.2*rnd()),z+Math.sin(a)*R];
-    const mid=[(top[0]+end[0])/2,Math.max(top[1],end[1])+Ht*.14,(top[2]+end[2])/2];let prev=top;
-    for(let s=1;s<=5;s++){
-      const u=s/5,w0=(1-u)*(1-u),w1=2*u*(1-u),w2=u*u,p=[w0*top[0]+w1*mid[0]+w2*end[0],w0*top[1]+w1*mid[1]+w2*end[1],w0*top[2]+w1*mid[2]+w2*end[2]];
-      limb(prev,p,Ht*.03*(1.1-u),Ht*.03*(.9-u*.8)+.012);prev=p;
-      if(s<2)continue;
-      leafBlob(p,.9,Math.round(8*LEAFK),PAL.willow,.9);
-      for(let h=0;h<Math.round(9*LEAFK)+1;h++){                    // hanging curtains of thin withies
-        let sx=p[0]+(rnd()-.5)*1.7,sz=p[2]+(rnd()-.5)*1.7,y=p[1]-.1;const bot=.6+rnd()*1.6,ox=(sx-x)*.012,oz=(sz-z)*.012;
-        while(y>bot){const c=mix3(PAL.willow[0],PAL.willow[3],rnd()),j=.75+.5*rnd();
-          add(sx+(rnd()-.5)*.08,y-.25,sz+(rnd()-.5)*.08,3,.034,.3,.012,.82,qYa(rnd()*3.14),c[0]*j,c[1]*j,c[2]*j,.25+.3*rnd());y-=.44;sx+=ox;sz+=oz;}
+  /* A weeping willow: a short bole forks into a few great limbs that climb and arch into a dome, and from the dome hang
+     curtains of long withies. The withies come in clumps with gaps between them, arch out before they fall, flare a
+     little as they drop, thin to wisps at the tip, and hang longest at the outer edge. Their leaves sway (aux 8-12). */
+  const PW=[[.13,.23,.08],[.23,.35,.11],[.34,.45,.15],[.46,.54,.22]],SILV=[.40,.47,.39];
+  const fork=[x+.25,Ht*.26,z-.12];limb([x,-.1,z],fork,Ht*.062,Ht*.05);
+  const C=[x+.35,Ht*.6,z-.2],RH=Ht*.56,RV=Ht*.36;
+  const ends=[];
+  for(let k=0;k<5;k++){
+    const a=k/5*6.2832+rnd()*.7,r=RH*(.5+.18*rnd());
+    const mid=[fork[0]+Math.cos(a)*r*.42,Ht*(.52+.08*rnd()),fork[2]+Math.sin(a)*r*.42];
+    const end=[fork[0]+Math.cos(a)*r,Ht*(.82+.1*rnd()),fork[2]+Math.sin(a)*r];
+    limb(fork,mid,Ht*.034,Ht*.024);limb(mid,end,Ht*.024,Ht*.009+.01);ends.push(mid,end);
+    for(let j=0;j<4;j++){const b=mix3(mid,end,.25+.65*rnd()),aa=a+(rnd()-.5)*1.7,rr=RH*(.8+.2*rnd()),el=.15+.9*rnd();
+      limb(b,[C[0]+Math.cos(aa)*rr*Math.cos(el)*.92,C[1]+RV*Math.sin(el)*.92,C[2]+Math.sin(aa)*rr*Math.cos(el)*.92],Ht*.007+.012,.015);}
+  }
+  const dome=(a,el,k)=>[C[0]+Math.cos(a)*RH*Math.cos(el)*k,C[1]+RV*Math.sin(el)*k,C[2]+Math.sin(a)*RH*Math.cos(el)*k];
+  for(let k=0;k<Math.round(60*LEAFK);k++){const el=.25+1.1*rnd();leafBlob(dome(rnd()*6.2832,el,.84-.1*el),.7,Math.round(6*LEAFK),PW,.8);}   // the crown, kept inside the dome so its top stays smooth
+  const leaf=(p,t,sz,col,h)=>{
+    const ph=rnd()*6.2832,pr=nrm(cross(t,[Math.cos(ph),0,Math.sin(ph)])),tl=(rnd()-.5)*1.1;
+    const ld=nrm([t[0]*Math.cos(tl)+pr[0]*Math.sin(tl),t[1]*Math.cos(tl)+pr[1]*Math.sin(tl),t[2]*Math.cos(tl)+pr[2]*Math.sin(tl)]);
+    const nv=nrm(cross(ld,pr)),j=.78+.44*rnd();
+    add(p[0]+(rnd()-.5)*.09,p[1]+(rnd()-.5)*.06,p[2]+(rnd()-.5)*.09,3,sz,sz*(.26+.1*rnd()),.012,.9,quatFromBasis(ld,cross(nv,ld),nv),col[0]*j,col[1]*j,col[2]*j,8+4*Math.min(.99,h));
+  };
+  const strand=(st,out,bottom,shade)=>{
+    let p=st.slice(),d=nrm([out[0],.12+.25*rnd(),out[2]]),arc=0;const drop=Math.max(.5,st[1]-bottom),hue=rnd(),br=.72+.4*rnd();
+    const g=.3+.04*rnd(),fl=.012+.02*rnd(),dr=[.012,0,-.006];
+    while(p[1]>bottom&&arc<14){
+      d=nrm([d[0]+out[0]*fl+dr[0],d[1]-g,d[2]+out[2]*fl+dr[2]]);
+      p=[p[0]+d[0]*.2,p[1]+d[1]*.2,p[2]+d[2]*.2];arc+=.2;
+      const u=clamp((st[1]-p[1])/drop,0,1),n=rnd()<1.3-.8*u?2:1;
+      for(let m=0;m<n;m++){
+        const c=rnd()<.12?SILV:mix3(mix3(PW[0],PW[2],hue),PW[3],u*u*.6+.2*rnd());
+        leaf(p,d,(.19-.07*u)*(.8+.4*rnd()),[c[0]*shade*br,c[1]*shade*br,c[2]*shade*br],arc/5);
       }
+      if(u>.75&&rnd()<.35)break;                                      // ragged ends: some withies stop short
     }
+  };
+  for(let k=0;k<Math.round(46*LEAFK);k++){                          // clumps of withies round the outside of the dome
+    const a=rnd()*6.2832,el=.85*Math.pow(rnd(),1.4)-.05,p0=dome(a,el,1),reach=.5+.5*rnd(),m=4+Math.floor(rnd()*7);
+    for(let s=0;s<m;s++){
+      const st=[p0[0]+(rnd()-.5)*1.1,p0[1]+(rnd()-.5)*.5,p0[2]+(rnd()-.5)*1.1],out=nrm([st[0]-C[0],0,st[2]-C[2]]);
+      const edge=1-el/.85,bottom=Math.max(.35,lerp(st[1]-1.4,.35,reach*(.55+.45*edge)*(.8+.3*rnd())));
+      strand(st,out,bottom,1);
+    }
+  }
+  for(let k=0;k<Math.round(26*LEAFK);k++){                          // shorter, shaded withies inside, so the curtain has depth
+    const e=ends[Math.floor(rnd()*ends.length)],st=[e[0]+(rnd()-.5)*1.5,e[1]+(rnd()-.5)*.6,e[2]+(rnd()-.5)*1.5],out=nrm([st[0]-C[0],0,st[2]-C[2]]);
+    strand(st,out,Math.max(1.2,st[1]-2-3*rnd()),.55);
   }
 }
 function bush(x,z,r,berries){
@@ -1412,8 +1445,11 @@ void main(){
     wp=t0.xyz;
   }else if(kind==3){
     wp=t0.xyz;mip=true;
+    float hang=0.;if(aux>7.9){hang=(aux-8.)*.25;aux=.45;}       // willow withies: sway grows down the strand, and whole clumps move together
     float vol=step(3.5,aux),tr=aux-4.*vol;
     wp.x+=sin(uField.z*1.6+wp.z*.9+wp.y*1.3)*.035*tr;
+    if(hang>0.){float ph=dot(wp.xz,vec2(.35,.27)),tm=uField.z;
+      wp.xz+=(vec2(sin(tm*1.1+ph),.6*sin(tm*.83+ph*1.3))*.24+vec2(sin(tm*2.7+wp.y*1.9+ph*3.),cos(tm*2.3+wp.y*1.5))*.035)*hang*hang;}
     vec3 v=normalize(uCam-wp),n=R[2];if(dot(n,v)<0.)n=-n;
     float lam=mix(max(dot(n,uSun),0.),.3,vol);
     vec3 amb=vec3(.20,.21,.31)*(.7+.3*n.y)+vec3(.14,.09,.05)*max(-n.y,0.);
@@ -1448,6 +1484,11 @@ void main(){
   if(mip)alpha*=kind==2?pow(d0/(a*c-b*b),.32):sqrt(d0/(a*c-b*b));
   if(alpha<.004){gl_Position=vec4(0.,0.,2.,1.);return;}
   float mid=.5*(a+c),rad=length(vec2(.5*(a-c),b)),l1=mid+rad,l2=max(mid-rad,.1);
+  // A splat right by the eye, or one whose centre is far off screen, projects to a huge, badly skewed ellipse (its shape is
+  // taken at the clamped edge of the view), which showed as a thin line or a pale oval drawn across the picture.
+  if((abs(cam.x*iz)>uLim.x||abs(cam.y*iz)>uLim.y)&&sqrt(2.*l1)>.25*uViewport.y){gl_Position=vec4(0.,0.,2.,1.);return;}
+  alpha*=smoothstep(.12,.45,-cam.z);
+  if(alpha<.004){gl_Position=vec4(0.,0.,2.,1.);return;}
   vec2 dv=abs(b)<1e-6?(a>=c?vec2(1.,0.):vec2(0.,1.)):normalize(vec2(b,l1-a));
   vec2 mj=min(sqrt(2.*l1),1500.)*dv,mn=min(sqrt(2.*l2),1500.)*vec2(dv.y,-dv.x);
   vec4 clip=uProj*cam;
@@ -1633,6 +1674,8 @@ function updateCamera(dt){
     if(!cam.rpos){cam.rpos=tp;cam.rlook=tl;}
     const k1=1-Math.exp(-dt/.16),k2=1-Math.exp(-dt/.1);
     for(let k=0;k<3;k++){cam.rpos[k]+=(tp[k]-cam.rpos[k])*k1;cam.rlook[k]+=(tl[k]-cam.rlook[k])*k2;}
+    {const dx=cam.rpos[0]-bp[0],dy=cam.rpos[1]-bp[1],dz=cam.rpos[2]-bp[2],dd=Math.hypot(dx,dy,dz),mn=.75*cam.rideDist;   // the camera lags, so in a hard turn it would overrun the bird
+     if(dd<mn){const k=dd>1e-4?mn/dd:0;if(k){cam.rpos[0]=bp[0]+dx*k;cam.rpos[1]=bp[1]+dy*k;cam.rpos[2]=bp[2]+dz*k;}else cam.rpos=tp.slice();}}
     cam.pos=cam.rpos.slice();cam.fwd=nrm([cam.rlook[0]-cam.pos[0],cam.rlook[1]-cam.pos[1],cam.rlook[2]-cam.pos[2]]);
     cam.up=nrm([u[0]*.35,.65+u[1]*.35,u[2]*.35]);cam.zoom=1.05;
   }else{
