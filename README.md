@@ -15,7 +15,7 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Meadow** (`1`) | Stand in the grass. The view follows the largest flock and keeps the horizon in shot while the birds are low. Drag to look, scroll or pinch to zoom, tap Meadow again to re-track. |
 | **Shore** (`5`) | Stand at the top of the beach, looking out to sea. Press again to follow the birds from there. Choosing dunlin or *Pteranodon* in Meadow view moves you here, since they fly over the shore. |
 | **Orbit** (`2`) | Circle all the flocks from below, against the sky. |
-| **Ride** (`3`) | Fly behind one bird inside the flock. |
+| **Ride** (`3`) | Fly behind one bird inside the flock. Click or tap another bird to follow that one. A read-out shows what the bird is doing and what its model is telling it: for flocking birds the pull of separation, alignment and cohesion from its neighbours, its place in the flock and any turn it is riding; for geese its role, arm and distance off station; for soarers the rising air, climb rate and thermal. Click the read-out to fold it, or press `H` to hide it. |
 | **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any movement key in another view takes off from where you are. On touch: drag to look, pinch to move. |
 | **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, storks or *Pteranodon*. |
 | **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, storks or *Pteranodon*. |
