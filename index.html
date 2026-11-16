@@ -22,14 +22,14 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:#2a2638;overflow:hidden;color:var(--ink);font-family:var(--display);
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:none}
 canvas:active{cursor:grabbing}
-#tag{position:fixed;left:16px;top:14px;display:flex;flex-direction:column;gap:2px;pointer-events:none;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+#tag{position:fixed;left:16px;top:14px;max-width:calc(100% - 32px);display:flex;flex-direction:column;gap:2px;pointer-events:none;text-shadow:0 1px 6px rgba(0,0,0,.5)}
 #tag b{font-weight:600;font-size:21px;letter-spacing:.09em;text-transform:uppercase}
 #tag i{font-style:normal;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .stat{font-family:var(--mono);font-size:11px;color:var(--ink-dim);font-variant-numeric:tabular-nums}
 #hint{position:fixed;left:16px;right:16px;bottom:190px;text-align:center;font-size:15px;letter-spacing:.06em;color:var(--ink-dim);
-  pointer-events:none;transition:opacity .6s;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  pointer-events:none;transition:opacity .6s;text-shadow:0 1px 6px rgba(0,0,0,.6);text-wrap:balance}
 #hint.off{opacity:0}
 #dock{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;
   padding:12px 14px;border-radius:18px;background:var(--glass);border:1px solid var(--edge);
@@ -37,13 +37,15 @@ canvas:active{cursor:grabbing}
   width:max-content;max-width:calc(100% - 32px)}
 .row{display:flex;gap:8px;align-items:center;justify-content:center}
 button{font:600 17px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);
-  height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--edge);background:rgba(247,239,230,.07);cursor:pointer}
+  height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--edge);background:rgba(247,239,230,.07);cursor:pointer;white-space:nowrap}
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .seg{display:flex;border:1px solid var(--edge);border-radius:12px;overflow:hidden}
 .seg button{border:0;border-radius:0;background:transparent;color:var(--ink-dim)}
 .seg button[aria-pressed="true"],#bSlow[aria-pressed="true"]{background:var(--accent);color:#2b1d0c}
+#bSplit:active{background:var(--accent);color:#2b1d0c}
 #bFalcon{color:var(--hot);border-color:rgba(255,106,74,.5)}
-#bFalcon:active,#bFalcon[aria-disabled="true"]{background:var(--hot);color:#2a0d06}
+#bFalcon:active,#bFalcon[data-on="1"]{background:var(--hot);color:#2a0d06}
+#bFalcon[aria-disabled="true"]{opacity:.6}
 .sl{gap:12px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
 .sl span{white-space:nowrap}
 .sl output{font-family:var(--mono);font-size:12px;min-width:4ch;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
@@ -54,19 +56,21 @@ input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:24px}
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhouse</b><i>Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
-<div id="hint">Drag to look · pinch to zoom · tap Meadow to re-track the flock</div>
+<div id="hint"></div>
 <div id="dock">
   <div class="row">
     <div class="seg" role="group" aria-label="Camera">
       <button id="vMeadow" type="button" aria-pressed="true">Meadow</button>
       <button id="vOrbit" type="button" aria-pressed="false">Orbit</button>
       <button id="vRide" type="button" aria-pressed="false">Ride</button>
+      <button id="vFly" type="button" aria-pressed="false">Fly</button>
     </div>
   </div>
   <div class="row">
     <button id="bFalcon" type="button">Falcon</button>
+    <button id="bSplit" type="button">Split</button>
     <button id="bSlow" type="button" aria-pressed="false">Slow-mo</button>
   </div>
   <label class="row sl" for="count"><span>Starlings</span>
@@ -90,6 +94,8 @@ const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 const mix3=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 function nrm(v){const l=Math.hypot(v[0],v[1],v[2])||1;return[v[0]/l,v[1]/l,v[2]/l];}
+const hash=n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+const num=(a,b)=>a-b;
 function quatFromBasis(x,y,z){
   const m00=x[0],m10=x[1],m20=x[2],m01=y[0],m11=y[1],m21=y[2],m02=z[0],m12=z[1],m22=z[2];
   const tr=m00+m11+m22;let s;
@@ -111,14 +117,16 @@ const horizonJS=az=>mix3([.50,.42,.56],[1.0,.56,.28],Math.pow(az,2.2));
 const azOf=(x,z)=>{const l=Math.hypot(x,z)||1;return(x/l*SUNH[0]+z/l*SUNH[2])*.5+.5;};
 const GROUND=[.13,.16,.08],TINT=[.62,.56,.46];
 
-/* ------------------------------------------------------ static splats */
+/* ------------------------------------------------------ static splats
+   kind 0 meadow (tiles around the camera) · 1 unlit world · 2 birds · 3 lit world surfaces */
 const coarse=matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHeight)<620;
 const L=36,RF=17,D0SQ=36,FMIN=0.12;
 const DENS=coarse?100:140;
 const NGX=Math.round(L/0.7),nGround=NGX*NGX,nTuft=Math.round(DENS*L*L);
-const CAP=Math.ceil((nGround+2*nTuft+4000)/512)*512;
+const CAP=Math.ceil((nGround+2*nTuft+120000)/512)*512;
 const D=new Float32Array(CAP*16);let N=0;
 function add(px,py,pz,kind,sx,sy,sz,op,q,r,g,b,aux){
+  if(N>=CAP)return N;
   const o=N*16;D[o]=px;D[o+1]=py;D[o+2]=pz;D[o+3]=kind;D[o+4]=sx;D[o+5]=sy;D[o+6]=sz;D[o+7]=op;
   D[o+8]=q[0];D[o+9]=q[1];D[o+10]=q[2];D[o+11]=q[3];D[o+12]=r;D[o+13]=g;D[o+14]=b;D[o+15]=aux;return N++;
 }
@@ -161,6 +169,28 @@ for(let i=0;i<nTuft;i++){
   const lq=Math.pow(lod,4/3);for(let k=first;k<N;k++){fLod[k]=lod;fLodQ[k]=lq;}
 }
 const nField=N;
+
+/* ---- the roost: a gambrel barn, a silo and trees ---- */
+const BARN={x:-30,z:-56,th:.09};
+const bcos=Math.cos(BARN.th),bsin=Math.sin(BARN.th);
+const bw=p=>[BARN.x+p[0]*bcos+p[2]*bsin,p[1],BARN.z-p[0]*bsin+p[2]*bcos];
+const bv=v=>[v[0]*bcos+v[2]*bsin,v[1],-v[0]*bsin+v[2]*bcos];
+const SILO=bw([-7.7,0,-3]);
+const TREES=[[-12,-67,12.5,1.0,0],[17,-64,10,.85,1],[25,-73,12,.9,0],[33,-66,9,.85,0],[29,-84,11,.9,2],[37,-33,9.5,1.0,0],[-56,-80,11,.9,1],[-45,-37,8.5,.85,2]];
+const OBST=[BARN.x,BARN.z,8.5,9.5,SILO[0],SILO[2],2.5,13.5];
+for(const t of TREES)OBST.push(t[0],t[1],t[2]*.4*t[3]+1,t[2]+1);
+
+// ground decals: long sunset shadows and the pool of lantern light
+const SHD=[-SUNH[0],-SUNH[2]];
+function shadow(x,z,wid,len,str){const n=6,q=quatFromBasis([SHD[0],0,SHD[1]],[SHD[1],0,-SHD[0]],[0,1,0]);
+  for(let t=0;t<n;t++){const d=len*(t+.5)/n;
+    add(x+SHD[0]*d,.04,z+SHD[1]*d,1,len/n*.95,wid*(.5+.35*t/n),.01,str*(1-.75*t/n),q,.02,.02,.04,0);}}
+shadow(BARN.x,BARN.z,9,46,.5);shadow(SILO[0],SILO[2],2.2,40,.42);
+for(const t of TREES)shadow(t[0],t[1],t[2]*.34*t[3],t[2]*3.6,.38);
+{const p=bw([0,.05,9.6]);add(p[0],p[1],p[2],1,2.4,1.7,.01,.2,FLAT,1,.6,.25,0);}
+const nDecal=N;
+
+// far scenery: hills, distant copses, clouds
 const qYa=a=>[0,Math.sin(a/2),0,Math.cos(a/2)];
 for(let i=0;i<34;i++){const a=i/34*6.2832+rnd()*.2,d=900+rnd()*400,h=14+rnd()*30,x=Math.sin(a)*d,z=Math.cos(a)*d;
   const c=mix3([.16,.15,.22],horizonJS(azOf(x,z)),.55+.15*rnd());
@@ -173,6 +203,148 @@ for(let i=0;i<16;i++){const a=rnd()*6.2832,d=900+rnd()*900,y=330+rnd()*420,cx=Ma
   const base=mix3([.42,.36,.52],[1.0,.60,.40],Math.pow(azOf(cx,cz),1.6));
   for(let k=0;k<12;k++){const w=30+rnd()*55,j=.88+.14*rnd(),lift=(rnd()-.5)*24;
     add(cx+(rnd()-.5)*260,y+lift,cz+(rnd()-.5)*120,1,w,4+rnd()*6,w*.35,.55,qYa(a+(rnd()-.5)*.4),base[0]*j,base[1]*j,base[2]*j,0);}}
+const nProps=N;
+
+// a flat panel of surface splats in barn-local coordinates; colFn(a,b) returns a colour or null for a hole
+function panel(o,u,v,ul,vl,su,sv,colFn,aux){
+  const q=quatFromBasis(bv(u),bv(v),bv(cross(u,v)));
+  const nu=Math.max(1,Math.round(ul/(su*1.45))),nv=Math.max(1,Math.round(vl/(sv*1.45)));
+  for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){
+    const a=(i+.5+(rnd()-.5)*.5)/nu*ul,b=(j+.5+(rnd()-.5)*.5)/nv*vl,c=colFn(a,b);if(!c)continue;
+    const p=bw([o[0]+u[0]*a+v[0]*b,o[1]+u[1]*a+v[1]*b,o[2]+u[2]*a+v[2]*b]),jt=.92+.16*rnd();
+    add(p[0],p[1],p[2],3,su*(.95+.2*rnd()),sv*(.95+.2*rnd()),.012,.97,q,c[0]*jt,c[1]*jt,c[2]*jt,aux||0);}
+}
+(function buildBarn(){
+  const RED=[.50,.11,.08],RED2=[.39,.09,.07],WHT=[.86,.84,.78],DARK=[.05,.04,.04];
+  const stone=(a,b)=>mix3([.33,.32,.30],[.52,.50,.46],hash(Math.floor(a/.5)+Math.floor(b/.25)*17.3));
+  const boards=(a,b,h)=>{const k=Math.floor(a/.36),f=a/.36-k;
+    if(f<.13)return[.15,.04,.03];
+    let c=mix3(RED,RED2,hash(k+h*31));
+    c=mix3(c,[.22,.14,.11],smooth(1-b/1.5)*.4+hash(k*7+h)*.12);
+    if(hash(k*3.3+h*5)>.86)c=mix3(c,[.50,.41,.36],.5);
+    return c;};
+  const prof=x=>{const ax=Math.abs(x);return ax<=3.1?8.4-1.5*ax/3.1:6.9-2.5*(ax-3.1)/1.9;};
+  const side=h=>(a,b)=>{
+    if(b<.5)return stone(a,b);
+    if(a<.24||a>13.76||b>4.2)return WHT;
+    for(const w of[2.6,7,11.4]){const da=Math.abs(a-w),db=Math.abs(b-2.7);
+      if(da<.62&&db<.62)return(da>.47||db>.47||da<.05||db<.05)?WHT:[.07,.08,.12];}
+    return boards(a,b,h);};
+  const front=(a,b)=>{const x=a-5,ax=Math.abs(x),pr=prof(x);if(b>pr)return null;
+    if(b<.5&&ax>2.25)return stone(a,b);
+    if(pr-b<.24||ax>4.76)return WHT;
+    if(ax<2.25&&b<3.75){
+      if(ax>2.08||b>3.58)return WHT;
+      if(ax<.17)return null;
+      const xl=(ax-.17)/1.91,yb=b/3.58;
+      if(xl<.07||xl>.93||yb<.04||Math.abs(yb-xl)<.05||Math.abs(yb-(1-xl))<.05)return WHT;
+      return mix3([.45,.10,.07],[.35,.08,.06],hash(Math.floor(ax/.24)));}
+    if(ax<.85&&b>5.0&&b<6.5)return(ax>.7||b<5.14||b>6.36)?WHT:[.06,.05,.05];
+    if(ax<.32&&b>7.2&&b<7.72)return DARK;
+    return boards(a,b,3);};
+  const back=(a,b)=>{const x=a-5,ax=Math.abs(x),pr=prof(x);if(b>pr)return null;
+    if(b<.5&&ax>.6)return stone(a,b);
+    if(pr-b<.24||ax>4.76)return WHT;
+    if(ax<.6&&b<2.3)return(ax>.48||b>2.18)?WHT:[.30,.08,.06];
+    if(ax<.5&&b>5.4&&b<6.3)return(ax>.38||b<5.52||b>6.18)?WHT:[.07,.08,.12];
+    return boards(a,b,4);};
+  const roof=s=>(a,b)=>{const k=Math.floor(a/.6),f=a/.6-k;
+    let c=mix3([.36,.37,.40],[.47,.47,.48],hash(k+s*13));
+    if(f<.1)c=[.19,.19,.21];
+    return mix3(c,[.42,.22,.12],hash(k*1.7+s*3)*smooth(b/3)*.85*hash(k*9.1+Math.floor(b/.5)+s));};
+  panel([5,0,7],[0,0,-1],[0,1,0],14,4.4,.07,.12,side(1));
+  panel([-5,0,-7],[0,0,1],[0,1,0],14,4.4,.07,.12,side(2));
+  panel([-5,0,7],[1,0,0],[0,1,0],10,8.4,.07,.12,front);
+  panel([5,0,-7],[-1,0,0],[0,1,0],10,8.4,.07,.12,back);
+  const dl=nrm([1.9,-2.5,0]),du=nrm([3.1,-1.5,0]);
+  panel([0,8.4,-7.4],[0,0,1],du,14.8,3.5,.12,.12,roof(1));
+  panel([3.1,6.9,-7.4],[0,0,1],dl,14.8,3.55,.12,.12,roof(2));
+  panel([0,8.4,7.4],[0,0,-1],[-du[0],du[1],0],14.8,3.5,.12,.12,roof(3));
+  panel([-3.1,6.9,7.4],[0,0,-1],[-dl[0],dl[1],0],14.8,3.55,.12,.12,roof(4));
+  // cupola with louvres, a patina roof and a weathervane
+  const rk=(v,k)=>{let x=v[0],z=v[2];for(let i=0;i<k;i++){const t=x;x=z;z=-t;}return[x,v[1],z];};
+  for(let k=0;k<4;k++){
+    panel(rk([-.55,8.2,.55],k),rk([1,0,0],k),[0,1,0],1.1,1.25,.045,.045,
+      (a,b)=>(a<.1||a>1||b>1.08||b<.3)?WHT:((b/.15-Math.floor(b/.15))<.5?[.09,.09,.10]:[.60,.58,.54]));
+    panel(rk([-.8,9.42,.8],k),rk([1,0,0],k),rk(nrm([0,.85,-.8]),k),1.6,1.167,.05,.05,
+      (a,b)=>Math.abs(a-.8)>.8*(1-b/1.167)+.03?null:mix3([.19,.36,.30],[.30,.26,.18],hash(Math.floor(a*9)+Math.floor(b*7)*3.1)));}
+  {const p=bw([0,10.75,0]);add(p[0],p[1],p[2],3,.02,.5,.02,.95,[0,0,0,1],.06,.06,.07,4);
+    const a=bw([0,11.05,0]);add(a[0],a[1],a[2],3,.4,.022,.022,.95,qYa(.7),.07,.07,.08,4);
+    add(a[0]+.26,a[1]+.02,a[2]-.22,3,.11,.07,.02,.95,qYa(.7),.07,.07,.08,4);}
+  // warm light through the doors, a lantern above them
+  const qf=quatFromBasis(bv([1,0,0]),[0,1,0],bv([0,0,1]));
+  for(let b=.2;b<3.5;b+=.27){const p=bw([(rnd()-.5)*.08,b,6.94]);add(p[0],p[1],p[2],1,.13,.17,.05,.95,qf,1,.72+.1*rnd(),.34,0);}
+  for(let k=0;k<5;k++){const p=bw([(rnd()-.5)*1.2,.7+rnd()*5.3,6.3]);add(p[0],p[1],p[2],1,.3,.3,.3,.5,[0,0,0,1],.75,.36,.12,0);}
+  {const p=bw([0,4.05,7.14]);add(p[0],p[1],p[2],1,.09,.09,.09,1,[0,0,0,1],1,.88,.6,0);add(p[0],p[1],p[2],1,.6,.6,.3,.2,[0,0,0,1],1,.6,.25,0);}
+  // concrete stave silo with steel hoops and a domed cap
+  const R=1.9,HS_=11;
+  {const su=.11,sv=.2,n=Math.round(6.2832*R/(su*1.45)),m=Math.round(HS_/(sv*1.45));
+    for(let j=0;j<m;j++)for(let i=0;i<n;i++){
+      const ph=(i+rnd()*.5)/n*6.2832,y=(j+.5+(rnd()-.5)*.4)/m*HS_,cx=Math.cos(ph),cz=Math.sin(ph),k=Math.floor(ph/6.2832*44);
+      let c=mix3([.52,.50,.45],[.66,.64,.58],hash(k));
+      if((y%1.1)<.1)c=[.19,.18,.18];else c=mix3(c,[.3,.27,.23],smooth((y-8)/3)*hash(k*3.7)*.7);
+      const jt=.92+.16*rnd();
+      add(SILO[0]+cx*R,y,SILO[2]+cz*R,3,su,sv,.012,.97,quatFromBasis([cz,0,-cx],[0,1,0],[cx,0,cz]),c[0]*jt,c[1]*jt,c[2]*jt,0);}
+    for(let k=0;k<340;k++){
+      const ph=rnd()*6.2832,st=rnd(),th=Math.asin(st),cx=Math.cos(ph),cz=Math.sin(ph),ct=Math.cos(th);
+      const nv=nrm([ct*cx,st*1.35,ct*cz]),tx=[cz,0,-cx],ty=cross(nv,tx);
+      const c=mix3([.58,.59,.62],[.44,.27,.16],hash(Math.floor(ph*7))*.6*(1-st)),jt=.9+.2*rnd();
+      add(SILO[0]+cx*ct*R,HS_+st*1.45,SILO[2]+cz*ct*R,3,.2,.2,.012,.97,quatFromBasis(tx,ty,nv),c[0]*jt,c[1]*jt,c[2]*jt,0);}}
+  // split-rail fence running out from the front corner
+  {let p=bw([5.6,0,9.2]),dir=bv([1,0,.12]);
+    for(let k=0;k<17;k++){
+      const d=nrm([dir[0]+(rnd()-.5)*.1,0,dir[2]+(rnd()-.5)*.1]),nx=[p[0]+d[0]*2.6,0,p[2]+d[2]*2.6],g=.34+.1*rnd();
+      add(p[0],.6,p[2],3,.055,.62,.055,.97,[0,0,0,1],g,g*.93,g*.84,4);
+      if(k<16){const q=quatFromBasis(d,[0,1,0],cross(d,[0,1,0]));
+        for(const y of[.48,.95])add((p[0]+nx[0])/2,y+(rnd()-.5)*.05,(p[2]+nx[2])/2,3,1.25,.035,.035,.97,q,g*1.05,g*.98,g*.9,4);}
+      p=nx;}}
+})();
+
+// trees: recursive limbs with leaf sprays at the tips
+const BARK=[.17,.13,.10];
+const PALS=[[[.09,.20,.06],[.21,.35,.10],[.42,.42,.12],[.60,.36,.10]],
+            [[.30,.30,.08],[.52,.42,.10],[.66,.34,.08],[.52,.17,.06]],
+            [[.07,.17,.07],[.16,.30,.11],[.30,.38,.12],[.50,.40,.12]]];
+function limb(a,b,r0,r1){
+  const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],len=Math.hypot(d[0],d[1],d[2]);d[0]/=len;d[1]/=len;d[2]/=len;
+  const h=Math.abs(d[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,d)),e2=cross(d,e1);
+  if(r0>.1){
+    const rings=Math.max(1,Math.round(len/.24));
+    for(let j=0;j<rings;j++){const t=(j+.5)/rings,r=lerp(r0,r1,t),m=Math.max(5,Math.round(6.2832*r/.14));
+      for(let i=0;i<m;i++){const ph=(i+rnd())/m*6.2832,c=Math.cos(ph),s=Math.sin(ph);
+        const nv=[e1[0]*c+e2[0]*s,e1[1]*c+e2[1]*s,e1[2]*c+e2[2]*s],jt=.75+.5*rnd();
+        add(a[0]+d[0]*len*t+nv[0]*r,a[1]+d[1]*len*t+nv[1]*r,a[2]+d[2]*len*t+nv[2]*r,3,Math.max(.05,r*.42),.17,.012,.97,
+          quatFromBasis(cross(d,nv),d,nv),BARK[0]*jt,BARK[1]*jt,BARK[2]*jt,0);}}
+  }else{
+    const n=Math.max(1,Math.round(len/.34)),q=quatFromBasis(d,e1,e2);
+    for(let j=0;j<n;j++){const t=(j+.5)/n,r=Math.max(.014,lerp(r0,r1,t)),jt=.7+.5*rnd();
+      add(a[0]+d[0]*len*t,a[1]+d[1]*len*t,a[2]+d[2]*len*t,3,len/n*.55,r,r,.95,q,BARK[0]*jt,BARK[1]*jt,BARK[2]*jt,4);}
+  }
+}
+function leafBlob(c,r,nL,pal){
+  for(let k=0;k<nL;k++){
+    let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
+    const nv=nrm([x+(rnd()-.5)*.8,y*.6+.5+(rnd()-.5)*.8,z+(rnd()-.5)*.8]);
+    const h=Math.abs(nv[1])<.9?[0,1,0]:[1,0,0],tx=nrm(cross(h,nv)),ty=cross(nv,tx);
+    const s=.15+.11*rnd(),t=rnd(),col=t<.72?mix3(pal[0],pal[1],rnd()):t<.94?mix3(pal[1],pal[2],rnd()):pal[3],j=.75+.5*rnd();
+    add(c[0]+x*r,c[1]+y*r*.75,c[2]+z*r,3,s,s*(.6+.3*rnd()),.012,.93,quatFromBasis(tx,ty,nv),col[0]*j,col[1]*j,col[2]*j,.5+.5*rnd());}
+}
+function branch(p,dir,len,rad,depth,tp){
+  let a=p,d=dir;
+  for(let sg=0;sg<2;sg++){
+    const b=[a[0]+d[0]*len/2,a[1]+d[1]*len/2,a[2]+d[2]*len/2];
+    limb(a,b,rad*(sg?.85:1),rad*(sg?.72:.85));a=b;
+    d=nrm([d[0]+(rnd()-.5)*.25,d[1]+(rnd()-.5)*.2+.04,d[2]+(rnd()-.5)*.25]);}
+  if(depth>=tp.depth||rad<.03){leafBlob(a,tp.blob*(.8+.4*rnd()),tp.leaves,tp.pal);return;}
+  if(depth>=tp.depth-2)leafBlob(a,tp.blob*(depth>=tp.depth-1?.85:.7),tp.leaves>>1,tp.pal);
+  const nb=depth===0?tp.forks:(rnd()<.55?2:3);
+  const h=Math.abs(d[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,d)),e2=cross(d,e1),a0=rnd()*6.2832;
+  for(let k=0;k<nb;k++){
+    const ang=a0+(k+rnd()*.6)/nb*6.2832,sp=tp.spread*(depth===0?.8:.66)*(.7+.6*rnd()),c=Math.cos(ang)*sp,s=Math.sin(ang)*sp;
+    branch(a,nrm([d[0]+e1[0]*c+e2[0]*s,d[1]+e1[1]*c+e2[1]*s+.12,d[2]+e1[2]*c+e2[2]*s]),len*(.62+.2*rnd()),rad*(.58+.12*rnd()),depth+1,tp);}
+}
+for(const t of TREES)branch([t[0],-.1,t[1]],nrm([(rnd()-.5)*.08,1,(rnd()-.5)*.08]),t[2]*.36,t[2]*.031,0,
+  {depth:4,forks:3+(rnd()<.6?1:0),spread:t[3],blob:t[2]*.115,leaves:coarse?26:40,pal:PALS[t[4]]});
 const nStatic=N;
 
 /* ------------------------------------------------------ bird templates */
@@ -205,8 +377,10 @@ const FALC=[[.26,.27,.30],[.55,.48,.20],[.27,.29,.33],[.62,.58,.52],[.24,.25,.29
    After StarDisplay (Hildenbrandt, Carere & Hemelrijk 2010): topological neighbours,
    cruise speed with relaxation, lift ∝ v², turning only by banking, roost attraction. */
 const MAXB=2400,K=7,NEARCAP=coarse?160:260;
-const G=9.81,V0C=10,TAUV=1.0,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=1.6,WR=4.0,BMAX=1.2;
-const REACT=.1,REFR=1.6,ZIG=.5,DAMP=.985,WBF=13.3,FLEE=10,DETECT=24;
+const G=9.81,V0C=10,TAUV=1.0,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,WR=4.0,BMAX=1.2;
+const REACT=.1,REFR=1.6,ZIG=.5,DAMP=.985,WBF=13.3,FLEE=11,DETECT=24;
+const TREACT=.07,TREFR=3,TPEAK=11,HOPM=2.3;          // turning waves
+const MAXC=12,LINK2=49,RVIS=140,WV=1.3,WVS=3.5,WJ=3.2,WO=2.6;       // flocks and the pull between them
 const ROOST=[0,0,-70],R0=48;
 let P=new Float32Array(MAXB*3),H=new Float32Array(MAXB*3),Pn=new Float32Array(MAXB*3),Hn=new Float32Array(MAXB*3);
 const V=new Float32Array(MAXB),V0=new Float32Array(MAXB),BETA=new Float32Array(MAXB),UPv=new Float32Array(MAXB*3);
@@ -214,24 +388,29 @@ const NZ=new Float32Array(MAXB*3),CEN=new Float32Array(MAXB),SC=new Float32Array
 const PH=new Float32Array(MAXB),FLAP=new Float32Array(MAXB),FT=new Float32Array(MAXB),FS=new Uint8Array(MAXB),TK=new Float32Array(MAXB),DEM=new Float32Array(MAXB);
 const ESC=new Float32Array(MAXB).fill(-99),ESCS=new Float32Array(MAXB),ESCA=new Float32Array(MAXB);
 const ESCp=new Float32Array(MAXB),ESCSp=new Float32Array(MAXB),ESCAp=new Float32Array(MAXB);
-const S={n:0,time:0,pol:0,nn:0,cen:[0,30,-70],frozen:false,slow:false};
-const hPref=t=>Math.max(7,24+13*Math.sin(t*.043)+7*Math.sin(t*.117+1.3));
+const TT=new Float32Array(MAXB).fill(-99),TD=new Float32Array(MAXB),TAc=new Float32Array(MAXB),THop=new Int16Array(MAXB);
+const UF=new Int32Array(MAXB),LAB=new Int16Array(MAXB).fill(-1),ccnt=new Int32Array(MAXB),cmap=new Int16Array(MAXB);
+const CLn=new Float32Array(MAXC),CLx=new Float32Array(MAXC),CLy=new Float32Array(MAXC),CLz=new Float32Array(MAXC),CLr=new Float32Array(MAXC);
+const CLq=new Float32Array(MAXC),CLhx=new Float32Array(MAXC),CLhy=new Float32Array(MAXC),CLhz=new Float32Array(MAXC);
+let NC=0,clusterNow=false,lastCluster=-9;
+const S={n:0,time:0,pol:0,gpol:0,nn:0,cen:[0,30,-70],rad:15,flocks:[],nextTurn:7,auto:true,frozen:false,slow:false};
+const hPref=t=>Math.max(9,24+13*Math.sin(t*.043)+7*Math.sin(t*.117+1.3));
 
 function initBird(i,px,py,pz,fx,fy,fz){
   const i3=i*3;P[i3]=px;P[i3+1]=py;P[i3+2]=pz;const f=nrm([fx,fy,fz]);H[i3]=f[0];H[i3+1]=f[1];H[i3+2]=f[2];
   V0[i]=V0C*(.96+.08*rnd());V[i]=V0[i];BETA[i]=0;UPv[i3]=0;UPv[i3+1]=1;UPv[i3+2]=0;NZ[i3]=NZ[i3+1]=NZ[i3+2]=0;
   SC[i]=.95+.1*rnd();WB[i]=WBF*(.95+.1*rnd());PH[i]=rnd()*6.28;FS[i]=1;FLAP[i]=1;FT[i]=rnd();TK[i]=0;DEM[i]=.5;
-  ESC[i]=-99;ESCA[i]=0;CEN[i]=0;
+  ESC[i]=-99;ESCA[i]=0;CEN[i]=0;TT[i]=-99;THop[i]=0;LAB[i]=-1;
 }
 function spawn(n){
   const k=Math.cbrt(n/1000);
   for(let i=0;i<n;i++){let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
-    initBird(i,ROOST[0]+40+x*13*k,30+y*4*k,ROOST[2]+z*9*k,(rnd()-.5)*.2,0,1);}
+    initBird(i,-40+x*13*k,27+y*4*k,-70+z*9*k,1,0,.2+(rnd()-.5)*.2);}
   S.n=n;
 }
 function resizeFlock(n){
   if(n>S.n){for(let i=S.n;i<n;i++){const j=(rnd()*S.n)|0,j3=j*3;
-    initBird(i,P[j3]+(rnd()-.5)*3,P[j3+1]+(rnd()-.5)*2,P[j3+2]+(rnd()-.5)*3,H[j3]+(rnd()-.5)*.1,H[j3+1],H[j3+2]+(rnd()-.5)*.1);}}
+    initBird(i,P[j3]+(rnd()-.5)*3,P[j3+1]+(rnd()-.5)*2,P[j3+2]+(rnd()-.5)*3,H[j3]+(rnd()-.5)*.1,H[j3+1],H[j3+2]+(rnd()-.5)*.1);LAB[i]=LAB[j];}}
   S.n=n;if(cam.rideBird>=n)cam.rideBird=0;
 }
 
@@ -267,12 +446,35 @@ function knn(i){
   }
   return n;
 }
+function ufFind(i){while(UF[i]!==i){UF[i]=UF[UF[i]];i=UF[i];}return i;}
+
+// flocks are the connected components of the "who is watching whom" graph
+function finishClusters(n){
+  ccnt.fill(0,0,n);for(let i=0;i<n;i++)ccnt[ufFind(i)]++;
+  const roots=[];for(let i=0;i<n;i++)if(ccnt[i]>=8)roots.push(i);
+  roots.sort((a,b)=>ccnt[b]-ccnt[a]);if(roots.length>MAXC)roots.length=MAXC;
+  cmap.fill(-1,0,n);NC=roots.length;
+  for(let c=0;c<NC;c++){cmap[roots[c]]=c;CLn[c]=CLx[c]=CLy[c]=CLz[c]=CLr[c]=CLhx[c]=CLhy[c]=CLhz[c]=0;}
+  for(let i=0;i<n;i++){const c=cmap[ufFind(i)];LAB[i]=c;if(c<0)continue;const i3=i*3;
+    CLn[c]++;CLx[c]+=P[i3];CLy[c]+=P[i3+1];CLz[c]+=P[i3+2];CLhx[c]+=H[i3];CLhy[c]+=H[i3+1];CLhz[c]+=H[i3+2];}
+  const thr=Math.max(15,.03*n);let tot=0,all=0,sx=0,sy=0,sz=0,pol=0;
+  for(let c=0;c<NC;c++){const m=CLn[c];pol+=Math.hypot(CLhx[c],CLhy[c],CLhz[c]);all+=m;CLhx[c]/=m;CLhy[c]/=m;CLhz[c]/=m;CLx[c]/=m;CLy[c]/=m;CLz[c]/=m;
+    if(m>=thr||!c){tot+=m;sx+=CLx[c]*m;sy+=CLy[c]*m;sz+=CLz[c]*m;}}
+  for(let i=0;i<n;i++){const c=LAB[i];if(c<0)continue;const i3=i*3,dx=P[i3]-CLx[c],dy=P[i3+1]-CLy[c],dz=P[i3+2]-CLz[c];CLr[c]+=dx*dx+dy*dy+dz*dz;}
+  S.flocks=[];
+  if(!NC){S.pol=S.gpol;return;}
+  S.cen=[sx/tot,sy/tot,sz/tot];S.pol=pol/all;let rr=0;
+  for(let c=0;c<NC;c++){const dx=CLx[c]-S.cen[0],dy=CLy[c]-S.cen[1],dz=CLz[c]-S.cen[2];if(CLn[c]>=thr||!c)rr+=CLr[c]+CLn[c]*(dx*dx+dy*dy+dz*dz);
+    CLr[c]=Math.sqrt(CLr[c]/CLn[c]);CLq[c]=1.3*Math.cbrt(CLn[c]);if(CLn[c]>=thr)S.flocks.push(CLn[c]);}
+  S.rad=Math.sqrt(rr/tot);
+}
 
 function stepFlock(h){
   const n0=S.n,now=S.time;if(!n0)return;
   buildGrid(n0);
   ESCp.set(ESC.subarray(0,n0));ESCSp.set(ESCS.subarray(0,n0));ESCAp.set(ESCA.subarray(0,n0));
-  const hp=hPref(now),fal=FAL.on,fpx=FAL.p[0],fpy=FAL.p[1],fpz=FAL.p[2],ou=Math.exp(-h/.8),os=1.9*Math.sqrt(h);
+  const doC=clusterNow;if(doC)for(let i=0;i<n0;i++)UF[i]=i;
+  const hp=hPref(now),nf=FALS.length,ou=Math.exp(-h/.8),os=1.9*Math.sqrt(h),nob=OBST.length;
   let ox=0,oy=0,oz=0,nn=0;
   for(let i=0;i<n0;i++){
     const i3=i*3,px=P[i3],py=P[i3+1],pz=P[i3+2],fx=H[i3],fy=H[i3+1],fz=H[i3+2],v=V[i];
@@ -280,35 +482,51 @@ function stepFlock(h){
     if(ul<1e-4){u0x=0;u0y=0;u0z=1;}else{u0x/=ul;u0y/=ul;u0z/=ul;}
     const sx=fy*u0z-fz*u0y,sy=fz*u0x-fx*u0z,sz=fx*u0y-fy*u0x;   // right wing direction
     const n=knn(i);nn+=Math.min(Math.sqrt(nnMin),10);
-    let ax=0,ay=0,az=0,trig=-1;
+    let ax=0,ay=0,az=0,trig=-1,ttrig=-1;
     if(n){
       let alx=0,aly=0,alz=0,chx=0,chy=0,chz=0,cux=0,cuy=0,cuz=0,spx=0,spy=0,spz=0;
-      const ok=now-ESC[i]>REFR;
+      const ok=now-ESC[i]>REFR,okT=now-TT[i]>TREFR;
       for(let m=0;m<n;m++){
         const j=kj[m],j3=j*3,ex=P[j3]-px,ey=P[j3+1]-py,ez=P[j3+2]-pz,d=Math.sqrt(kd[m])+1e-6,id=1/d;
         alx+=H[j3];aly+=H[j3+1];alz+=H[j3+2];
         chx+=ex;chy+=ey;chz+=ez;cux+=ex*id;cuy+=ey*id;cuz+=ez*id;
         const qd=(d-RH)/SEPW,w=d<RH?1:Math.exp(-qd*qd);spx-=ex*id*w;spy-=ey*id*w;spz-=ez*id*w;
         if(ok&&trig<0){const te=now-ESCp[j];if(te>=REACT&&te<REACT+.25&&ESCAp[j]>.3)trig=j;}
+        if(okT&&ttrig<0&&THop[j]>0){const tq=now-TT[j];if(tq>=TREACT&&tq<TREACT+.3)ttrig=j;}
+        if(doC&&kd[m]<LINK2){const ra=ufFind(i),rb=ufFind(j);if(ra!==rb)UF[ra]=rb;}
       }
       const inv=1/n,C=Math.hypot(cux,cuy,cuz)*inv,cl=Math.hypot(chx,chy,chz)||1;CEN[i]=C;
       ax+=WS*spx+WA*(alx*inv-fx)+WC*C*chx/cl;
       ay+=WS*spy+WA*(aly*inv-fy)+WC*C*chy/cl;
       az+=WS*spz+WA*(alz*inv-fz)+WC*C*chz/cl;
     }
-    {const C=S.cen,dx=C[0]-px,dy=C[1]-py,dz=C[2]-pz,dl=Math.hypot(dx,dy,dz)||1,k=WC*Math.max(1.5*(1-n/4),1.2*clamp((dl-18)/25,0,1));
-      if(k>0){ax+=dx/dl*k;ay+=dy/dl*k;az+=dz/dl*k;}}
     if(trig>=0){ESC[i]=now;ESCS[i]=ESCSp[trig];ESCA[i]=ESCAp[trig]*DAMP;}
+    if(ttrig>=0){TT[i]=now;TD[i]=TD[ttrig];TAc[i]=TAc[ttrig];THop[i]=THop[ttrig]-1;}
+    // other flocks in view pull this bird toward them; small groups feel big ones most
+    {const lc=LAB[i],nc=lc>=0?CLn[lc]:1;let gx=0,gy=0,gz=0;
+      if(lc>=0){const dx=CLx[lc]-px,dy=CLy[lc]-py,dz=CLz[lc]-pz,d=Math.hypot(dx,dy,dz),q0=CLq[lc];
+        if(d>1.4*q0){const w=Math.min((d-1.4*q0)/q0,1.5)/d;gx=dx*w;gy=dy*w;gz=dz*w;}
+        // two groups that have just met share one flock but not one heading: steer both onto the common course
+        const pl=Math.hypot(CLhx[lc],CLhy[lc],CLhz[lc]);if(pl<.96&&pl>.05&&now-TT[i]>6){const jo=WO*Math.min(1,(1-pl)*4)/pl;ax+=jo*(CLhx[lc]-fx*pl);ay+=jo*(CLhy[lc]-fy*pl);az+=jo*(CLhz[lc]-fz*pl);}}
+      for(let c=0;c<NC;c++){if(c===lc)continue;const dx=CLx[c]-px,dy=CLy[c]-py,dz=CLz[c]-pz,d=Math.hypot(dx,dy,dz);
+        if(d>RVIS||d<1e-3)continue;const sh=CLn[c]/(CLn[c]+nc),w=sh*(1+1.2*sh*sh)*(d>RVIS-40?(RVIS-d)/40:1)/d;gx+=dx*w;gy+=dy*w;gz+=dz*w;
+        const reach=CLr[c]*1.5+12;if(d<CLr[c]+reach){const jn=WJ*sh*Math.min(1,(CLr[c]+reach-d)/reach);ax+=jn*(CLhx[c]-fx);ay+=jn*(CLhy[c]-fy);az+=jn*(CLhz[c]-fz);}}
+      const gm=Math.hypot(gx,gy,gz);if(gm>1e-4){const kk=(lc<0?WVS:WV)*Math.min(gm,2.2)/gm;ax+=gx*kk;ay+=gy*kk;az+=gz*kk;}}
     NZ[i3]=NZ[i3]*ou+os*gauss();NZ[i3+1]=NZ[i3+1]*ou+os*gauss();NZ[i3+2]=NZ[i3+2]*ou+os*gauss();
     ax+=NZ[i3];ay+=NZ[i3+1]*.4;az+=NZ[i3+2];
-    ay+=clamp(.35*(hp-py)-.7*fy*v,-4,4);if(py<4)ay+=(4-py)*5;
-    if(fal){const rx=px-fpx,ry=py-fpy,rz=pz-fpz,d=Math.hypot(rx,ry,rz)+1e-6;
-      if(d<FLEE){const k=9*(1-d/FLEE)/d;ax+=rx*k;ay+=ry*k;az+=rz*k;}
+    ay+=clamp(.35*(hp-py)-.7*fy*v,-4,4);
+    // stay clear of the ground, the barn and the treetops
+    {let fl=4;for(let q=0;q<nob;q+=4){const dx=px-OBST[q],dz=pz-OBST[q+1],r=OBST[q+2]+7,d2=dx*dx+dz*dz;
+        if(d2<r*r){const hh=OBST[q+3]*Math.min(1,(1-Math.sqrt(d2)/r)*2.2)+2;if(hh>fl)fl=hh;}}
+      if(py<fl)ay+=Math.min((fl-py)*5,26);}
+    for(let q=0;q<nf;q++){const fp=FALS[q].p,rx=px-fp[0],ry=py-fp[1],rz=pz-fp[2],d=Math.hypot(rx,ry,rz)+1e-6;
+      if(d<FLEE){const kf=11*(1-d/FLEE)/d;ax+=rx*kf;ay+=ry*kf;az+=rz*kf;}
       if(d<DETECT&&now-ESC[i]>REFR){ESC[i]=now;ESCS[i]=(rx*sx+ry*sy+rz*sz)>=0?1:-1;ESCA[i]=1;}}
     let lat=ax*sx+ay*sy+az*sz;ax-=sx*lat;ay-=sy*lat;az-=sz*lat;
     {const rx=ROOST[0]-px,rz=ROOST[2]-pz,dh=Math.hypot(rx,rz);
       if(dh>R0){const k=Math.min((dh-R0)/30,1),tx=rx/dh,tz=rz/dh,fh=Math.hypot(fx,fz)||1,c=(fx*tx+fz*tz)/fh,s=sx*tx+sz*tz;
         lat+=WR*k*((s>=0?1:-1)*(.5-.5*c)+.3*s);}}
+    {const tq=now-TT[i];if(tq>=0&&tq<TD[i])lat+=TAc[i]*Math.sin(Math.PI*tq/TD[i]);}   // riding a turning wave
     let bt=clamp(Math.atan2(lat,G),-BMAX,BMAX),tauR=.10;
     const te=now-ESC[i];
     if(te>=0&&te<ZIG){const zz=Math.sin(Math.PI*te/ZIG)*ESCA[i];bt=ESCS[i]*1.3*zz;ay-=1.4*zz;tauR=.035;}
@@ -332,45 +550,78 @@ function stepFlock(h){
     TK[i]+=(smooth((-nfy*v2-2.5)/6)-TK[i])*(1-Math.exp(-h/.2));
   }
   let t=P;P=Pn;Pn=t;t=H;H=Hn;Hn=t;
-  S.pol=Math.hypot(ox,oy,oz)/n0;S.nn=nn/n0;
+  S.gpol=Math.hypot(ox,oy,oz)/n0;S.nn=nn/n0;
+  if(doC){finishClusters(n0);clusterNow=false;}
 }
 
-/* -------------------------------------------------------------- falcon */
-const FAL={on:false,p:[0,60,0],f:[0,0,1],v:20,b:0,u:[0,1,0],phase:'',t:0,tg:0,passes:0,ph:0,flap:1,tk:0};
-function nearestBird(p){let best=0,bd=1e18;for(let i=0;i<S.n;i++){const i3=i*3,d=(P[i3]-p[0])**2+(P[i3+1]-p[1])**2+(P[i3+2]-p[2])**2;if(d<bd){bd=d;best=i;}}return best;}
-function launchFalcon(){
-  if(FAL.on||!S.n)return;
-  const C=S.cen,a=rnd()*6.2832;
-  FAL.p=[C[0]+Math.sin(a)*75,C[1]+38,C[2]+Math.cos(a)*75];
-  FAL.f=nrm([C[0]-FAL.p[0],C[1]-FAL.p[1],C[2]-FAL.p[2]]);
-  FAL.v=18;FAL.b=0;FAL.phase='stoop';FAL.t=0;FAL.passes=0;FAL.tg=nearestBird(FAL.p);FAL.on=true;
-  bFalcon.setAttribute('aria-disabled','true');
+/* A turning wave: one bird on the flock's edge banks into a turn and the birds watching it copy.
+   If the wave reaches everyone the flock wheels as one; if it dies out part-way, the flock tears in two. */
+function startTurn(c,partial,frac,sharp){
+  let best=-1,bestC=-1;
+  for(let t=0;t<240;t++){const i=(rnd()*S.n)|0;if(LAB[i]===c&&CEN[i]>bestC&&S.time-TT[i]>TREFR){bestC=CEN[i];best=i;}}
+  if(best<0)return false;
+  const i3=best*3,side=(CLx[c]-P[i3])*-H[i3+2]+(CLz[c]-P[i3+2])*H[i3];   // > 0: the flock lies to this bird's right
+  let sgn=side>0?-1:1;if(rnd()<.25)sgn=-sgn;
+  const phi=sharp?1.5+.35*rnd():partial?1.15+.55*rnd():.5+.8*rnd();
+  const dur=phi*V[best]*1.5708/TPEAK,hops=partial?Math.max(2,Math.round(frac*3.2*CLr[c]/HOPM)):30000;
+  const near=[];
+  for(let i=0;i<S.n;i++){if(LAB[i]!==c)continue;const j3=i*3,dx=P[j3]-P[i3],dy=P[j3+1]-P[i3+1],dz=P[j3+2]-P[i3+2];near.push([dx*dx+dy*dy+dz*dz,i]);}
+  near.sort((a,b)=>a[0]-b[0]);
+  for(let q=0;q<Math.min(10,near.length);q++){const i=near[q][1];TT[i]=S.time;TD[i]=dur;TAc[i]=sgn*TPEAK;THop[i]=hops;}
+  S.lastTurn={c,hops,rad:CLr[c],n:CLn[c],partial};
+  return true;
 }
-function stepFalcon(h){
-  if(!FAL.on)return;FAL.t+=h;
-  const p=FAL.p,f=FAL.f;let des,vT;
-  if(FAL.phase==='stoop'){
-    const j3=FAL.tg*3,dx=P[j3]-p[0],dy=P[j3+1]-p[1],dz=P[j3+2]-p[2],d=Math.hypot(dx,dy,dz),lead=Math.min(d/Math.max(FAL.v,1),.8),vj=V[FAL.tg];
+function autoTurn(){
+  S.nextTurn=S.time+5-7*Math.log(1-rnd()*.999);
+  if(!NC)return;
+  let tot=0;for(let c=0;c<NC;c++)tot+=CLn[c];
+  let r=rnd()*tot,c=0;for(;c<NC-1;c++){r-=CLn[c];if(r<0)break;}
+  const partial=CLn[c]>=120&&S.flocks.length<4&&rnd()<.5;
+  startTurn(c,partial,.2+.3*rnd());
+}
+function forceSplit(){if(NC&&CLn[0]>=40){startTurn(0,true,.3+.2*rnd(),true);S.nextTurn=Math.max(S.nextTurn,S.time+8);}}
+
+/* -------------------------------------------------------------- falcons */
+const FALS=[],MAXF=4;
+function nearestBird(p){let best=0,bd=1e18;for(let i=0;i<S.n;i++){const i3=i*3,dx=P[i3]-p[0],dy=P[i3+1]-p[1],dz=P[i3+2]-p[2],d=dx*dx+dy*dy+dz*dz;if(d<bd){bd=d;best=i;}}return best;}
+function pickTarget(from){
+  if(NC){let tot=0;for(let c=0;c<NC;c++)tot+=CLn[c];
+    let r=rnd()*tot,c=0;for(;c<NC-1;c++){r-=CLn[c];if(r<0)break;}
+    for(let t=0;t<80;t++){const i=(rnd()*S.n)|0;if(LAB[i]===c)return i;}}
+  return nearestBird(from);
+}
+function launchFalcon(){
+  if(FALS.length>=MAXF||!S.n)return;
+  const tg=pickTarget(S.cen),t3=tg*3,a=rnd()*6.2832,p=[P[t3]+Math.sin(a)*75,P[t3+1]+38,P[t3+2]+Math.cos(a)*75];
+  FALS.push({p,f:nrm([P[t3]-p[0],P[t3+1]-p[1],P[t3+2]-p[2]]),v:18,b:0,u:[0,1,0],phase:'stoop',t:0,tg,passes:0,ph:rnd()*6,flap:1,tk:0,done:false});
+  syncFalconUI();
+}
+function stepFalcon(F,h){
+  F.t+=h;
+  const p=F.p,f=F.f;let des,vT;
+  if(F.phase==='stoop'){
+    if(F.tg>=S.n)F.tg=nearestBird(p);
+    const j3=F.tg*3,dx=P[j3]-p[0],dy=P[j3+1]-p[1],dz=P[j3+2]-p[2],d=Math.hypot(dx,dy,dz),lead=Math.min(d/Math.max(F.v,1),.8),vj=V[F.tg];
     des=nrm([dx+H[j3]*vj*lead,dy+H[j3+1]*vj*lead,dz+H[j3+2]*vj*lead]);vT=30;
-    if(d<2.2||FAL.t>6){FAL.phase='pull';FAL.t=0;FAL.passes++;}
-  }else if(FAL.phase==='pull'){
+    if(d<2.2||F.t>6){F.phase='pull';F.t=0;F.passes++;}
+  }else if(F.phase==='pull'){
     des=nrm([f[0],.5,f[2]]);vT=17;
-    if(FAL.t>1.5){if(FAL.passes<3){FAL.phase='stoop';FAL.t=0;FAL.tg=nearestBird(p);}else{FAL.phase='leave';FAL.t=0;}}
+    if(F.t>1.5){if(F.passes<3){F.phase='stoop';F.t=0;F.tg=pickTarget(p);}else{F.phase='leave';F.t=0;}}
   }else{
     const C=S.cen;des=nrm([p[0]-C[0],12,p[2]-C[2]]);vT=21;
-    if(FAL.t>5){FAL.on=false;bFalcon.removeAttribute('aria-disabled');}
+    if(F.t>5)F.done=true;
   }
-  if(p[1]<14&&des[1]<.35)des=nrm([des[0],.35+(14-p[1])*.05,des[2]]);
-  const dt=clamp(f[0]*des[0]+f[1]*des[1]+f[2]*des[2],-1,1),ang=Math.acos(dt),mx=G*3.5/Math.max(FAL.v,5)*h;
+  if(p[1]<16&&des[1]<.35)des=nrm([des[0],.35+(16-p[1])*.05,des[2]]);
+  const dt=clamp(f[0]*des[0]+f[1]*des[1]+f[2]*des[2],-1,1),ang=Math.acos(dt),mx=G*3.5/Math.max(F.v,5)*h;
   let nf=f;if(ang>1e-4){const k=Math.min(1,mx/ang);nf=nrm([f[0]+(des[0]-f[0])*k,f[1]+(des[1]-f[1])*k,f[2]+(des[2]-f[2])*k]);}
   const u0=nrm([-nf[0]*nf[1],1-nf[1]*nf[1],-nf[2]*nf[1]]),sd=cross(nf,u0);
-  const lat=((nf[0]-f[0])*sd[0]+(nf[1]-f[1])*sd[1]+(nf[2]-f[2])*sd[2])/h*FAL.v;
-  const bt=clamp(Math.atan2(lat,G),-1.3,1.3);FAL.b+=(bt-FAL.b)*(1-Math.exp(-h/.12));
-  FAL.v=clamp(FAL.v+((vT-FAL.v)/1.2-G*nf[1]*.6)*h,10,34);
-  p[0]+=nf[0]*FAL.v*h;p[1]=Math.max(2,p[1]+nf[1]*FAL.v*h);p[2]+=nf[2]*FAL.v*h;FAL.f=nf;
-  const cb=Math.cos(FAL.b),sb=Math.sin(FAL.b);FAL.u=[u0[0]*cb+sd[0]*sb,u0[1]*cb+sd[1]*sb,u0[2]*cb+sd[2]*sb];
-  const stoop=FAL.phase==='stoop'?1:0;
-  FAL.tk+=(stoop-FAL.tk)*(1-Math.exp(-h/.3));FAL.flap+=((1-stoop)-FAL.flap)*(1-Math.exp(-h/.2));FAL.ph+=6.2832*5.5*h;
+  const lat=((nf[0]-f[0])*sd[0]+(nf[1]-f[1])*sd[1]+(nf[2]-f[2])*sd[2])/h*F.v;
+  const bt=clamp(Math.atan2(lat,G),-1.3,1.3);F.b+=(bt-F.b)*(1-Math.exp(-h/.12));
+  F.v=clamp(F.v+((vT-F.v)/1.2-G*nf[1]*.6)*h,10,34);
+  p[0]+=nf[0]*F.v*h;p[1]=Math.max(2,p[1]+nf[1]*F.v*h);p[2]+=nf[2]*F.v*h;F.f=nf;
+  const cb=Math.cos(F.b),sb=Math.sin(F.b);F.u=[u0[0]*cb+sd[0]*sb,u0[1]*cb+sd[1]*sb,u0[2]*cb+sd[2]*sb];
+  const stoop=F.phase==='stoop'?1:0;
+  F.tk+=(stoop-F.tk)*(1-Math.exp(-h/.3));F.flap+=((1-stoop)-F.flap)*(1-Math.exp(-h/.2));F.ph+=6.2832*5.5*h;
 }
 
 /* ------------------------------------------------------------------ GL */
@@ -412,6 +663,19 @@ void main(){
     col=mix(col,uGround,smoothstep(Rf*.45,Rf,d)*.8);
   }else if(kind==1){
     wp=t0.xyz;
+  }else if(kind==3){
+    wp=t0.xyz;mip=true;
+    float vol=step(3.5,aux),tr=aux-4.*vol;
+    wp.x+=sin(uField.z*1.6+wp.z*.9+wp.y*1.3)*.035*tr;
+    vec3 v=normalize(uCam-wp),n=R[2];if(dot(n,v)<0.)n=-n;
+    float lam=mix(max(dot(n,uSun),0.),.3,vol);
+    vec3 amb=vec3(.20,.21,.31)*(.7+.3*n.y)+vec3(.14,.09,.05)*max(-n.y,0.);
+    vec3 base=col;
+    col=base*(amb+vec3(1.,.58,.30)*1.35*lam);
+    col+=base*vec3(1.6,.85,.3)*tr*pow(max(dot(-v,uSun),0.),3.);
+    vec2 hd=normalize(wp.xz-uCam.xz+1e-5);
+    float az=dot(hd,normalize(uSun.xz))*.5+.5;
+    col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2)),1.-exp(-length(uCam-wp)*.0022));
   }else{
     wp=t0.xyz;mip=true;
     float fl=aux,vol=step(3.5,fl);fl-=4.*vol;float sided=step(1.5,fl);fl-=2.*sided;float spec=fl;
@@ -434,7 +698,7 @@ void main(){
   vec3 a0=j0*M,a1=j1*M;
   float a=dot(a0,a0),b=dot(a0,a1),c=dot(a1,a1);
   float d0=max(a*c-b*b,0.);a+=.3;c+=.3;
-  if(mip)alpha*=sqrt(d0/(a*c-b*b));
+  if(mip)alpha*=kind==2?pow(d0/(a*c-b*b),.32):sqrt(d0/(a*c-b*b));
   if(alpha<.004){gl_Position=vec4(0.,0.,2.,1.);return;}
   float mid=.5*(a+c),rad=length(vec2(.5*(a-c),b)),l1=mid+rad,l2=max(mid-rad,.1);
   vec2 dv=abs(b)<1e-6?(a>=c?vec2(1.,0.):vec2(0.,1.)):normalize(vec2(b,l1-a));
@@ -478,7 +742,7 @@ const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','u
 const BU={};for(const n of['uR','uU','uF','uSun','uGround','uCam'])BU[n]=gl.getUniformLocation(BP,n);
 
 const TH0=Math.ceil(nStatic/512),DYN0=TH0*512;
-const DCAP=Math.ceil((MAXB*FAR.length+(NEARCAP+2)*NEAR.length)/512)*512,THD=DCAP/512;
+const DCAP=Math.ceil((MAXB*FAR.length+(NEARCAP+6)*NEAR.length)/512)*512,THD=DCAP/512;
 const DY=new Float32Array(DCAP*16),DK=new Uint16Array(DCAP);
 const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
 gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,2048,TH0+THD,0,gl.RGBA,gl.FLOAT,null);
@@ -496,57 +760,64 @@ gl.enableVertexAttribArray(1);gl.vertexAttribIPointer(1,1,gl.UNSIGNED_INT,0,0);g
 const bvao=gl.createVertexArray();
 
 /* -------------------------------------------------------------- camera */
-const cam={mode:'meadow',track:true,autoZoom:true,yaw:Math.PI,pitch:.35,zoom:.9,
-  oyaw:.6,opitch:-.06,odist:42,oauto:!matchMedia('(prefers-reduced-motion:reduce)').matches,
-  rideBird:0,rideYaw:0,rideDist:3,rpos:null,rlook:null,
-  pos:[0,1.55,0],fwd:[0,0,-1],up:[0,1,0],Cs:null,spread:.3};
+const cam={mode:'meadow',track:true,autoZoom:true,yaw:Math.PI,pitch:.3,zoom:.8,
+  oyaw:.6,opitch:-.3,odist:42,oauto:!matchMedia('(prefers-reduced-motion:reduce)').matches,oautoDist:true,
+  rideBird:0,rideYaw:0,rideDist:3,rpos:null,rlook:null,tk:null,
+  fpos:[0,1.6,0],fyaw:Math.PI,fpitch:.2,fvel:[0,0,0],fspeed:12,
+  pos:[0,1.55,0],fwd:[0,0,-1],up:[0,1,0],Cs:null};
+const keysDown=new Set();
 const view=new Float32Array(16),proj=new Float32Array(16);
-let VW=1,VH=1,scale=1,tanX=1,tanY=1,focal=1;
+let VW=1,VH=1,ASP=1,scale=1,tanX=1,tanY=1,focal=1;
 function resize(){
   const dpr=Math.min(window.devicePixelRatio||1,coarse?1.6:2)*scale;
   const w=Math.max(2,Math.round(canvas.clientWidth*dpr)),h=Math.max(2,Math.round(canvas.clientHeight*dpr));
   if(w!==VW||h!==VH){VW=canvas.width=w;VH=canvas.height=h;}
-  const asp=VW/VH;let fovy=asp>=1?cam.zoom:2*Math.atan(Math.tan(cam.zoom/2)/asp);fovy=Math.min(fovy,2.3);
-  tanY=Math.tan(fovy/2);tanX=tanY*asp;focal=VH/(2*tanY);
+  ASP=VW/VH;let fovy=ASP>=1?cam.zoom:2*Math.atan(Math.tan(cam.zoom/2)/ASP);fovy=Math.min(fovy,2.3);
+  tanY=Math.tan(fovy/2);tanX=tanY*ASP;focal=VH/(2*tanY);
   const n=.1,f=6000;proj.fill(0);proj[0]=1/tanX;proj[5]=1/tanY;proj[10]=(f+n)/(n-f);proj[11]=-1;proj[14]=2*f*n/(n-f);
 }
 function flockStats(){
-  const n=S.n;let cx=0,cy=0,cz=0;
+  if(NC)return;const n=S.n;let cx=0,cy=0,cz=0;
   for(let i=0;i<n;i++){cx+=P[i*3];cy+=P[i*3+1];cz+=P[i*3+2];}
-  let c=[cx/n,cy/n,cz/n];
-  for(let it=0;it<3;it++){let sx=0,sy=0,sz=0,m=0;const r2=it?900:3600;
-    for(let i=0;i<n;i++){const i3=i*3,dx=P[i3]-c[0],dy=P[i3+1]-c[1],dz=P[i3+2]-c[2];
-      if(dx*dx+dy*dy+dz*dz<r2){sx+=P[i3];sy+=P[i3+1];sz+=P[i3+2];m++;}}
-    if(m>n*.2)c=[sx/m,sy/m,sz/m];}
-  S.cen=c;
-}
-function spreadFrom(p,c){
-  const cd=nrm([c[0]-p[0],c[1]-p[1],c[2]-p[2]]),n=S.n,st=Math.max(1,(n/400)|0),a=[];
-  for(let i=0;i<n;i+=st){const i3=i*3,dx=P[i3]-p[0],dy=P[i3+1]-p[1],dz=P[i3+2]-p[2],l=Math.hypot(dx,dy,dz)||1;
-    a.push(Math.acos(clamp((dx*cd[0]+dy*cd[1]+dz*cd[2])/l,-1,1)));}
-  a.sort((x,y)=>x-y);return a[Math.floor(a.length*.85)]||.2;
+  S.cen=[cx/n,cy/n,cz/n];
 }
 const wrapA=a=>{while(a>Math.PI)a-=6.2832;while(a<-Math.PI)a+=6.2832;return a;};
+const fEl=[],fAz=[];
+function pickFlock(){
+  if(!NC){cam.tk=null;return -1;}
+  let ci=0;
+  if(cam.tk){let bd=1e18;for(let c=0;c<NC;c++){const dx=CLx[c]-cam.tk[0],dy=CLy[c]-cam.tk[1],dz=CLz[c]-cam.tk[2],d=dx*dx+dy*dy+dz*dz;if(d<bd){bd=d;ci=c;}}
+    if(CLn[0]>1.6*CLn[ci])ci=0;}
+  cam.tk=[CLx[ci],CLy[ci],CLz[ci]];return ci;
+}
+function frameFlock(p,ci){
+  const c=ci<0?S.cen:cam.tk,yaw0=Math.atan2(c[0]-p[0],c[2]-p[2]),n=S.n,st=Math.max(1,((ci<0?n:CLn[ci])/300)|0);fEl.length=0;fAz.length=0;
+  for(let i=0,q=0;i<n;i++){if(ci>=0&&LAB[i]!==ci)continue;if(q++%st)continue;const i3=i*3,dx=P[i3]-p[0],dy=P[i3+1]-p[1],dz=P[i3+2]-p[2],el=Math.atan2(dy,Math.hypot(dx,dz));
+    fEl.push(el);fAz.push(Math.abs(wrapA(Math.atan2(dx,dz)-yaw0))*Math.cos(el));}
+  if(!fEl.length){fEl.push(.4);fAz.push(.1);}
+  fEl.sort(num);fAz.sort(num);const m=fEl.length;
+  return{yaw:yaw0,top:fEl[Math.min(m-1,Math.floor(m*.96))]+.05,bot:fEl[Math.floor(m*.04)]-.05,hh:fAz[Math.min(m-1,Math.floor(m*.93))]+.04};
+}
 function updateCamera(dt){
   flockStats();
   const C=S.cen;if(!cam.Cs)cam.Cs=C.slice();
   const kc=1-Math.exp(-dt/.5);for(let k=0;k<3;k++)cam.Cs[k]+=(C[k]-cam.Cs[k])*kc;
   const Cs=cam.Cs;
   if(cam.mode==='meadow'){
-    const p=cam.pos=[0,1.55,0];
-    if(cam.track){
-      const ty=Math.atan2(Cs[0]-p[0],Cs[2]-p[2]),tp=Math.atan2(Cs[1]-p[1],Math.hypot(Cs[0]-p[0],Cs[2]-p[2]));
-      const k=1-Math.exp(-dt/.45);cam.yaw+=wrapA(ty-cam.yaw)*k;cam.pitch+=(tp-cam.pitch)*k;
-    }
-    if(cam.autoZoom){cam.spread=spreadFrom(p,Cs);const zt=clamp(cam.spread*2.7+.06,.14,1.3);cam.zoom+=(zt-cam.zoom)*(1-Math.exp(-dt/1.2));}
+    // frame every flock, and keep the horizon in shot whenever the birds are low enough
+    const p=cam.pos=[0,1.55,0],fr=frameFlock(p,pickFlock()),bot=Math.min(fr.bot,Math.max(-.13,fr.top-.85));
+    if(cam.track){const k=1-Math.exp(-dt/.45);cam.yaw+=wrapA(fr.yaw-cam.yaw)*k;cam.pitch+=((fr.top+bot)/2-cam.pitch)*k;}
+    if(cam.autoZoom){const ty=Math.max(Math.tan(Math.min((fr.top-bot)/2,1.2)),Math.tan(Math.min(fr.hh,1.2))/ASP);
+      const zt=clamp(2*Math.atan(ASP>=1?ty:ty*ASP),.16,1.15);cam.zoom+=(zt-cam.zoom)*(1-Math.exp(-dt/1.2));}
     cam.pitch=clamp(cam.pitch,-.25,1.5);
     cam.fwd=[Math.sin(cam.yaw)*Math.cos(cam.pitch),Math.sin(cam.pitch),Math.cos(cam.yaw)*Math.cos(cam.pitch)];cam.up=[0,1,0];
   }else if(cam.mode==='orbit'){
     if(cam.oauto)cam.oyaw+=dt*.05;
+    if(cam.oautoDist){const t=clamp(S.rad*1.9+14,32,170);cam.odist+=(t-cam.odist)*(1-Math.exp(-dt/1.5));}
     const cp=Math.cos(cam.opitch);
     const p=[Cs[0]+cam.odist*Math.sin(cam.oyaw)*cp,Cs[1]+cam.odist*Math.sin(cam.opitch),Cs[2]+cam.odist*Math.cos(cam.oyaw)*cp];
     p[1]=Math.max(p[1],1.3);cam.pos=p;cam.fwd=nrm([Cs[0]-p[0],Cs[1]-p[1],Cs[2]-p[2]]);cam.up=[0,1,0];cam.zoom=.95;
-  }else{
+  }else if(cam.mode==='ride'){
     const b=cam.rideBird*3,f=[H[b],H[b+1],H[b+2]],bp=[P[b],P[b+1],P[b+2]];
     let u=[UPv[b],UPv[b+1],UPv[b+2]];const fu=u[0]*f[0]+u[1]*f[1]+u[2]*f[2];u=nrm([u[0]-f[0]*fu,u[1]-f[1]*fu,u[2]-f[2]*fu]);
     const c=Math.cos(cam.rideYaw),s=Math.sin(cam.rideYaw),bx=-f[0]*cam.rideDist,bz=-f[2]*cam.rideDist;
@@ -557,6 +828,17 @@ function updateCamera(dt){
     for(let k=0;k<3;k++){cam.rpos[k]+=(tp[k]-cam.rpos[k])*k1;cam.rlook[k]+=(tl[k]-cam.rlook[k])*k2;}
     cam.pos=cam.rpos.slice();cam.fwd=nrm([cam.rlook[0]-cam.pos[0],cam.rlook[1]-cam.pos[1],cam.rlook[2]-cam.pos[2]]);
     cam.up=nrm([u[0]*.35,.65+u[1]*.35,u[2]*.35]);cam.zoom=1.05;
+  }else{
+    // free flight: W A S D along the view, Space and C straight up and down
+    const cp=Math.cos(cam.fpitch),f=[Math.sin(cam.fyaw)*cp,Math.sin(cam.fpitch),Math.cos(cam.fyaw)*cp],r=nrm(cross(f,[0,1,0]));
+    const kd_=keysDown,fw=(kd_.has('KeyW')||kd_.has('ArrowUp')?1:0)-(kd_.has('KeyS')||kd_.has('ArrowDown')?1:0);
+    const rt=(kd_.has('KeyD')||kd_.has('ArrowRight')?1:0)-(kd_.has('KeyA')||kd_.has('ArrowLeft')?1:0),upk=(kd_.has('Space')?1:0)-(kd_.has('KeyC')?1:0);
+    let mx=f[0]*fw+r[0]*rt,my=f[1]*fw+upk,mz=f[2]*fw+r[2]*rt;const ml=Math.hypot(mx,my,mz);
+    const sp=cam.fspeed*(kd_.has('Shift')?2.5:1),k=1-Math.exp(-dt/.14);
+    if(ml>1e-3){mx*=sp/ml;my*=sp/ml;mz*=sp/ml;}
+    cam.fvel[0]+=(mx-cam.fvel[0])*k;cam.fvel[1]+=(my-cam.fvel[1])*k;cam.fvel[2]+=(mz-cam.fvel[2])*k;
+    cam.fpos[0]=clamp(cam.fpos[0]+cam.fvel[0]*dt,-700,700);cam.fpos[1]=clamp(cam.fpos[1]+cam.fvel[1]*dt,.5,400);cam.fpos[2]=clamp(cam.fpos[2]+cam.fvel[2]*dt,-700,700);
+    cam.pos=cam.fpos.slice();cam.fwd=f;cam.up=[0,1,0];cam.zoom=1.0;
   }
 }
 function lookAt(){
@@ -569,6 +851,7 @@ function lookAt(){
 }
 
 /* -------------------------------------------------------- bird splats */
+const LOGK=3900/Math.log(150);
 const qp=[0,0,0,0,0],mp=[0,1,2,3,4].map(()=>new Float32Array(9)),op=[0,0,0,0,0];
 const WA4=[0,0,0,0];
 function wingAngles(ph,fl,tk,A){
@@ -597,7 +880,7 @@ function emit(tpl,pal,specK,sc){
     DY[b]=wx;DY[b+1]=wy;DY[b+2]=wz;DY[b+3]=2;DY[b+4]=t.sig[0]*sc;DY[b+5]=t.sig[1]*sc;DY[b+6]=t.sig[2]*sc;DY[b+7]=t.op;
     DY[b+8]=q[0];DY[b+9]=q[1];DY[b+10]=q[2];DY[b+11]=q[3];DY[b+12]=c[0];DY[b+13]=c[1];DY[b+14]=c[2];DY[b+15]=t.spec*specK+t.flags;
     const d=-(v2*wx+v6*wy+v10*wz+v14);
-    DK[nd++]=d<40?Math.max(0,d)*1500:61600+Math.min((d-40)*2,3900);
+    DK[nd++]=d<40?Math.max(0,d)*1500:61600+Math.min(Math.log(d*.025)*LOGK,3900);
   }
 }
 const PX=new Float32Array(MAXB);
@@ -619,7 +902,7 @@ function genBirds(){
     frames([P[i3],P[i3+1],P[i3+2]],f,u,SC[i],isNear);
     emit(isNear?NEAR:FAR,STAR,1,SC[i]);
   }
-  if(FAL.on){wingAngles(FAL.ph,FAL.flap,FAL.tk,.75);frames(FAL.p.slice(),FAL.f,FAL.u,2.4,true);emit(NEAR,FALC,.15,2.4);}
+  for(const F of FALS){wingAngles(F.ph,F.flap,F.tk,.75);frames(F.p.slice(),F.f,F.u,2.4,true);emit(NEAR,FALC,.15,2.4);}
 }
 
 /* ---------------------------------------------------------------- sort */
@@ -636,9 +919,19 @@ function buildOrder(){
     const ly=-vz*tanY+mg,vy=m1*wx+m5*y+m9*wz+m13;if(vy>ly||vy<-ly)continue;
     tmpIdx[n]=i;keys[n++]=grass?Math.min(-vz*1500,59999):60000+Math.min(-vz*20,1500);
   }
-  for(let i=nField;i<nStatic;i++){
-    const o=i<<4,x=D[o],y=D[o+1],z=D[o+2],vz=m2*x+m6*y+m10*z+m14;if(vz>-1)continue;
-    const d=-vz;tmpIdx[n]=i;keys[n++]=61600+Math.min((d-40)*2,3900);
+  for(let i=nField;i<nDecal;i++){        // ground decals sort with the ground
+    const o=i<<4,d=-(m2*D[o]+m6*D[o+1]+m10*D[o+2]+m14);if(d<.2)continue;
+    tmpIdx[n]=i;keys[n++]=d<40?60000+Math.min(d*20,1500):61600+Math.min(Math.log(d*.025)*LOGK,3900);
+  }
+  for(let i=nDecal;i<nProps;i++){
+    const o=i<<4,d=-(m2*D[o]+m6*D[o+1]+m10*D[o+2]+m14);if(d<1)continue;
+    tmpIdx[n]=i;keys[n++]=d<40?d*1500:61600+Math.min(Math.log(d*.025)*LOGK,3900);
+  }
+  for(let i=nProps;i<nStatic;i++){
+    const o=i<<4,x=D[o],y=D[o+1],z=D[o+2],d=-(m2*x+m6*y+m10*z+m14);if(d<.15)continue;
+    const lx=d*tanX+1.2,vx=m0*x+m4*y+m8*z+m12;if(vx>lx||vx<-lx)continue;
+    const ly=d*tanY+1.2,vy=m1*x+m5*y+m9*z+m13;if(vy>ly||vy<-ly)continue;
+    tmpIdx[n]=i;keys[n++]=d<40?d*1500:61600+Math.min(Math.log(d*.025)*LOGK,3900);
   }
   for(let k=0;k<nd;k++){tmpIdx[n]=DYN0+k;keys[n++]=DK[k];}
   counts.fill(0);for(let i=0;i<n;i++)counts[keys[i]]++;
@@ -650,19 +943,31 @@ function buildOrder(){
 /* ---------------------------------------------------------------- loop */
 let last=0,fpsT=0,fpsN=0,slow=0,drawn=0;
 const st1=document.getElementById('st1'),st2=document.getElementById('st2');
-function advance(dt){const steps=Math.max(1,Math.ceil(dt/.02)),h=dt/steps;for(let k=0;k<steps;k++){if(!(k%5))flockStats();stepFlock(h);stepFalcon(h);S.time+=h;}}
+function advance(dt){
+  const steps=Math.max(1,Math.ceil(dt/.02)),h=dt/steps;
+  for(let k=0;k<steps;k++){
+    if(S.time-lastCluster>=.15){clusterNow=true;lastCluster=S.time;}
+    if(S.auto&&S.time>=S.nextTurn)autoTurn();
+    stepFlock(h);
+    if(FALS.length){for(const F of FALS)stepFalcon(F,h);
+      if(FALS.some(F=>F.done)){for(let q=FALS.length-1;q>=0;q--)if(FALS[q].done)FALS.splice(q,1);syncFalconUI();}}
+    S.time+=h;
+  }
+}
 function frame(now){
   requestAnimationFrame(frame);
-  const t=now/1000,dt=Math.min(.05,Math.max(0,t-last));last=t;
+  const t=now/1000,rdt=Math.max(0,t-last),dt=Math.min(.05,rdt);last=t;
   if(!S.frozen)advance(dt*(S.slow?.2:1));
-  updateCamera(dt);
+  updateCamera(Math.min(.12,rdt));
   render();
-  fpsN++;fpsT+=dt;
+  fpsN++;fpsT+=rdt;
   if(dt>.03)slow++;else slow=Math.max(0,slow-1);
   if(slow>50&&scale>.55){scale*=.85;slow=0;}
   if(fpsT>=.5){
     st1.textContent=S.n.toLocaleString()+' starlings · '+drawn.toLocaleString()+' splats · '+Math.round(fpsN/fpsT)+' fps';
-    st2.textContent='alignment '+S.pol.toFixed(2)+' · nearest neighbour '+S.nn.toFixed(2)+' m';fpsT=fpsN=0;}
+    const fl=S.flocks,nf=FALS.length;
+    st2.textContent=(fl.length>1?fl.length+' flocks '+fl.slice(0,4).join('/'):'1 flock')+' · alignment '+S.pol.toFixed(2)+(nf?' · '+nf+(nf>1?' falcons':' falcon'):'');
+    fpsT=fpsN=0;}
 }
 function render(){
   resize();
@@ -689,45 +994,73 @@ function render(){
 
 /* --------------------------------------------------------------- input */
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
-const HINTS={meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',orbit:'Drag to orbit the flock · pinch to zoom',ride:'Drag to swing around your starling · pinch to move closer'};
-function showHint(){hint.textContent=HINTS[cam.mode];hint.classList.remove('off');clearTimeout(hintTimer);hintTimer=setTimeout(()=>hint.classList.add('off'),7000);}
-function touched(){hint.classList.add('off');}
-canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pinch=0;touched();});
+const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',orbit:'Drag to orbit · pinch to zoom',
+    ride:'Drag to swing around your starling · pinch to move closer',fly:'Drag to look · pinch to fly forward or back'}
+  :{meadow:'Drag to look · scroll to zoom · press W A S D to take off and fly',orbit:'Drag to orbit · scroll to zoom',
+    ride:'Drag to swing around your starling · scroll to move closer',fly:'W A S D to fly · Space up · C down · Shift faster · drag to look · scroll sets speed'};
+function showHint(){hint.textContent=HINTS[cam.mode];hint.classList.remove('off');clearTimeout(hintTimer);hintTimer=setTimeout(()=>hint.classList.add('off'),cam.mode==='fly'?12000:7000);}
+function touched(){if(cam.mode!=='fly')hint.classList.add('off');}
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});pts.set(e.pointerId,[e.clientX,e.clientY]);pinch=0;touched();});
 canvas.addEventListener('pointermove',e=>{
   const p=pts.get(e.pointerId);if(!p)return;const dx=e.clientX-p[0],dy=e.clientY-p[1];p[0]=e.clientX;p[1]=e.clientY;
   if(pts.size===1){
-    if(cam.mode==='meadow'){const k=cam.zoom/Math.min(canvas.clientWidth,canvas.clientHeight);cam.track=false;cam.yaw+=dx*k;cam.pitch=clamp(cam.pitch+dy*k,-.25,1.5);}
+    const k=cam.zoom/Math.min(canvas.clientWidth,canvas.clientHeight);
+    if(cam.mode==='meadow'){cam.track=false;cam.yaw+=dx*k;cam.pitch=clamp(cam.pitch+dy*k,-.25,1.5);}
     else if(cam.mode==='orbit'){cam.oauto=false;cam.oyaw-=dx*.0075;cam.opitch=clamp(cam.opitch+dy*.006,-.4,1.4);}
-    else cam.rideYaw-=dx*.008;
-  }else if(pts.size===2){const[a,b]=[...pts.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch)zoomBy(pinch/d);pinch=d;}
+    else if(cam.mode==='ride')cam.rideYaw-=dx*.008;
+    else{const sgn=e.pointerType==='mouse'?-1:1;     // mouse turns the head, a finger drags the scene
+      cam.fyaw+=sgn*dx*k*1.3;cam.fpitch=clamp(cam.fpitch+sgn*dy*k*1.3,-1.45,1.45);}
+  }else if(pts.size===2){const[a,b]=[...pts.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch)zoomBy(pinch/d,true);pinch=d;}
 });
-function zoomBy(k){
+function zoomBy(k,isPinch){
   if(cam.mode==='meadow'){cam.autoZoom=false;cam.zoom=clamp(cam.zoom*k,.06,1.5);}
-  else if(cam.mode==='orbit')cam.odist=clamp(cam.odist*k,8,260);
-  else cam.rideDist=clamp(cam.rideDist*k,.8,14);
+  else if(cam.mode==='orbit'){cam.oautoDist=false;cam.odist=clamp(cam.odist*k,8,260);}
+  else if(cam.mode==='ride')cam.rideDist=clamp(cam.rideDist*k,.8,14);
+  else if(isPinch){const d=-Math.log(k)*30,f=cam.fwd;cam.fpos[0]+=f[0]*d;cam.fpos[1]=Math.max(.5,cam.fpos[1]+f[1]*d);cam.fpos[2]+=f[2]*d;}
+  else cam.fspeed=clamp(cam.fspeed/k,3,60);
 }
 const up=e=>{pts.delete(e.pointerId);pinch=0;};
 canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
-canvas.addEventListener('wheel',e=>{e.preventDefault();zoomBy(Math.exp(e.deltaY*.0012));touched();},{passive:false});
-const VB={meadow:document.getElementById('vMeadow'),orbit:document.getElementById('vOrbit'),ride:document.getElementById('vRide')};
+canvas.addEventListener('wheel',e=>{e.preventDefault();zoomBy(Math.exp(e.deltaY*.0012),false);touched();},{passive:false});
+const MODES=['meadow','orbit','ride','fly'];
+const VB={meadow:document.getElementById('vMeadow'),orbit:document.getElementById('vOrbit'),ride:document.getElementById('vRide'),fly:document.getElementById('vFly')};
 function setMode(m){
   if(m==='meadow'){cam.track=true;cam.autoZoom=true;}
+  if(m==='orbit'&&cam.mode==='orbit'){cam.oautoDist=true;cam.oauto=true;}
   if(m==='ride'){let best=0,bc=9;for(let i=0;i<S.n;i++)if(CEN[i]<bc){bc=CEN[i];best=i;}cam.rideBird=best;cam.rpos=null;cam.rideYaw=0;}
+  if(m==='fly'&&cam.mode!=='fly'){cam.fpos=cam.pos.slice();cam.fyaw=Math.atan2(cam.fwd[0],cam.fwd[2]);cam.fpitch=Math.asin(clamp(cam.fwd[1],-1,1));cam.fvel=[0,0,0];}
   cam.mode=m;for(const k in VB)VB[k].setAttribute('aria-pressed',k===m);showHint();
 }
-for(const k in VB)VB[k].onclick=()=>setMode(k);
-const bFalcon=document.getElementById('bFalcon'),bSlow=document.getElementById('bSlow');
-bFalcon.onclick=launchFalcon;
-bSlow.onclick=()=>{S.slow=!S.slow;bSlow.setAttribute('aria-pressed',S.slow);};
+for(const k in VB)VB[k].onclick=e=>{setMode(k);e.currentTarget.blur();};
+const bFalcon=document.getElementById('bFalcon'),bSlow=document.getElementById('bSlow'),bSplit=document.getElementById('bSplit');
+function syncFalconUI(){const n=FALS.length;bFalcon.textContent=n?'Falcon ×'+n:'Falcon';bFalcon.dataset.on=n?'1':'0';
+  if(n>=MAXF)bFalcon.setAttribute('aria-disabled','true');else bFalcon.removeAttribute('aria-disabled');}
+function toggleSlow(){S.slow=!S.slow;bSlow.setAttribute('aria-pressed',S.slow);}
+bFalcon.onclick=e=>{launchFalcon();e.currentTarget.blur();};
+bSplit.onclick=e=>{forceSplit();e.currentTarget.blur();};
+bSlow.onclick=e=>{toggleSlow();e.currentTarget.blur();};
 const cnt=document.getElementById('count'),cntOut=document.getElementById('countOut');
 cnt.oninput=()=>{resizeFlock(+cnt.value);cntOut.textContent=cnt.value;};
-addEventListener('keydown',e=>{if(e.repeat||e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();
-  if(k==='f')launchFalcon();else if(k==='s')bSlow.onclick();else if(k==='1')setMode('meadow');else if(k==='2')setMode('orbit');else if(k==='3')setMode('ride');});
+cnt.onchange=()=>cnt.blur();
+const MOVE=new Set(['KeyW','KeyA','KeyS','KeyD','KeyC','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.ctrlKey||e.metaKey||e.altKey)return;
+  const c=e.code;
+  if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
+  if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
+  if(e.repeat)return;
+  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();
+  else if(c>='Digit1'&&c<='Digit4')setMode(MODES[+c.slice(5)-1]);
+});
+addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
+addEventListener('blur',()=>keysDown.clear());
 
 const n0=coarse?600:1000;cnt.value=n0;cntOut.textContent=n0;spawn(n0);
-advance(1.5);flockStats();cam.Cs=S.cen.slice();
+advance(1.5);resize();
+for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__sim={S,cam,FAL,ESC,getP:()=>P,advance,setMode,launchFalcon,updateCamera,render,count:()=>({nStatic,nd,drawn,n:S.n})};
+window.__sim={S,cam,FALS,ESC,TT,LAB,CLn,CLr,getP:()=>P,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
+  count:()=>({nStatic,nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
 </script>
