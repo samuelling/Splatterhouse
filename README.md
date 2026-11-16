@@ -1,6 +1,6 @@
 # Splatterhouse
 
-A real-time 3D Gaussian splat demo in one HTML file: starling flocks at dusk over a wind-blown meadow, wheeling above a barn, a silo and a stand of trees. The flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
+A real-time 3D Gaussian splat demo in one HTML file: starling flocks at dusk over a wildflower meadow, wheeling above a barn, a silo, fenced fields and a mix of trees. The flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
 
 Every splat is generated in the browser and drawn the way trained splat scenes are. Each one is an anisotropic 3D Gaussian (position, rotation, scale, colour, opacity), projected to a 2D covariance in the vertex shader, depth-sorted on the CPU each frame and alpha-blended back to front. There is no mesh and no depth buffer.
 
@@ -30,7 +30,7 @@ The flock follows StarDisplay (Hildenbrandt, Carere & Hemelrijk 2010, *Behaviora
 - **Cohesion weighted by centrality.** Birds on the flock edge are pulled inward more strongly than birds in the interior.
 - **Aerodynamics.** Cruise speed is 10 m/s, with relaxation back toward it. Lift scales with v² along the bird's up vector, and gravity acts throughout.
 - **Turning only by banking.** Social and roost forces never yaw a bird directly. Their sideways component sets a target roll angle, and the tilted lift vector does the turning. Banked birds lose height in turns, as real ones do.
-- **Roost attraction.** Birds turn back toward the roost (the barn and trees) once they stray more than 48 m from it. The preferred altitude drifts slowly, and birds climb over the barn, silo and treetops.
+- **Roost attraction.** Birds turn back toward the roost (the barn and the trees around it) once they stray more than 48 m from it. The preferred altitude drifts slowly, and birds climb over the barn, silo and treetops.
 - **Wings.** Each bird flaps at about 13.3 Hz, the wind-tunnel value for European starlings, with wrist flex on the upstroke, flap-glide bursts and tucked wings in dives.
 
 ## Splitting and rejoining
@@ -58,7 +58,10 @@ Other simplifications that are not from the papers: small, slow noise forces kee
 
 - **Data.** Each splat is four RGBA32F texels in one data texture. Static splats (grass, barn, trees, hills, clouds) are uploaded once. Bird splats are rebuilt and re-uploaded every frame into a dynamic region of the same texture.
 - **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. Near birds use 46 splats, with separate top and underside wing splats that fade by facing, so wings look glossy black from above and grey-brown from below. Distant birds collapse to 3 splats.
-- **Barn and silo.** About 22,000 surface splats laid out on panels: board-and-batten walls with per-board weathering, white trim, windows, X-braced sliding doors standing ajar with light inside, a hay-loft door, a rusting standing-seam gambrel roof, a louvred cupola with a weathervane, a stave silo with steel hoops, and a split-rail fence. Each splat's thin axis is the surface normal, so the sunset lights them properly.
-- **Trees.** Recursive limbs with sprays of translucent leaf splats at the tips. Leaves glow when backlit by the sun and sway slightly.
-- **Meadow.** The grass tiles a 36 m torus centred on the camera, so it follows you in Fly mode. It sways in a periodic wind field, thins out with distance, and fades into a ray-traced ground plane.
-- **Sort.** Visible splats are culled against the frustum and ordered with a 16-bit counting sort, linear in depth out to 40 m and logarithmic beyond.
+- **Barn and silo.** About 22,000 surface splats laid out on panels: board-and-batten walls with per-board weathering, white trim, windows, X-braced sliding doors standing ajar with light inside, a hay-loft door, a rusting standing-seam gambrel roof, a louvred cupola with a weathervane, and a stave silo with steel hoops. Each splat's thin axis is the surface normal, so the sunset lights them properly.
+- **Meadow.** The meadow covers the whole field in three nested rings that tile around the camera. Within 17 m every blade, seed head and flower is its own splat. From 14 to 68 m each splat is a tussock or a patch of flowers, and from 55 to 272 m a larger one. Beyond that, and underneath everything, is a ray-traced ground plane in the same colours.
+- **World maps.** Two 512 m textures drive all three rings and the ground plane, so they always agree: one holds dryness, flower density, dominant species and grass vigour; the other holds short grass, shade, bare earth and lamplight. Flower splats carry random numbers instead of a colour. The shader turns each into a poppy, oxeye daisy, cornflower, buttercup, knapweed or clover from the species map at its world position, or hides it where the density map is low. That is what makes the flowers grow in drifts.
+- **Track, paddock and shadows.** A two-rut farm track runs from the barn doors through a field gate and across the meadow. The white-fenced paddock beside the barn is grazed short. The long sunset shadows of the barn, silo and every tree are painted into the shade map, so they fall across grass, flowers and ground alike.
+- **Fences.** Post-and-rail fences enclose the barn field and run off toward the horizon, with a five-bar gate where the track crosses and shrubs along the lines, some with berries.
+- **Trees.** Eight kinds, each with its own generator: spreading oaks, orange maples, white-barked birches in clumps, conical spruces with drooping sprays, a row of Lombardy poplars, a weeping willow with hanging withies, a small apple orchard behind the barn, and one dead snag. Leaves are translucent splats that glow when backlit and sway slightly.
+- **Sort.** Each meadow ring is stored in a 12×12 grid of cells, so cells outside the ring or the view are skipped without reading their splats. What survives is ordered with a 16-bit counting sort, linear in depth out to 40 m and logarithmic beyond.
