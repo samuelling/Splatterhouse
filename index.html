@@ -56,9 +56,9 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
 #chips{position:fixed;left:14px;top:96px;display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 28px)}
-#bClean,#bFull,#bFinger,#bHead{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
-#bFinger[hidden],#bHead[hidden]{display:none}
-#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bFull[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
+#bClean,#bFull,#bFinger,#bHead,#bHold{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#bFinger[hidden],#bHead[hidden],#bHold[hidden]{display:none}
+#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bHold[aria-pressed="true"],#bFull[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bAdv[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #adv{position:fixed;left:14px;top:128px;width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 140px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
@@ -94,6 +94,8 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #cam b{position:absolute;width:10px;height:10px;margin:-5px;border-radius:50%;border:2px solid #7fc4ff;background:#7fc4ff}
 #cam b.w{border-radius:2px;border-color:#9be28a;background:#9be28a}
 #cam u{position:absolute;width:22px;height:22px;margin:-11px;border-radius:50%;border:1px dashed rgba(247,239,230,.7)}
+#cam s{position:absolute;height:2px;margin-top:-1px;background:rgba(247,239,230,.85);transform-origin:0 50%}
+#cam s[hidden]{display:none}
 #cam em{position:absolute;width:10px;height:10px;margin:-5px;border:2px solid #f3c96b;transform:rotate(45deg)}
 #cam em.a{background:#f3c96b}
 #cam b[hidden],#cam u[hidden],#cam i[hidden],#cam em[hidden],#cam button[hidden],#cam small[hidden]{display:none}
@@ -142,7 +144,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button></div>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button></div>
 <button id="bShow" type="button">Show menus</button>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
   <h4>Advanced <small>Gaussian splats</small><button type="button" id="advX" aria-label="Close">×</button></h4>
@@ -159,7 +161,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 </form>
 <div id="flash"></div><div id="lens"></div>
 <div id="bag" hidden></div>
-<div id="cam" hidden><div><video playsinline muted></video><u hidden></u><em hidden></em><i hidden></i><b hidden></b></div><span></span><small></small><small hidden></small><small></small><button id="bCal" type="button">Calibrate</button><button id="bCen" type="button" hidden>Centre head (C)</button></div>
+<div id="cam" hidden><div><video playsinline muted></video><u hidden></u><s hidden></s><em hidden></em><i hidden></i><b hidden></b></div><span></span><small></small><small hidden></small><small></small><button id="bCal" type="button">Calibrate</button><button id="bCen" type="button" hidden>Centre (C)</button></div>
 <div id="calib" hidden><p></p><i></i><small></small></div>
 <div id="xh" hidden><i></i><b></b></div>
 <div id="hint"></div>
@@ -1947,6 +1949,8 @@ function updateCamera(dt){
     const HD=Finger.H,lx_=HD.ax-(cam.hax||0),ly_=HD.ay-(cam.hay||0);
     if(HD.live){cam.hyaw-=HD.x*1.9*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+HD.y*.8*cam.hzoom*dt,-.6,1.45);}                                // the head as a stick: turned away from the middle, the view keeps turning
     if(lx_||ly_){cam.hyaw-=lx_;cam.hpitch=clamp(cam.hpitch+ly_,-.6,1.45);cam.hax=HD.ax;cam.hay=HD.ay;}                                       // and the small lean that follows the head at once
+    if(Finger.F.hold&&Finger.F.gun&&!HD.on){const pu=v=>Math.sign(v)*clamp((Math.abs(v)-.7)/.3,0,1);                                        // shotgun hold without head look: pushing the cross-hairs at an edge turns you that way
+      cam.hyaw-=pu(Hunt.aim.x)*1.5*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+pu(Hunt.aim.y)*.8*cam.hzoom*dt,-.6,1.45);}
     if(JS.on&&JS.mode==='look'&&!HD.on){cam.hyaw-=JS.x*1.9*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+JS.y*1.3*cam.hzoom*dt,-.6,1.45);}              // the other hand, open: turn the head
     const fw=(kd_.has('KeyW')?1:0)-(kd_.has('KeyS')?1:0)+(jw?JS.y:0),rt=(kd_.has('KeyD')?1:0)-(kd_.has('KeyA')?1:0)+(jw?JS.x:0),sy=Math.sin(cam.hyaw),cy=Math.cos(cam.hyaw);       // as a fist: walk
     let mx=sy*fw-cy*rt,mz=cy*fw+sy*rt;const ml=Math.hypot(mx,mz),spd=kd_.has('Shift')?6.5:3.6,k=1-Math.exp(-dt/.12);
@@ -2688,9 +2692,9 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     if(!cam.hpos||!canStand(cam.hpos[0],cam.hpos[1])){cam.hpos=[GATE[0]+2,GATE[1]-6];cam.hyaw=Math.atan2(RSX-cam.hpos[0],RSZ-cam.hpos[1]);cam.hpitch=.25;cam.hzoom=1.05;cam.hvel=[0,0];cam.hbob=0;}
     aim.x=aim.y=0;if(!gvao)try{build();}catch(e){console.error(e);}
     {const d=bw([0,0,11]);dog.on=true;dog.p=[d[0],d[2]];dog.mode='heel';dog.tg=null;dog.spd=0;dog.ph=0;}      // the dog comes out from the barn
-    document.getElementById('bFinger').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
+    document.getElementById('bFinger').hidden=false;document.getElementById('bHold').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
   }
-  function leave(){Finger.stop();document.getElementById('bFinger').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
+  function leave(){Finger.stop();document.getElementById('bFinger').hidden=true;document.getElementById('bHold').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
   function pointAt(cx,cy){const r=canvas.getBoundingClientRect();aim.x=clamp((cx-r.left)/r.width*2-1,-1,1);aim.y=clamp(1-(cy-r.top)/r.height*2,-1,1);}
   function step(h){
     stepFx(h);stepDead(h);dogStep(h);
@@ -2774,11 +2778,11 @@ const Finger=(()=>{
     model:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'};
   const DEF={S0:.8,up:0,down:0,x1:.27,y1:.3,x2:.73,y2:.7,done:false},KEY='splatterhaus.fingergun';
   let C=Object.assign({},DEF);try{const j=JSON.parse(localStorage.getItem(KEY));if(j&&j.done)C=Object.assign({},DEF,j);}catch(e){}
-  const F={on:false,gun:false,cocked:false,x:0,y:0,fires:0,err:'',inN:0,outN:0,lost:0,lowN:0,hi:0,gp:null,lp:null,gT:-9,gl:'',lv:0,sw:0},hist=[];
+  const F={on:false,gun:false,cocked:false,x:0,y:0,fires:0,err:'',inN:0,outN:0,lost:0,lowN:0,hi:0,gp:null,lp:null,gT:-9,gl:'',lv:0,sw:0,hold:false,held:false,hN:0,n0:null,nbuf:null,sc:0},hist=[];
   const box=document.getElementById('cam'),video=box.querySelector('video'),note=box.querySelector('span'),nums=box.querySelector('small'),dot=box.querySelector('i'),dot2=box.querySelector('b'),ring=box.querySelector('u'),btn=document.getElementById('bFinger'),bCal=document.getElementById('bCal');
   const ov=document.getElementById('calib'),ovT=ov.querySelector('p'),ovD=ov.querySelector('i'),ovS=ov.querySelector('small');
   const FACE=SRC.face||'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
-  const bHead=document.getElementById('bHead'),bCen=document.getElementById('bCen'),hm=box.querySelector('em'),hn=box.querySelectorAll('small')[1],rate=box.querySelectorAll('small')[2],want={gun:false,head:false};
+  const bHold=document.getElementById('bHold'),bar=box.querySelector('s'),bHead=document.getElementById('bHead'),bCen=document.getElementById('bCen'),hm=box.querySelector('em'),hn=box.querySelectorAll('small')[1],rate=box.querySelectorAll('small')[2],want={gun:false,head:false};
   let lm=null,fm=null,vis=null,fset=null,stream=null,lastT=-1,cal=null,busy=Promise.resolve();
   const sub=(a,b)=>[a.x-b.x,a.y-b.y,a.z-b.z],len=v=>Math.hypot(v[0],v[1],v[2]),med=a=>{const b=a.slice().sort((x,y)=>x-y);return b[b.length>>1];};
   // One hand, as 21 points in the picture (l) and in metres (w). How far a finger is out is the distance from wrist to fingertip over wrist to
@@ -2787,7 +2791,9 @@ const Finger=(()=>{
   // finger may be out or folded: the barrel can be one finger or two, and with two the gun points from between their tips.
   function read(l,w){
     const d=(i,j)=>len(sub(w[i],w[j]))+1e-6,E=k=>d(k+3,0)/d(k,0),ei=E(5),em=E(9),eo=Math.max(E(13),E(17)),two=em>ei*.8;
-    return{score:ei-eo,ei,em,eo,two,thumb:d(4,5)/d(9,0),x:1-(two?(l[8].x+l[12].x)/2:l[8].x),y:two?(l[8].y+l[12].y)/2:l[8].y,       // thumb: its tip to the index knuckle, in palm lengths
+    // sz: picture widths per metre at this hand's distance, from the palm's bones (the one lying flattest to the camera gives the truest figure)
+    const asp=video.videoWidth?video.videoWidth/video.videoHeight:4/3,p2=(i,j)=>Math.hypot(l[i].x-l[j].x,(l[i].y-l[j].y)/asp);
+    return{sz:Math.max(p2(0,5)/d(0,5),p2(0,9)/d(0,9),p2(0,17)/d(0,17),p2(5,17)/d(5,17)),score:ei-eo,ei,em,eo,two,thumb:d(4,5)/d(9,0),x:1-(two?(l[8].x+l[12].x)/2:l[8].x),y:two?(l[8].y+l[12].y)/2:l[8].y,       // thumb: its tip to the index knuckle, in palm lengths
       open:(ei+em+E(13)+E(17))/4,px:1-(l[0].x+l[5].x+l[17].x)/3,py:(l[0].y+l[5].y+l[17].y)/3};                               // how open the whole hand is, and where its palm is
   }
   // ---- calibration: four steps. Each waits until the hand has reached its place and is holding still, then reads it for a second, and
@@ -2870,9 +2876,51 @@ const Finger=(()=>{
      points straight at the camera). Position settles it while the hands are apart; the label settles it when they cross or one has been
      out of view. Aiming with the other hand for a moment hands the gun over. */
   const dist2=(r,p)=>Math.hypot(r.px-p[0],r.py-p[1]);
+  /* The shotgun hold: an imaginary gun in both hands. The trigger hand is the one with its index finger out along the gun and the others
+     wrapped round the grip, which is the finger-gun shape, so it is found the same way; the other hand is the one out on the fore-end.
+     The gun points the way the fore-end hand lies from the trigger hand. Only the sideways and up-and-down parts of that can be seen by one
+     camera, and they are what is used: the offset between the two palms, turned into centimetres by how big the hands look, measured from
+     what it was when the gun was first pointed at the middle of the screen. Being a difference between two hands, it does not care where
+     you sit. Curling the trigger finger fires; straightening it makes ready again. Once the hold is made the hands keep their jobs by
+     where they are and by their left and right labels, whatever shape they take, until both have been out of view for a moment. */
+  const HX=.13,HY=.10;         // metres of swing at the fore-end that carry the cross-hairs from the middle of the screen to its edge
+  function holdCentre(){F.n0=null;F.nbuf=null;}
+  function holdShow(T,O){
+    if(T){dot.hidden=false;dot.style.left=(T.px*100).toFixed(1)+'%';dot.style.top=(T.py*100).toFixed(1)+'%';}else dot.hidden=true;
+    if(O){dot2.hidden=false;dot2.className='';dot2.style.left=(O.px*100).toFixed(1)+'%';dot2.style.top=(O.py*100).toFixed(1)+'%';}else dot2.hidden=true;
+    if(T&&O){const W=bar.parentNode.clientWidth||150,Hh=bar.parentNode.clientHeight||112,dx=(O.px-T.px)*W,dy=(O.py-T.py)*Hh;
+      bar.hidden=false;bar.style.left=(T.px*100).toFixed(1)+'%';bar.style.top=(T.py*100).toFixed(1)+'%';bar.style.width=Math.hypot(dx,dy).toFixed(1)+'px';bar.style.transform='rotate('+Math.atan2(dy,dx).toFixed(3)+'rad)';}else bar.hidden=true;
+  }
+  function holdFrame(H,t){
+    const enter=.45*C.S0,miss=(r,isGun)=>F.gl&&r.lab&&(r.lab===F.gl)!==isGun?.25:0;let g=-1;ring.hidden=true;
+    if(H.length>=2){
+      if(F.held){const c=i=>dist2(H[i],F.gp)+dist2(H[1-i],F.lp)+miss(H[i],true)+miss(H[1-i],false);g=c(0)<=c(1)?0:1;}
+      else{g=H[0].score>=H[1].score?0:1;if(H[g].score>enter){if(++F.hN>=3){F.held=true;F.cocked=false;F.lowN=0;F.sc=0;hist.length=0;fx.t=fy.t=null;}}else F.hN=0;}}
+    if(g<0||!F.held){
+      if(F.held&&t-F.gT>.6){F.held=false;F.hN=0;}                              // both hands gone for a moment: the gun is lowered
+      if(!F.held){F.gun=false;F.cocked=false;dot.className='';holdShow(H[0],H[1]);note.textContent='hold an imaginary shotgun: trigger finger out, other hand out in front';nums.textContent=H.length?H.length+' hand'+(H.length>1?'s':'')+' in view':'no hands in view';}
+      return;}                                                                // one hand hidden for a moment keeps the aim
+    const T=H[g],O=H[1-g],asp=video.videoWidth?video.videoWidth/video.videoHeight:4/3,sc=(T.sz+O.sz)/2>.2?(T.sz+O.sz)/2:1.3;
+    F.gp=[T.px,T.py];F.lp=[O.px,O.py];F.gT=t;F.sc=F.sc?F.sc+(sc-F.sc)*.08:sc;holdShow(T,O);
+    if(T.lab){F.lv=clamp(F.lv+(T.lab==='Right'?1:-1),-30,30);if(F.lv>5)F.gl='Right';else if(F.lv<-5)F.gl='Left';}
+    const ox=(O.px-T.px)/F.sc,oy=(O.py-T.py)/asp/F.sc;
+    if(!F.n0){if(!F.nbuf)F.nbuf=[];F.nbuf.push([t,ox,oy]);F.gun=false;dot.className='';note.textContent='point it at the middle of the screen and hold still';       // half a second of that is "the middle"
+      if(t-F.nbuf[0][0]>.6){F.n0=[med(F.nbuf.map(q=>q[1])),med(F.nbuf.map(q=>q[2]))];F.nbuf=null;}return;}
+    F.gun=true;
+    const tx=clamp((ox-F.n0[0])/HX,-1.05,1.05),ty=clamp((F.n0[1]-oy)/HY,-1.05,1.05);
+    F.x=clamp(euro(fx,tx,t),-1,1);F.y=clamp(euro(fy,ty,t),-1,1);hist.push([F.x,F.y]);if(hist.length>6)hist.shift();
+    if(cam.mode==='hunt'){Hunt.aim.x=F.x;Hunt.aim.y=F.y;}
+    dot.className='g';
+    if(T.score>enter){F.cocked=true;F.lowN=0;note.textContent='aiming \u00b7 curl your trigger finger to fire';}
+    else if(F.cocked&&T.score<.28*C.S0){if(++F.lowN>=2){F.cocked=false;F.lowN=0;F.fires++;note.textContent='bang';dot.className='f';
+      if(cam.mode==='hunt'){const h=hist[0];Hunt.aim.x=h[0];Hunt.aim.y=h[1];Hunt.fire();Hunt.aim.x=F.x;Hunt.aim.y=F.y;}}}
+    else{F.lowN=0;if(!F.cocked)note.textContent='straighten your trigger finger to make ready';}
+    nums.textContent='trigger '+T.score.toFixed(2)+' \u00b7 swing '+((ox-F.n0[0])*100).toFixed(0)+', '+((F.n0[1]-oy)*100).toFixed(0)+' cm';
+  }
   function feedHands(hs){
     const t=clock(),H=hs.map(h=>{const r=read(h[0],h[1]);r.lab=h[2]&&h[3]>.75?h[2]:'';r.rx=r.x;r.ry=r.y;anchor(r);return r;}),enter=.45*C.S0,exit=.2*C.S0;let g=-1,k=-1;
     if(cal){let b=null;for(const r of H)if(!b||r.score>b.score)b=r;gun(b);look(null,t);return;}
+    if(F.hold){look(null,t);holdFrame(H,t);return;}
     const gOK=F.gp&&t-F.gT<.6,lOK=F.lp&&t-J.seen<.6,miss=(r,isGun)=>F.gl&&r.lab&&(r.lab===F.gl)!==isGun?.25:0;
     if(H.length>=2){const c=i=>(gOK?dist2(H[i],F.gp):0)+(lOK?dist2(H[1-i],F.lp):0)+miss(H[i],true)+miss(H[1-i],false),c0=c(0),c1=c(1);
       g=c0!==c1?(c0<c1?0:1):H[0].score>=H[1].score?0:1;
@@ -2910,8 +2958,8 @@ const Finger=(()=>{
     else F.lowN=0;
   }
   // The camera and the two trackers are shared: each is fetched the first time something wants it, and the camera is let go when nothing does.
-  function sync(){btn.setAttribute('aria-pressed',String(want.gun));bHead.setAttribute('aria-pressed',String(want.head));bCal.hidden=nums.hidden=!want.gun;bCen.hidden=hn.hidden=!want.head;}
-  function shut(){F.on=false;F.gun=false;Hd.on=Hd.live=false;Hd.x=Hd.y=Hd.ax=Hd.ay=0;FA.ok=false;sref=null;rate.textContent='';hm.hidden=dot.hidden=dot2.hidden=ring.hidden=true;J.on=false;J.since=0;J.x=J.y=0;if(cal){cal=null;ov.hidden=true;}if(stream){for(const t of stream.getTracks())t.stop();stream=null;}video.srcObject=null;box.hidden=true;}
+  function sync(){btn.setAttribute('aria-pressed',String(want.gun&&!F.hold));bHold.setAttribute('aria-pressed',String(want.gun&&F.hold));bHead.setAttribute('aria-pressed',String(want.head));nums.hidden=!want.gun;bCal.hidden=!want.gun||F.hold;hn.hidden=!want.head;bCen.hidden=!want.head&&!(want.gun&&F.hold);}
+  function shut(){F.on=false;F.gun=false;F.held=false;F.hN=0;holdCentre();bar.hidden=true;Hd.on=Hd.live=false;Hd.x=Hd.y=Hd.ax=Hd.ay=0;FA.ok=false;sref=null;rate.textContent='';hm.hidden=dot.hidden=dot2.hidden=ring.hidden=true;J.on=false;J.since=0;J.x=J.y=0;if(cal){cal=null;ov.hidden=true;}if(stream){for(const t of stream.getTracks())t.stop();stream=null;}video.srcObject=null;box.hidden=true;}
   function stop(){want.gun=want.head=false;sync();shut();}
   function set(what,on){want[what]=!!on;sync();busy=busy.then(ensure);return busy;}
   const start=()=>set('gun',true);
@@ -2932,8 +2980,8 @@ const Finger=(()=>{
         const mk=dg=>vis.FaceLandmarker.createFromOptions(fset,{baseOptions:{modelAssetPath:FACE,delegate:dg},runningMode:'VIDEO',numFaces:1,outputFacialTransformationMatrixes:true});
         try{fm=await mk('GPU');}catch(e){fm=await mk('CPU');}}
       if(!want.gun&&!want.head){shut();return;}
-      if(want.gun&&!F.on){F.on=true;note.textContent='show the camera a finger gun';if(!C.done)calStart();}
-      else if(!want.gun&&F.on){F.on=false;F.gun=false;J.on=false;J.since=0;J.x=J.y=0;if(cal){cal=null;ov.hidden=true;}dot.hidden=dot2.hidden=ring.hidden=true;nums.textContent='';}
+      if(want.gun&&!F.on){F.on=true;note.textContent=F.hold?'hold an imaginary shotgun':'show the camera a finger gun';if(!C.done&&!F.hold)calStart();}
+      else if(!want.gun&&F.on){F.on=false;F.gun=false;F.held=false;F.hN=0;bar.hidden=true;J.on=false;J.since=0;J.x=J.y=0;if(cal){cal=null;ov.hidden=true;}dot.hidden=dot2.hidden=ring.hidden=true;nums.textContent='';}
       if(want.head&&!Hd.on){Hd.on=true;Hd.seen=-9;headCentre();hn.textContent='head: looking for your face';}
       else if(!want.head&&Hd.on){Hd.on=Hd.live=false;Hd.x=Hd.y=Hd.ax=Hd.ay=0;FA.ok=false;sref=null;hm.hidden=true;}
       if(!want.gun){note.textContent='turn your head to look around';nums.textContent='';}
@@ -2958,11 +3006,19 @@ const Finger=(()=>{
     if(t2-St.t0>600){St.fps=St.t0?St.n*1000/(t2-St.t0):0;St.n=0;St.t0=t2;
       rate.textContent=(St.fps?St.fps.toFixed(0)+'/s':'')+(F.on?' · hand '+St.hand.toFixed(0)+' ms':'')+(Hd.on?' · face '+St.face.toFixed(0)+' ms':'')+(St.lag?' · lag '+St.lag.toFixed(0)+' ms':'');}
   }
-  btn.onclick=e=>{set('gun',!want.gun);e.currentTarget.blur();};
+  // the finger gun and the shotgun hold are two ways of using the same hand tracker: choosing one drops the other
+  function aimWith(hold){
+    if(want.gun&&F.hold===hold){set('gun',false);return;}
+    F.hold=hold;F.gun=false;F.held=false;F.hN=0;F.cocked=false;F.gp=F.lp=null;holdCentre();if(cal){cal=null;ov.hidden=true;}J.on=false;J.since=0;J.x=J.y=0;dot.hidden=dot2.hidden=ring.hidden=bar.hidden=true;fx.t=fy.t=null;
+    if(F.on){note.textContent=hold?'hold an imaginary shotgun':'show the camera a finger gun';nums.textContent='';if(!hold&&!C.done)calStart();}
+    set('gun',true);
+  }
+  btn.onclick=e=>{aimWith(false);e.currentTarget.blur();};
+  bHold.onclick=e=>{aimWith(true);e.currentTarget.blur();};
   bHead.onclick=e=>{set('head',!want.head);e.currentTarget.blur();};
-  bCen.onclick=e=>{headCentre();e.currentTarget.blur();};
+  bCen.onclick=e=>{if(Hd.on)headCentre();holdCentre();e.currentTarget.blur();};
   bCal.onclick=e=>{if(cal)calCancel();else calStart();e.currentTarget.blur();};
-  return{F,J,H:Hd,FA,St,want,set,headCentre,feedHead:(m,n)=>head(m,n||{x:.5,y:.4},clock()),read,feed,feedHands,start,stop,tick,calStart,calCancel,get cal(){return cal;},get C(){return C;},reset(){C=Object.assign({},DEF);try{localStorage.removeItem(KEY);}catch(e){}}};
+  return{F,J,H:Hd,FA,St,want,set,aimWith,holdCentre,headCentre,feedHead:(m,n)=>head(m,n||{x:.5,y:.4},clock()),read,feed,feedHands,start,stop,tick,calStart,calCancel,get cal(){return cal;},get C(){return C;},reset(){C=Object.assign({},DEF);try{localStorage.removeItem(KEY);}catch(e){}}};
 })();
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
@@ -3098,7 +3154,7 @@ addEventListener('keydown',e=>{
   if(cam.mode==='hunt'){
     if(c==='Space'||c==='Enter'){e.preventDefault();if(!e.repeat)Hunt.fire();return;}
     if(c==='KeyR'){Hunt.reload();return;}
-    if(c==='KeyC'&&Finger.H.on){if(!e.repeat)Finger.headCentre();return;}
+    if(c==='KeyC'&&(Finger.H.on||(Finger.F.on&&Finger.F.hold))){if(!e.repeat){if(Finger.H.on)Finger.headCentre();Finger.holdCentre();}return;}
     if(MOVE.has(c)){e.preventDefault();keysDown.add(c);return;}}
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
