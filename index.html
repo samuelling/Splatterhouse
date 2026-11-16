@@ -45,7 +45,7 @@ select option{color:#1b1a22;background:#f3ece2;text-transform:none}
 button[aria-disabled="true"]{opacity:.42;cursor:default}
 .seg{display:flex;border:1px solid var(--edge);border-radius:12px;overflow:hidden}
 .seg button{border:0;border-radius:0;background:transparent;color:var(--ink-dim)}
-.seg button[aria-pressed="true"],#bSlow[aria-pressed="true"]{background:var(--accent);color:#2b1d0c}
+.seg button[aria-pressed="true"],#bSlow[aria-pressed="true"],#bScore[aria-pressed="true"]{background:var(--accent);color:#2b1d0c}
 #bSplit:active{background:var(--accent);color:#2b1d0c}
 #bFalcon{color:var(--hot);border-color:rgba(255,106,74,.5)}
 #bFalcon:active,#bFalcon[data-on="1"]{background:var(--hot);color:#2a0d06}
@@ -56,7 +56,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){#hint{transition:none}}
-@media (max-width:470px){.seg button{padding:0 9px;font-size:15px;letter-spacing:.05em}}
+@media (max-width:470px){button{padding:0 10px;font-size:15px;letter-spacing:.05em}.seg button{padding:0 9px}}
 </style>
 </head>
 <body>
@@ -77,6 +77,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
     <button id="bFalcon" type="button">Falcon</button>
     <button id="bSplit" type="button">Split</button>
     <button id="bSlow" type="button" aria-pressed="false">Slow-mo</button>
+    <button id="bScore" type="button" aria-pressed="false">Score</button>
   </div>
   <div class="row sl">
     <select id="species" aria-label="Species">
@@ -466,11 +467,11 @@ function panel(o,u,v,ul,vl,su,sv,colFn,aux){
       const y=.13+row*.24+(rnd()-.5)*.03,g=.27+.24*rnd(),hl=.1+.05*rnd();
       line([o[0]+u[0]*(a-hl),y,o[2]+u[2]*(a-hl)],[o[0]+u[0]*(a+hl),y,o[2]+u[2]*(a+hl)],.085,[g,g*.97,g*.92],n,{lift:.02,seg:9,jit:.05});}
 
-  /* ---- Virginia creeper turning red on the sunny corner ---- */
+  /* ---- Virginia creeper on the sunny corner, in summer leaf ---- */
   for(let k=0;k<5;k++){const f=k%2,o=.15+k*.3;rod(f?[5.03,0,7-o]:[5-o,0,7.03],f?[5.03,2+k*.6,7-o*.5]:[5-o*.4,2+k*.6,7.03],.012,[.14,.10,.07],{seg:.6});}
   for(let k=0;k<300;k++){
     const y=.25+5.5*Math.pow(rnd(),.75),off=rnd()*rnd()*2.7*(1-y/6.3)+.02,f=rnd()<.55,ang=rnd()*6.28;
-    const c=rnd()<.58?mix3([.48,.06,.05],[.74,.22,.06],rnd()):mix3([.08,.20,.06],[.20,.34,.09],rnd());
+    const c=rnd()<.58?mix3([.10,.25,.07],[.24,.41,.11],rnd()):mix3([.08,.20,.06],[.20,.34,.09],rnd());
     quad(f?[5-off,y,7]:[5,y,7-off*1.2],f?nPZ:nPX,f?[Math.cos(ang),Math.sin(ang),0]:[0,Math.sin(ang),Math.cos(ang)],.075,.05,c,{lift:.04+rnd()*.05,aux:.25,jit:.3});}
 
   /* ---- roof furniture: cupola, weathercock, lightning rods, and starlings on the ridge ---- */
@@ -599,10 +600,10 @@ fence([[5.3,8.7],[34,9],[34,-16],[5.3,-15.8]].map(p=>{const w=bw([p[0],0,p[1]]);
 
 /* ---- trees: oak, maple, birch, spruce, Lombardy poplar, weeping willow, apple, and one dead snag ---- */
 const BARK=[.17,.13,.10],BIRCH=[.80,.78,.72];
-const PAL={oak:[[.09,.20,.06],[.21,.35,.10],[.42,.42,.12],[.60,.36,.10]],
-  maple:[[.34,.28,.07],[.58,.40,.09],[.72,.32,.07],[.56,.15,.05]],
-  birch:[[.30,.38,.10],[.52,.52,.14],[.72,.62,.16],[.80,.66,.20]],
-  poplar:[[.12,.24,.08],[.24,.36,.11],[.40,.44,.14],[.55,.50,.15]],
+const PAL={oak:[[.09,.20,.06],[.19,.34,.10],[.28,.41,.12],[.34,.45,.14]],          // summer leaf: the meadow is in flower, so nothing has turned
+  maple:[[.08,.21,.07],[.17,.36,.10],[.27,.45,.13],[.36,.50,.16]],
+  birch:[[.14,.28,.09],[.26,.42,.13],[.38,.52,.17],[.46,.58,.20]],
+  poplar:[[.10,.23,.08],[.19,.34,.11],[.28,.42,.14],[.36,.48,.16]],
   willow:[[.13,.25,.08],[.22,.36,.11],[.33,.44,.14],[.42,.48,.16]],
   apple:[[.08,.19,.06],[.17,.31,.09],[.26,.37,.11],[.30,.40,.12]],
   bush:[[.06,.15,.06],[.13,.25,.09],[.20,.30,.10],[.32,.33,.11]]};
@@ -1827,6 +1828,96 @@ function render(){
   gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,drawn);
 }
 
+/* --------------------------------------------------------------- score
+   A slow pad score, made up as it goes and played by a small synth built here in Web Audio. Nothing is recorded.
+   Harmony: chords drift through D major (ninths and major sevenths, a suspended fifth), each voice moving to the nearest note of the next chord.
+   While a falcon hunts, the harmony turns to D minor, and turns back when it has gone. Over the sea it brightens and the bell tones come more often.
+   Bigger, slower animals get a slower score. Sound: detuned saw pads through slowly opening filters, a sine bass, a soft lead, bell tones, one long reverb. */
+const Score=(()=>{
+  const hz=m=>440*Math.pow(2,(m-69)/12),KEY=50,MAJ=[0,2,4,5,7,9,11],MIN=[0,2,3,5,7,8,10],MAJD=[0,3,5,4,2,1],MIND=[0,5,6,3,2,4],HOME=[57,62,66,71];
+  let ac=null,out,tapN,padBus,airBus,on=false,iv=0,tChord=0,deg=0,minor=false,away=0,pv=HOME.slice(),pcs=[2,6,9,4],tLead=0,lead=74,tShim=0,bright=.5,cur=[],bassO=[],bassG=null;
+  function impulse(){                       // the room: five seconds of noise, fading and growing duller as it fades
+    const sr=ac.sampleRate,n=(sr*5.5)|0,b=ac.createBuffer(2,n,sr);
+    for(let c=0;c<2;c++){const d=b.getChannelData(c);let lp=0;
+      for(let i=0;i<n;i++){const t=i/sr,k=.2+.72*Math.min(t/3,1);lp=lp*k+(Math.random()*2-1)*(1-k);d[i]=lp*Math.exp(-t*1.2)*Math.min(t/.03,1)*(1+3*k);}}
+    return b;
+  }
+  const osc=(type,f,det)=>{const o=ac.createOscillator();o.type=type;o.frequency.value=f;o.detune.value=det||0;return o;};
+  function bus(dryAmt,wetAmt,dry,wet){const g=ac.createGain(),a=ac.createGain(),b=ac.createGain();a.gain.value=dryAmt;b.gain.value=wetAmt;g.connect(a);g.connect(b);a.connect(dry);b.connect(wet);return g;}
+  function send(node,x,to){if(ac.createStereoPanner){const p=ac.createStereoPanner();p.pan.value=x;node.connect(p);p.connect(to);}else node.connect(to);}
+  const hold=(prm,t)=>{if(prm.cancelAndHoldAtTime)prm.cancelAndHoldAtTime(t);else prm.cancelScheduledValues(t);};
+  function start(){
+    ac=new(window.AudioContext||window.webkitAudioContext)();
+    out=ac.createGain();out.gain.value=0;
+    const comp=ac.createDynamicsCompressor();comp.threshold.value=-20;comp.knee.value=12;comp.ratio.value=3;comp.attack.value=.05;comp.release.value=.6;
+    out.connect(comp);comp.connect(ac.destination);tapN=comp;
+    const dry=ac.createGain(),wet=ac.createGain(),cv=ac.createConvolver();cv.buffer=impulse();dry.connect(out);wet.connect(cv);cv.connect(out);
+    padBus=bus(.5,.75,dry,wet);airBus=bus(.22,1,dry,wet);
+    // the bass: a sine on the root with its octave below and a quiet fifth above, gliding from chord to chord
+    bassG=ac.createGain();bassG.gain.value=0;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=260;bassG.connect(lp);lp.connect(padBus);
+    [[1,'sine',.6],[.5,'sine',.22],[1.5,'triangle',.1]].forEach(([r,ty,g])=>{const o=osc(ty,hz(38)*r),og=ac.createGain();og.gain.value=g;o.connect(og);og.connect(bassG);o.start();bassO.push([o,r]);});
+  }
+  function pad(m,t,x,vel,air){             // one pad note: two detuned saws and a triangle an octave up, through a filter that opens as the note swells
+    const f=hz(m),g=ac.createGain(),lp=ac.createBiquadFilter(),atk=air?5:3.2,cut=(air?1500:420)+2300*bright*Math.min(1,1.3-m/150);
+    lp.type='lowpass';lp.Q.value=.6;lp.frequency.setValueAtTime(cut*.4,t);lp.frequency.linearRampToValueAtTime(cut,t+atk+2.5);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vel,t+atk);
+    const os=air?[osc('sine',f,-4),osc('triangle',f,5)]:[osc('sawtooth',f,-8),osc('sawtooth',f,7),osc('triangle',f*2,3)];
+    const dr=osc('sine',.07+Math.random()*.1),dg=ac.createGain();dg.gain.value=5;dr.connect(dg);dr.start(t);         // a slow drift in pitch, different for every note
+    os.forEach((o,i)=>{const og=ac.createGain();og.gain.value=i<2?.5:.2;o.connect(og);og.connect(lp);dg.connect(o.detune);o.start(t);});
+    lp.connect(g);send(g,x,air?airBus:padBus);
+    return{off(te){hold(g.gain,te);g.gain.setTargetAtTime(0,te,1.6);hold(lp.frequency,te);lp.frequency.setTargetAtTime(cut*.4,te,2.5);os.forEach(o=>o.stop(te+11));dr.stop(te+11);}};
+  }
+  function leadNote(t,slow){               // the lead: a soft horn-like voice that steps between chord notes, with a little vibrato once the note has settled
+    const c=[];for(let m=69;m<=86;m++)if(pcs.includes(m%12)&&m!==lead&&Math.abs(m-lead)<=7)c.push(m);
+    if(!c.length)return;lead=c[(Math.random()*c.length)|0];
+    const f=hz(lead),dur=(3+Math.random()*3.5)*slow,g=ac.createGain(),lp=ac.createBiquadFilter(),o1=osc('triangle',f),o2=osc('sine',f*2),g2=ac.createGain(),vb=osc('sine',4.7),vg=ac.createGain();
+    lp.type='lowpass';lp.frequency.value=1400+1600*bright;g2.gain.value=.16;vg.gain.setValueAtTime(0,t);vg.gain.linearRampToValueAtTime(6,t+1.8);
+    vb.connect(vg);vg.connect(o1.detune);vg.connect(o2.detune);o1.connect(lp);o2.connect(g2);g2.connect(lp);lp.connect(g);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.9);g.gain.setTargetAtTime(0,t+dur,1.3);
+    send(g,(Math.random()-.5)*.5,airBus);[o1,o2,vb].forEach(o=>{o.start(t);o.stop(t+dur+9);});
+  }
+  function bell(t){                        // a high bell tone
+    const c=[];for(let m=84;m<=98;m++)if(pcs.includes(m%12))c.push(m);if(!c.length)return;
+    const f=hz(c[(Math.random()*c.length)|0]),g=ac.createGain(),o1=osc('sine',f),o2=osc('sine',f*2.76),g2=ac.createGain();g2.gain.value=.12;
+    o1.connect(g);o2.connect(g2);g2.connect(g);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.012+.01*Math.random(),t+.012);g.gain.setTargetAtTime(0,t+.03,.8);
+    send(g,Math.random()*1.6-.8,airBus);[o1,o2].forEach(o=>{o.start(t);o.stop(t+6);});
+  }
+  function nextChord(t,slow){
+    const want=FALS.length>0;
+    if(want!==minor){minor=want;deg=0;away=0;}
+    else{const set=minor?MIND:MAJD;if(away>=2&&Math.random()<.45)deg=0;else{let d;do d=set[(Math.random()*set.length)|0];while(d===deg);deg=d;}away=deg?away+1:0;}
+    const sc=minor?MIN:MAJ,tone=k=>sc[(deg+k)%7]+12*Math.floor((deg+k)/7),ks=!minor&&deg===4?[0,3,4,8]:[0,2,4,6,8];      // the fifth chord is suspended; the rest stack thirds up to the ninth
+    pcs=ks.map(k=>(tone(k)+KEY)%12);
+    const cands=[],used=[];for(let m=52;m<=77;m++)if(pcs.includes(m%12))cands.push(m);
+    pv=pv.map((v,i)=>{let best=cands[0],bs=1e9;for(const c of cands){if(used.includes(c))continue;let sco=Math.abs(c-v)+.15*Math.abs(c-HOME[i]);for(const u of used)if(Math.abs(u-c)<3)sco+=4;if(sco<bs){bs=sco;best=c;}}used.push(best);return best;});
+    {const th=pcs[1];if(!pv.some(m=>m%12===th)){let bi=0,bm=pv[0],bd=1e9;pv.forEach((v,i)=>{for(const c of cands)if(c%12===th&&!pv.includes(c)&&Math.abs(c-v)<bd){bd=Math.abs(c-v);bi=i;bm=c;}});pv[bi]=bm;}}     // make sure the note that says major or minor is sounding
+    for(const h of cur)h.off(t);cur=[];
+    pv.forEach((m,i)=>cur.push(pad(m,t+i*.4+Math.random()*.3,-.6+.4*i,.066)));
+    const hi=cands.map(m=>m+24).filter(m=>m>=79&&m<=88);if(hi.length)cur.push(pad(hi[(Math.random()*hi.length)|0],t+1.5,(Math.random()-.5)*.8,.026,true));
+    let b=38+tone(0)%12;if(b>45)b-=12;
+    for(const[o,r]of bassO)o.frequency.setTargetAtTime(hz(b)*r,t,.7);
+    hold(bassG.gain,t);bassG.gain.setTargetAtTime(.14,t,.6);bassG.gain.setTargetAtTime(.08,t+3.5,2.5);            // the bass swells into each new chord
+    tChord=t+(13+Math.random()*6)*slow;
+  }
+  function tick(){
+    if(!on)return;const now=ac.currentTime,slow=1+.03*Math.min(SIZE,14),sea=coastC(cam.pos[0],cam.pos[2])>-70;
+    bright+=(.45+.18*Math.sin(now*.021)+(sea?.17:0)-(minor?.14:0)-bright)*.08;
+    if((FALS.length>0)!==minor&&tChord-now>2.5)tChord=now+1.2;                          // a falcon arriving or leaving does not wait for the bar line
+    if(now+1>tChord)nextChord(Math.max(tChord,now+.1),slow);
+    if(now>tLead){if(Math.random()<.6)leadNote(now+.1,slow);tLead=now+(4+Math.random()*6)*slow;}
+    if(now>tShim){bell(now+.05);tShim=now+(sea?1.2+Math.random()*3:3.5+Math.random()*7);}
+  }
+  function toggle(){
+    if(!ac)start();
+    on=!on;const now=ac.currentTime;hold(out.gain,now);
+    if(on){ac.resume();out.gain.setTargetAtTime(1.3,now,.8);tChord=now+.15;tLead=now+9;tShim=now+6;if(!iv)iv=setInterval(tick,250);tick();}
+    else{out.gain.setTargetAtTime(0,now,.35);clearInterval(iv);iv=0;for(const h of cur)h.off(now);cur=[];hold(bassG.gain,now);bassG.gain.setTargetAtTime(0,now,.5);setTimeout(()=>{if(!on)ac.suspend();},2600);}
+    return on;
+  }
+  document.addEventListener('visibilitychange',()=>{if(ac&&on){if(document.hidden)ac.suspend();else ac.resume();}});
+  return{toggle,get on(){return on;},probe:()=>({ac,tap:tapN,minor,deg,pv:pv.slice()})};
+})();
+
 /* --------------------------------------------------------------- input */
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
@@ -1876,6 +1967,9 @@ function toggleSlow(){S.slow=!S.slow;bSlow.setAttribute('aria-pressed',S.slow);}
 bFalcon.onclick=e=>{launchFalcon();e.currentTarget.blur();};
 bSplit.onclick=e=>{forceSplit();e.currentTarget.blur();};
 bSlow.onclick=e=>{toggleSlow();e.currentTarget.blur();};
+const bScore=document.getElementById('bScore');
+function toggleScore(){bScore.setAttribute('aria-pressed',Score.toggle());}
+bScore.onclick=e=>{toggleScore();e.currentTarget.blur();};
 const cnt=document.getElementById('count'),cntOut=document.getElementById('countOut');
 cnt.oninput=()=>{resizeFlock(+cnt.value);cntOut.textContent=cnt.value;};
 cnt.onchange=()=>cnt.blur();
@@ -1901,7 +1995,7 @@ addEventListener('keydown',e=>{
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
   if(e.repeat)return;
-  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();
+  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();
   else if(c>='Digit1'&&c<='Digit5')setMode(MODES[+c.slice(5)-1]);
 });
 addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
@@ -1910,7 +2004,7 @@ addEventListener('blur',()=>keysDown.clear());
 resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__sim={S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
+window.__score=Score;window.__sim={S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();

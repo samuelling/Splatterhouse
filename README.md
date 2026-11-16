@@ -20,6 +20,7 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, storks or *Pteranodon*. |
 | **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, storks or *Pteranodon*. |
 | **Slow-mo** (`T`) | 0.2× time, so the wingbeats can be followed. |
+| **Score** (`M`) | Turn the music on or off. It starts off, because browsers only allow sound after a click. |
 | **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, white storks or *Pteranodon*. Changing species restarts the birds. |
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 
@@ -117,12 +118,25 @@ The flight paths come from the flocking and soaring models above. This section i
 
 What rests on what: the frequency formula and the flap-glide-bound pattern are published models and measurements. The stroke shares, span ratios, sweep and twist are typical figures from the bird-flight kinematics literature set by hand for each species, not fitted to tracked recordings. For *Pteranodon* every one of them is a guess scaled from large soaring birds, with a body mass of 35 kg for males that is itself disputed.
 
+## The score
+
+The music is generated while it plays by a small synthesizer written in Web Audio inside the page. Nothing is recorded or looped.
+
+- **Harmony.** Chords drift through D major every 13 to 19 seconds: stacked thirds up to the ninth, with the chord on the fifth degree suspended. The next chord is picked at random from the other degrees, with a pull back to the tonic after two chords away. Each of the four pad voices moves to the nearest note of the new chord, so the changes glide.
+- **Reacting to the scene.** While a falcon hunts, the harmony turns to D minor within about a second, and turns back when the falcon has gone. Near the sea the pads open up and the bell tones come more often. Larger animals get a slower score: chords last about 40% longer for *Pteranodon* than for starlings.
+- **Pads.** Each note is two sawtooth oscillators detuned 15 cents apart plus a triangle an octave up, with a slow pitch drift of its own, through a low-pass filter that opens over about five seconds as the note swells. A quieter sine-and-triangle voice doubles one chord note two octaves up.
+- **Bass.** A sine on the chord root with its octave below and a quiet fifth, gliding between roots and swelling into each change.
+- **Lead and bells.** A soft triangle lead steps between chord notes within a fifth of its last note, with vibrato that comes in after the note has settled. High sine bells with one inharmonic partial ring on chord notes.
+- **Room.** Everything goes through one convolution reverb whose impulse is 5.5 seconds of generated noise that fades and darkens, then a gentle compressor.
+
+The score has been checked for levels and for the key change, but only by measurement in a headless browser, not by ear.
+
 ## How the splats work
 
 - **Data.** Each splat is four RGBA32F texels in one data texture. Static splats (grass, barn, trees, hills, clouds) are uploaded once. Bird splats are rebuilt and re-uploaded every frame into a dynamic region of the same texture.
 - **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. All the fliers come from one parametric body. Near birds use 39 to 63 splats depending on species, with separate top and underside wing splats that fade by facing, so a starling's wings look glossy black from above and grey-brown from below, and a dunlin flashes white when it banks. Distant birds collapse to 3 to 7 splats.
 - **Barn and silo.** About 36,000 splats. The shell is surface splats laid out on panels, each with its thin axis along the surface normal so the sunset lights it properly. Fine detail is drawn on top with long, thin splats used as lines: board-and-batten strips, white corner boards, rakes and bargeboards, window casings and glazing bars, standing seams and patched sheets on the gambrel roof, gutters and downspouts.
-  - *Front:* X-braced sliding doors standing ajar on a steel track, with light inside and a lantern above; a hay hood with a hoist beam, pulley and rope; hay spilling from the loft door; a fieldstone foundation; Virginia creeper turning red up one corner.
+  - *Front:* X-braced sliding doors standing ajar on a steel track, with light inside and a lantern above; a hay hood with a hoist beam, pulley and rope; hay spilling from the loft door; a fieldstone foundation; Virginia creeper up one corner.
   - *Sides:* windows, some lit from inside; a painted barn quilt on the sunlit wall; a ladder left leaning; a lean-to with a tin roof, posts and stacked straw bales.
   - *Roof:* a louvred cupola with a weathercock, lightning rods with glass balls, and a few starlings perched on the ridge.
   - *Yard:* milk cans, a barrel, bales, an old wagon wheel, and a water trough in the paddock.
@@ -131,7 +145,7 @@ What rests on what: the frequency formula and the flap-glide-bound pattern are p
 - **World maps.** Two 512 m textures drive all three rings and the ground plane, so they always agree: one holds dryness, flower density, dominant species and grass vigour; the other holds short grass, shade, bare earth and lamplight. Flower splats carry random numbers instead of a colour. The shader turns each into a poppy, oxeye daisy, cornflower, buttercup, knapweed or clover from the species map at its world position, or hides it where the density map is low. That is what makes the flowers grow in drifts.
 - **Track, paddock and shadows.** A two-rut farm track runs from the barn doors through a field gate and across the meadow. The white-fenced paddock beside the barn is grazed short. The long sunset shadows of the barn, silo and every tree are painted into the shade map, so they fall across grass, flowers and ground alike.
 - **Fences.** Post-and-rail fences enclose the barn field and run down to where the dunes begin, with a five-bar gate where the track crosses and shrubs along the lines, some with berries.
-- **Trees.** Eight kinds, each with its own generator: spreading oaks, orange maples, white-barked birches in clumps, conical spruces with drooping sprays, a row of Lombardy poplars, a weeping willow with hanging withies, a small apple orchard behind the barn, and one dead snag. Leaves are translucent splats that glow when backlit and sway slightly.
+- **Trees.** Eight kinds, all in summer leaf, each with its own generator: spreading oaks, maples, white-barked birches in clumps, conical spruces with drooping sprays, a row of Lombardy poplars, a weeping willow with hanging withies, a small apple orchard behind the barn, and one dead snag. Leaves are translucent splats that glow when backlit and sway slightly.
 - **Coast.** The shoreline, the beach profile and the dune heights are plain functions of position, written once in JavaScript and once in GLSL, so the coast runs on without repeating. Going seaward the flowers stop, the sward thins into clumps of marram, and the ground rises into two ridges of dunes up to about 4 m with a low gap where the sea shows through from the field.
 - **Dunes.** The dune surface is splats: three rings of overlapping sand discs, like the meadow rings, each laid on the dune by the shader and tilted to the slope, so dunes hide what is behind them. Marram blades and tussocks are the meadow's own splats, recoloured, made taller and lifted onto the dune.
 - **Beach and sea.** These are not splats. Like the far meadow, they are shaded in the background pass: the pass finds where each view ray meets the beach or the water. The sea has travelling swell and ripples, reflects the sky more strongly at grazing angles, carries the sun's glitter path, breaks into foam lines near the shore and washes up and down the sand, leaving it wet and reflective. Ripples finer than a pixel are dropped with distance to avoid shimmer.
