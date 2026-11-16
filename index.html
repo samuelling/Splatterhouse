@@ -1951,7 +1951,7 @@ function frames(p,f,u,sc,near){
       const w=mv(mp[ii],sd*.082*sc,0,0);op[oo]=[op[ii][0]+w[0],op[ii][1]+w[1],op[ii][2]+w[2]];}
   }
 }
-let nd=0;
+let nd=0,EB=0;         // EB: draw as if this much nearer (the dog, and the birds it carries and lays down, which the grass would otherwise bury)
 function emit(tpl,pal,specK,sc){
   const v2=view[2],v6=view[6],v10=view[10],v14=view[14];
   for(let k=0;k<tpl.length;k++){
@@ -1960,7 +1960,7 @@ function emit(tpl,pal,specK,sc){
     const q=qmul(qp[t.part],t.q),c=pal[t.role],b=nd*16;
     DY[b]=wx;DY[b+1]=wy;DY[b+2]=wz;DY[b+3]=2;DY[b+4]=t.sig[0]*sc;DY[b+5]=t.sig[1]*sc;DY[b+6]=t.sig[2]*sc;DY[b+7]=t.op;
     DY[b+8]=q[0];DY[b+9]=q[1];DY[b+10]=q[2];DY[b+11]=q[3];DY[b+12]=c[0];DY[b+13]=c[1];DY[b+14]=c[2];DY[b+15]=t.spec*specK+t.flags;
-    const d=-(v2*wx+v6*wy+v10*wz+v14);
+    const d=-(v2*wx+v6*wy+v10*wz+v14)-EB;
     DK[nd++]=d<40?Math.max(0,d)*1500:61600+Math.min(Math.log(d*.025)*LOGK,3900);
   }
 }
@@ -2456,7 +2456,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
           c.st=1;c.t=0;const hh=Math.hypot(c.f[0],c.f[2])||1;c.f=[c.f[0]/hh,0,c.f[2]/hh];const lean=(Math.random()-.5)*1.2;c.u=nrm([-c.f[2]*lean,1,c.f[0]*lean]);
           for(let q=0;q<5;q++)addP(2,c.p[0],c.p[1]+.1,c.p[2],(Math.random()-.5)*2,.6+Math.random(),(Math.random()-.5)*2,(.035+.03*Math.random())*c.sc,5,c.fc[0],c.fc[1],c.fc[2]);
           addP(3,c.p[0],fl-.02*c.sc,c.p[2],0,0,0,.12*c.sc*(1+Math.random()),30,.26,.01,.014);}
-      }else if(c.st===1||c.st===3){const life=c.st===3?26:c.claimed?140:70;if(c.t>life){c.p[1]-=h*.04;if(c.t>life+4){DEAD.splice(k,1);}}}
+      }else if(c.st===1||c.st===3){const life=c.st===3?75:c.claimed?140:70;if(c.t>life){c.p[1]-=h*.04;if(c.t>life+4){DEAD.splice(k,1);}}}
     }
   }
   function emitDead(){
@@ -2467,7 +2467,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
       if(c.st===2){WA4[0]=-.12;WA4[1]=1.2;WA4[2]=0;WA4[3]=2;WA4[4]=0;}                // in the dog's mouth, wings folded
       else if(c.st){WA4[0]=-.05;WA4[1]=.5;WA4[2]=.05;WA4[3]=1.1;WA4[4]=0;}            // lying where it fell, wings half open
       else{const s=Math.sin(c.ph);WA4[0]=.75+.35*s;WA4[1]=.25;WA4[2]=.5+.3*Math.sin(c.ph*1.3+1);WA4[3]=.7;WA4[4]=0;}    // falling: the wings trail upward and flail
-      WA4[5]=0;frames(c.p,c.f,c.u,c.sc,near);emit(tpl,c.pal,1,c.sc);}
+      WA4[5]=0;frames(c.p,c.f,c.u,c.sc,near);EB=c.st===2?1.9:c.st===3?Math.min(1.3,dz*.6):0;emit(tpl,c.pal,1,c.sc);EB=0;}
   }
   function kill(i,dir,dist){
     const i3=i*3,p=[P[i3],P[i3+1],P[i3+2]],v=V[i],sc=SC[i],tp=sp.shapes?sp.tpls[PALI[i]]:sp.tpl,pal=sp.pals[PALI[i]],fc=pal[0],k=Math.sqrt(sc),many=st.last>24?.5:1;
@@ -2485,15 +2485,15 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
   /* The dog. A farm collie drawn as 8-bit pixel art: every pixel of the sprite is one square splat, sorted in with the rest, so the
      grass hides its legs as it would anything else. It waits by you, runs out to each bird that has come down on land, and brings it
      back. It runs in bounds, as dogs do in long grass, and steers round the barn. */
-  const DOGF={run1:'............................/....................K......./...................KKK....../WW.................KKKKK..../.WKK..............KKKWKKK.../..KKK.............KKBWWKWW../...KKK...........KKKWWWWWWK./....KKKKKKKKKKKKRRKKWWWWWK../....KKKKKKKKKKKKKRRWWWPP..../...KKKKKKKKKKKKKKWRRWW....../...KKKKKKKKKKKKKKWWWW......./..KKKKKKKKKKKKKKWWWWW......./..KKKK.KKKKKKKWWWWWWKK....../.KKK.....GGGGW.....KKKK...../.KK..................KKWW.../WW.....................WW.../W...........................',run2:'............................/......................K...../.....................KKK..../.....................KKKKK../....WW..............KKKWKKK./...WKK..............KKBWWKWW/...KKK.............KKKWWWWWK/....KKKKKKKKKKKKKKRRKWWWWWK./....KKKKKKKKKKKKKKKRRWWW..../....KKKKKKKKKKKKKKWWRRW...../....KKKKKKKKKKKKKWWWWW....../....KKKKKKKKKKKKWWWWW......./.....KKKKKGGGGWWWKKK......../......KKKK....KKKK........../.......KKKW..WKK............/........WW....WW............/............................',sit1:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWW......../............KKKWWRRW......../...........KKKKWWWWW......../..........KKKKKWWWWW......../.........KKKKKKKWWWK......../........KKKKKKKKKWWK......../........KKKKKKKKKKWK......../..KKK..KKKKKKKKKKKKKW......./.WWKKKKKKKKKKGGWWWKKWW......',sit2:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWWPP....../............KKKWWRRW......../...WW......KKKKWWWWW......../...WKK....KKKKKWWWWW......../....KKK..KKKKKKKWWWK......../.....KKKKKKKKKKKKWWK......../......KKKKKKKKKKKKWK......../.......KKKKKKKKKKKKKW......./........KKKKKGGWWWKKWW......',fetch:'............................/............................/............................/WW........................../.WKK......................../..KKK..............K......../...KKK............KKK......./....KKKKKKKKKKKKKKKKKKK...../....KKKKKKKKKKKKKRRKWKKK..../...KKKKKKKKKKKKKKKRRBWWKW.../...KKKKKKKKKKKKKKWWRWWWWWW../..KKKKKKKKKKKKKKWWWWWWWWWK../..KKKK.KKKKKKKWWWWW.WWWW..../..KKK....GGGGW.KK.........../..KK...........KK.........../..WW...........WW.........../............................'},DOGC={K:[.085,.085,.105],W:[.95,.87,.79],G:[.56,.53,.56],R:[.84,.2,.14],P:[.92,.5,.56],B:[.46,.27,.12]},DPX=.046,DOGS={};
+  const DOGF={run1:'............................/....................K......./...................KKK....../WW.................KKKKK..../.WKK..............KKKWKKK.../..KKK.............KKBWWKWW../...KKK...........KKKWWWWWWK./....KKKKKKKKKKKKRRKKWWWWWK../....KKKKKKKKKKKKKRRWWWPP..../...KKKKKKKKKKKKKKWRRWW....../...KKKKKKKKKKKKKKWWWW......./..KKKKKKKKKKKKKKWWWWW......./..KKKK.KKKKKKKWWWWWWKK....../.KKK.....GGGGW.....KKKK...../.KK..................KKWW.../WW.....................WW.../W...........................',run2:'............................/......................K...../.....................KKK..../.....................KKKKK../....WW..............KKKWKKK./...WKK..............KKBWWKWW/...KKK.............KKKWWWWWK/....KKKKKKKKKKKKKKRRKWWWWWK./....KKKKKKKKKKKKKKKRRWWW..../....KKKKKKKKKKKKKKWWRRW...../....KKKKKKKKKKKKKWWWWW....../....KKKKKKKKKKKKWWWWW......./.....KKKKKGGGGWWWKKK......../......KKKK....KKKK........../.......KKKW..WKK............/........WW....WW............/............................',sit1:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWW......../............KKKWWRRW......../...........KKKKWWWWW......../..........KKKKKWWWWW......../.........KKKKKKKWWWK......../........KKKKKKKKKWWK......../........KKKKKKKKKKWK......../..KKK..KKKKKKKKKKKKKW......./.WWKKKKKKKKKKGGWWWKKWW......',sit2:'............................/.................K........../................KKK........./................KKKKK......./...............KKKWKKK....../...............KKBWWKWW...../..............KKKWWWWWWK..../..............RRKKWWWWK...../.............KKRRWWWPP....../............KKKWWRRW......../...WW......KKKKWWWWW......../...WKK....KKKKKWWWWW......../....KKK..KKKKKKKWWWK......../.....KKKKKKKKKKKKWWK......../......KKKKKKKKKKKKWK......../.......KKKKKKKKKKKKKW......./........KKKKKGGWWWKKWW......',fetch:'............................/............................/............................/WW........................../.WKK......................../..KKK..............K......../...KKK............KKK......./....KKKKKKKKKKKKKKKKKKK...../....KKKKKKKKKKKKKRRKWKKK..../...KKKKKKKKKKKKKKKRRBWWKW.../...KKKKKKKKKKKKKKWWRWWWWWW../..KKKKKKKKKKKKKKWWWWWWWWWK../..KKKK.KKKKKKKWWWWW.WWWW..../..KKK....GGGGW.KK.........../..KK...........KK.........../..WW...........WW.........../............................',back1:'............................/..........K......K........../..........KK....KK........../..........KKKKKKKK........../..........KKKKKKKK.....WW.../..........KKKKKKKK....WWK.../..........RRRRRRRR....KK..../.........KKKKKKKKKK..KKK..../.........KKKKKKKKKK.KKK...../........KKKKKKKKKKKKKK....../........KKKKKKKKKKKKK......./........KKKKKKKKKKKK......../........KKKKKKKKKKKK......../........KKKK....KKKK......../.........KKK.....KKK......../.........WWW.....KK........./.................WW.........',back2:'............................/..........K......K........../..........KK....KK........../..........KKKKKKKK........../..........KKKKKKKK......WW../..........KKKKKKKK.....WKK../..........RRRRRRRR....KKK.../.........KKKKKKKKKK..KKK..../.........KKKKKKKKKK.KKK...../........KKKKKKKKKKKKKK....../........KKKKKKKKKKKKK......./........KKKKKKKKKKKK......../........KKKKKKKKKKKK......../........KKKK....KKKK......../........KKK......KKK......../.........KK......WWW......../.........WW.................',front1:'............................/..........K......K........../..........KK....KK........../..........KKKWWKKK........../..........KBKWWKBK........../..........KKWWWWKK........../...........WWKKWW.........../...........WWPPWW.........../..........RRRRRRRR........../.........KKWWWWWWKK........./........KKKWWWWWWKKK......../........KKKWWWWWWKKK......../........KKKKWWWWKKKK......../........KKKK....KKKK......../.........KKK.....KKK......../.........WWW.....KK........./.................WW.........',front2:'............................/..........K......K........../..........KK....KK........../..........KKKWWKKK........../..........KBKWWKBK........../..........KKWWWWKK........../...........WWKKWW.........../...........WWPPWW.........../..........RRRRRRRR........../.........KKWWWWWWKK........./........KKKWWWWWWKKK......../........KKKWWWWWWKKK......../........KKKKWWWWKKKK......../........KKKK....KKKK......../........KKK......KKK......../.........KK......WWW......../.........WW.................'},DOGC={K:[.085,.085,.105],W:[.95,.87,.79],G:[.56,.53,.56],R:[.84,.2,.14],P:[.92,.5,.56],B:[.46,.27,.12]},DPX=.062,DOGS={};        // DPX: the size of one pixel of the dog, in metres. It stands about a metre tall, bigger than life
   for(const n in DOGF){const a=[];DOGF[n].split('/').forEach((row,y)=>{for(let x=0;x<row.length;x++)if(row[x]!=='.')a.push([x,y,DOGC[row[x]]]);});DOGS[n]=a;}
-  const dog={on:false,p:[0,0],y:0,dir:[0,-1],mode:'heel',tg:null,t:0,ph:0,spd:0,hop:0,flip:false,fetched:0,wag:0};
+  const dog={on:false,p:[0,0],y:0,dir:[0,-1],mode:'heel',tg:null,t:0,ph:0,spd:0,hop:0,flip:false,view:0,fetched:0,wag:0};
   const dogOK=(x,z)=>{const dx=x-BARN.x,dz=z-BARN.z,lx=dx*bcos-dz*bsin,lz=dx*bsin+dz*bcos;return!((Math.abs(lx)<7.3&&Math.abs(lz)<10.6)||(Math.abs(lx+7.8)<3.9&&Math.abs(lz-3.7)<5.5))&&coastC(x,z)<-1.5;};
   function dogRun(tx,tz,h,top){                                  // head for a point, going round what is in the way; returns the distance left
     const dx=tx-dog.p[0],dz=tz-dog.p[1],d=Math.hypot(dx,dz);if(d<.05)return d;
     dog.spd+=(Math.min(top,2+d*3)-dog.spd)*(1-Math.exp(-h/.25));const st_=dog.spd*h,a0=Math.atan2(dx,dz);
     for(const da of[0,.6,-.6,1.2,-1.2,1.9,-1.9,2.6]){const a=a0+da,nx=dog.p[0]+Math.sin(a)*st_,nz=dog.p[1]+Math.cos(a)*st_;if(dogOK(nx,nz)||!dogOK(dog.p[0],dog.p[1])){dog.p[0]=nx;dog.p[1]=nz;dog.dir=[Math.sin(a),Math.cos(a)];break;}}
-    dog.ph+=st_/1.25;dog.hop=Math.abs(Math.sin(dog.ph*Math.PI))*.3*Math.min(1,dog.spd/5);return d;}
+    dog.ph+=st_/1.6;dog.hop=Math.abs(Math.sin(dog.ph*Math.PI))*.38*Math.min(1,dog.spd/5);return d;}
   function dogStep(h){
     if(!dog.on)return;
     dog.t+=h;dog.wag+=h;const hp=cam.hpos||[GATE[0]+2,GATE[1]-6],me=dog.p,dp=Math.hypot(hp[0]-me[0],hp[1]-me[1]);
@@ -2504,21 +2504,27 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
         if(best){best.claimed=true;dog.tg=best;dog.mode='go';Score.sfx('bark',0,.5,0);}}
     }else if(dog.mode==='heel'){const fx=Math.sin(cam.hyaw||0),fz=Math.cos(cam.hyaw||0);
       if(dogRun(hp[0]+fx*2.4+fz*1.5,hp[1]+fz*2.4-fx*1.5,h,7)<.5){dog.mode='idle';dog.t=0;}
-    }else if(dog.mode==='go'){const c=dog.tg;if(dogRun(c.p[0],c.p[2],h,9.5)<.8){dog.mode='grab';dog.t=0;dog.hop=0;}
+    }else if(dog.mode==='go'){const c=dog.tg;if(dogRun(c.p[0],c.p[2],h,9.5)<1){dog.mode='grab';dog.t=0;dog.hop=0;}
     }else if(dog.mode==='grab'){if(dog.t>.4){dog.tg.st=2;dog.mode='bring';}
-    }else if(dog.mode==='bring'){const c=dog.tg,left=dogRun(hp[0],hp[1],h,8.5);
-      if(left<2.2){c.st=3;c.t=0;c.p=[me[0]+dog.dir[0]*.7,groundH(me[0]+dog.dir[0]*.7,me[1]+dog.dir[1]*.7)+.05*c.sc,me[1]+dog.dir[1]*.7];c.f=[dog.dir[1],0,-dog.dir[0]];c.u=[0,1,0];
-        dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;Score.sfx('bark',0,.8,0);sync();}}
+    }else if(dog.mode==='bring'){const c=dog.tg,fx=Math.sin(cam.hyaw||0),fz=Math.cos(cam.hyaw||0);        // right up to you, to a spot just in front of where you are facing
+      if(dogRun(hp[0]+fx*2.4,hp[1]+fz*2.4,h,8.5)<.6){
+        const k=dog.fetched%5,ox=(k-2)*.34+(Math.random()-.5)*.1,dx=hp[0]+fx*(1.25+.12*(k%2))-fz*ox,dz=hp[1]+fz*(1.25+.12*(k%2))+fx*ox;     // laid in a row at your feet
+        c.st=3;c.t=0;c.p=[dx,groundH(dx,dz)+.06*c.sc+.02,dz];c.f=[-fz,0,fx];c.u=[0,1,0];
+        let nlaid=0;for(const q of DEAD)if(q.st===3)nlaid++;if(nlaid>10)for(const q of DEAD)if(q.st===3&&q!==c){q.t=1e3;break;}
+        dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;dog.dir=[-fx,-fz];Score.sfx('bark',0,.8,0);sync();}}
     dog.y=groundH(me[0],me[1]);
-    if(dog.tg&&dog.tg.st===2){const c=dog.tg,mx=me[0]+dog.dir[0]*.52,mz=me[1]+dog.dir[1]*.52;c.p=[mx,dog.y+dog.hop+.44,mz];c.f=[dog.dir[1],0,-dog.dir[0]];c.u=[0,1,0];}     // the bird rides crosswise in its mouth
+    if(dog.tg&&dog.tg.st===2){const c=dog.tg,mx=me[0]+dog.dir[0]*DPX*11.5,mz=me[1]+dog.dir[1]*DPX*11.5;c.p=[mx,dog.y+dog.hop+DPX*9.3,mz];c.f=[dog.dir[1],0,-dog.dir[0]];c.u=[0,1,0];}     // the bird rides crosswise in its mouth
   }
   function emitDog(){
-    if(!dog.on||nd+220>DCAP)return;
+    if(!dog.on||nd+260>DCAP)return;
     const f=cam.fwd,r=nrm(cross(f,cam.up)),u=cross(r,f),bx=dog.p[0],by=dog.y+dog.hop,bz=dog.p[1],d0=-(view[2]*bx+view[6]*(by+.4)+view[10]*bz+view[14]);if(d0<.4)return;
-    const moving=dog.mode!=='idle'&&dog.mode!=='grab',sg=dog.dir[0]*r[0]+dog.dir[1]*r[2];
-    if(moving){if(Math.abs(sg)>.15)dog.flip=sg<0;}else if(dog.mode==='idle')dog.flip=(view[0]*bx+view[4]*by+view[8]*bz+view[12])>0;     // running: the way it is going; sitting: turned in toward what you are looking at
-    const fr=DOGS[dog.mode==='grab'?'fetch':moving?(Math.floor(dog.ph*2)%2?'run2':'run1'):(Math.floor(dog.wag*(dog.wag<3?7:1.5))%2?'sit2':'sit1')];
-    const dk=Math.max(.3,d0-1.3),key=dk<40?dk*1500:61600+Math.min(Math.log(dk*.025)*LOGK,3900),fl=dog.flip?-1:1;       // drawn as if a little nearer, so the grass right in front does not bury it
+    const moving=dog.mode!=='idle'&&dog.mode!=='grab',sg=dog.dir[0]*r[0]+dog.dir[1]*r[2],fh=Math.hypot(f[0],f[2])||1,al=(dog.dir[0]*f[0]+dog.dir[1]*f[2])/fh;
+    // Seen side on when it crosses your view, from behind when it runs away from you, from the front when it comes back. The change of
+    // view has some stickiness, so it does not flicker between two near a diagonal.
+    if(moving){const want=Math.abs(al)>Math.abs(sg)*(dog.view?.8:1.25)?(al>0?1:2):0;dog.view=want;if(!want&&Math.abs(sg)>.15)dog.flip=sg<0;}
+    else if(dog.mode==='idle'){dog.view=0;dog.flip=(view[0]*bx+view[4]*by+view[8]*bz+view[12])>0;}                 // sitting: turned in toward what you are looking at
+    const step=Math.floor(dog.ph*2)%2,fr=DOGS[dog.mode==='grab'?'fetch':moving?(dog.view===1?(step?'back2':'back1'):dog.view===2?(step?'front2':'front1'):(step?'run2':'run1')):(Math.floor(dog.wag*(dog.wag<3?7:1.5))%2?'sit2':'sit1')];
+    const dk=Math.max(.3,d0-1.5),key=dk<40?dk*1500:61600+Math.min(Math.log(dk*.025)*LOGK,3900),fl=dog.flip&&!(moving&&dog.view)?-1:1;       // drawn as if a little nearer, so the grass right in front does not bury it
     for(const[cx,cy,c]of fr){const ox=(cx-13.5)*DPX*fl,oy=(16.5-cy)*DPX+DPX*.5,b=nd*16;
       DY[b]=bx+r[0]*ox+u[0]*oy;DY[b+1]=by+r[1]*ox+u[1]*oy;DY[b+2]=bz+r[2]*ox+u[2]*oy;DY[b+3]=5;DY[b+4]=DY[b+5]=DY[b+6]=DPX*.52;DY[b+7]=1;DY[b+8]=0;DY[b+9]=0;DY[b+10]=0;DY[b+11]=1;DY[b+12]=c[0];DY[b+13]=c[1];DY[b+14]=c[2];DY[b+15]=0;DK[nd++]=key;}
   }
@@ -2665,7 +2671,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     gl.disable(gl.DEPTH_TEST);gl.bindVertexArray(null);
   }
   return{st,aim,fire,reload,enter,leave,step,clear,draw,pointAt,canStand,emit(){emitDead();emitFx();emitDog();},fireAt(cx,cy){pointAt(cx,cy);return fire();},
-    recentre(dt){const k=Math.exp(-dt/.12);aim.x*=k;aim.y*=k;},dog,probe:()=>({NP,dead:DEAD.length,states:DEAD.map(c=>c.st).join(''),dog:[dog.mode,dog.p[0].toFixed(1),dog.p[1].toFixed(1),dog.fetched],gunN,muzzle,port,scares:SCARES.length,flying:flying.length})};
+    recentre(dt){const k=Math.exp(-dt/.12);aim.x*=k;aim.y*=k;},dog,probe:()=>({NP,dead:DEAD.length,states:DEAD.map(c=>c.st).join(''),dog:[dog.mode,dog.p[0].toFixed(1),dog.p[1].toFixed(1),dog.fetched,dog.view],laid:DEAD.filter(c=>c.st===3).map(c=>[(c.p[0]-(cam.hpos||[0,0])[0]).toFixed(2),(c.p[2]-(cam.hpos||[0,0])[1]).toFixed(2)]),gunN,muzzle,port,scares:SCARES.length,flying:flying.length})};
 })();
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
