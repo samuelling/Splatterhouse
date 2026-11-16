@@ -55,6 +55,18 @@ button[aria-disabled="true"]{opacity:.42;cursor:default}
 input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
+#adv{position:fixed;left:14px;top:96px;width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
+  background:rgba(30,23,36,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.3 var(--mono);color:var(--ink);display:grid;gap:7px}
+#adv[hidden]{display:none}
+#adv h4{margin:0;display:flex;justify-content:space-between;align-items:center;font:600 15px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+#adv label{display:grid;grid-template-columns:84px 1fr 34px;align-items:center;gap:6px;color:var(--ink-dim)}
+#adv label.ck{grid-template-columns:auto 1fr;color:var(--ink)}
+#adv output{text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+#adv input[type=range]{min-width:0;width:100%}
+#adv select{grid-column:2/4;max-width:none;height:28px;font-size:13px}
+#adv button{height:28px;padding:0 10px;font-size:13px;border-radius:8px}
+#advX{width:28px;padding:0}
+#tag b{pointer-events:auto}
 #hud{position:fixed;right:14px;top:14px;width:244px;max-width:calc(100% - 28px);box-sizing:border-box;padding:10px 12px 9px;border-radius:12px;border:1px solid var(--edge);
   background:rgba(30,23,36,.5);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.5 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums;cursor:pointer;max-height:calc(100% - 236px);overflow:hidden}
 #hud.min>:not(h4){display:none}#hud.min h4{margin:0}
@@ -74,6 +86,18 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhouse</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
+<form id="adv" hidden aria-label="Gaussian splat settings">
+  <h4>Splats <button type="button" id="advX" aria-label="Close">×</button></h4>
+  <label>Size <input type="range" data-k="size" min="0.1" max="2.5" step="0.05" value="1"><output></output></label>
+  <label>Opacity <input type="range" data-k="op" min="0.1" max="1.5" step="0.05" value="1"><output></output></label>
+  <label>Edge <input type="range" data-k="sharp" min="0.4" max="6" step="0.1" value="1"><output></output></label>
+  <label>Pixel filter <input type="range" data-k="low" min="0" max="4" step="0.05" value="0.3"><output></output></label>
+  <label>Density <input type="range" data-k="dens" min="0.02" max="1" step="0.02" value="1"><output></output></label>
+  <label>Colour <select data-k="mode"><option value="0">As painted</option><option value="1">One colour per splat</option><option value="2">By distance</option></select></label>
+  <label class="ck"><input type="checkbox" data-k="ring"> Outlines only</label>
+  <label class="ck"><input type="checkbox" data-k="sort" checked> Depth sort</label>
+  <button type="button" id="advR">Reset</button>
+</form>
 <div id="hint"></div>
 <div id="dock">
   <div class="row">
@@ -165,7 +189,7 @@ const coarse=matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHe
 const L=36,RF=17,D0SQ=36,FMIN=0.12,LEAFK=coarse?.65:1;
 const DENS=coarse?96:132;
 const nTuft=Math.round(DENS*L*L/144)*144,N1=coarse?36000:60048,N2=coarse?21600:36000;
-const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?150000:205000))/512)*512;
+const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?170000:340000))/512)*512;
 const D=new Float32Array(CAP*16);let N=0;
 function add(px,py,pz,kind,sx,sy,sz,op,q,r,g,b,aux){
   if(N>=CAP)return N;
@@ -258,6 +282,9 @@ const OBST=[BARN.x,BARN.z,8.5,9.5,SILO[0],SILO[2],2.5,13.5];
 for(const t of TREES)OBST.push(t[1],t[2],t[3]*CROWN[t[0]]+1,t[3]+1);
 const TRACK=[bw([0,0,7.6]),bw([0,0,15])].map(p=>[p[0],p[2]]).concat([[-22,-34],[-13,-27],[-8,-22],[-2,-14],[5,-6],[7,6],[3,30],[-8,70],[-20,130],[-24,205]]);
 const GATE=[-8,-22];
+// a footpath leaves the track beyond the gate and crosses the field to a boardwalk through the gap in the dunes
+const BWX=60,bwP=c=>[BWX+2.2*Math.sin((c+88)*.05),ZC+wig(BWX)-c];
+const FOOT=[[-11,-25.5],[6,-33],[22,-41],[34,-52],[43,-64],[50,-84],[56,-104],[59,-113],bwP(-88)];
 
 // world maps, 512 m square and wrapping. A: dryness, flower density, species, vigour. B: short grass, shade, bare earth, lamplight.
 const MA=512,MB=1024,MPT=MB/512,mapA=new Uint8Array(MA*MA*4),mapB=new Uint8Array(MB*MB*4);
@@ -286,6 +313,12 @@ const MA=512,MB=1024,MPT=MB/512,mapA=new Uint8Array(MA*MA*4),mapB=new Uint8Array
       const t=clamp(((px-a[0])*ex+(pz-a[1])*ez)/l2,0,1),d=Math.hypot(px-a[0]-ex*t,pz-a[1]-ez*t);
       const m=255*smooth((2.3-d)/1.1),r=230*smooth((.45-Math.abs(d-.72))/.32);
       if(m>mapB[o])mapB[o]=m;if(r>mapB[o+2])mapB[o+2]=r;});}
+  for(let k=0;k<FOOT.length-1;k++){const a=FOOT[k],b=FOOT[k+1],ex=b[0]-a[0],ez=b[1]-a[1],l2=ex*ex+ez*ez;
+    region(Math.min(a[0],b[0])-3,Math.min(a[1],b[1])-3,Math.max(a[0],b[0])+3,Math.max(a[1],b[1])+3,(px,pz,o)=>{
+      const t=clamp(((px-a[0])*ex+(pz-a[1])*ez)/l2,0,1),d=Math.hypot(px-a[0]-ex*t,pz-a[1]-ez*t);
+      const m=235*smooth((1.5-d)/.9),r=205*smooth((.8-d)/.5);
+      if(m>mapB[o])mapB[o]=m;if(r>mapB[o+2])mapB[o+2]=r;});}
+  for(let c=-88;c<-12;c+=.4){const q=bwP(c);region(q[0]-2,q[1]-2,q[0]+2,q[1]+2,(px,pz,o)=>{const v=250*smooth((1.5-Math.hypot(px-q[0],pz-q[1]))/.6);if(v>mapB[o+2])mapB[o+2]=v;});}
   // the grazed paddock, the bare yard round the barn and the lamplight at its door
   const door=bw([0,0,9.5]);
   region(BARN.x-45,BARN.z-45,BARN.x+45,BARN.z+45,(px,pz,o)=>{
@@ -301,13 +334,22 @@ for(let i=0;i<34;i++){const a=i/34*6.2832+rnd()*.2,d=900+rnd()*400,h=14+rnd()*30
   const c=mix3([.16,.15,.22],horizonJS(azOf(x,z)),.55+.15*rnd());
   add(x,h*.3,z,1,90+rnd()*120,h,60,coastC(x,z)<-60?.97:0,qYa(a),c[0],c[1],c[2],0);}
 for(let i=0;i<130;i++){const a=rnd()*6.2832,d=300+rnd()*240,cx=Math.sin(a)*d,cz=Math.cos(a)*d,m=3+(rnd()*6|0);
-  const c=mix3([.035,.05,.035],horizonJS(azOf(cx,cz)),1-Math.exp(-d*.0022));
-  for(let k=0;k<m;k++){const h=1.6+rnd()*2.6,j=.8+.4*rnd(),x=cx+(rnd()-.5)*14,z=cz+(rnd()-.5)*14;
-    add(x,h*.9,z,1,1.4+rnd()*2.4,h,1.8,coastC(cx,cz)<-95?.95:0,qYa(rnd()*6.28),c[0]*j,c[1]*j,c[2]*j,0);}}
+  const inland=coastC(cx,cz)<-95;
+  // each a small tree: a stem and a crown of a dozen leaf masses, lit like the trees close by, so the copses still read as trees when the birds fly out over them
+  for(let k=0;k<m;k++){const h=3.4+rnd()*5.2,j=.8+.4*rnd(),x=cx+(rnd()-.5)*14,z=cz+(rnd()-.5)*14,cr=h*(.3+.12*rnd()),tall=rnd()<.25,nl=coarse?8:16;
+    if(!inland){for(let q=0;q<nl*3+2;q++)rnd();continue;}
+    add(x,h*.2,z,3,.07+h*.009,h*.22,.07+h*.009,.96,QID,.13*j,.10*j,.08*j,4);
+    for(let q=0;q<nl;q++){const a=rnd()*6.2832,el=rnd()*1.5-.35,rr=.55+.45*rnd(),ox=Math.cos(a)*Math.cos(el),oy=Math.sin(el),oz=Math.sin(a)*Math.cos(el);
+      const nv=nrm([ox,oy+.35,oz]),hh=Math.abs(nv[1])<.9?[0,1,0]:[1,0,0],tx=nrm(cross(hh,nv)),sd=ox*SUN[0]+oy*SUN[1]+oz*SUN[2],lit=(.62+.5*smooth(clamp(sd*.8+.5,0,1)))*(.8+.2*clamp(oy+.5,0,1));
+      const col=mix3([.07,.17,.06],[.24,.37,.12],rnd()),sz=cr*(.34+.16*rnd());
+      add(x+ox*cr*rr*(tall?.6:1),h*(tall?.55:.62)+oy*cr*rr*(tall?1.5:.8),z+oz*cr*rr*(tall?.6:1),3,sz,sz*.8,.05,.95,quatFromBasis(tx,cross(nv,tx),nv),col[0]*j*lit,col[1]*j*lit,col[2]*j*lit,.4);}}}
 for(let i=0;i<16;i++){const a=rnd()*6.2832,d=900+rnd()*900,y=330+rnd()*420,cx=Math.sin(a)*d,cz=Math.cos(a)*d;
   const base=mix3([.42,.36,.52],[1.0,.60,.40],Math.pow(azOf(cx,cz),1.6));
+  const azc=azOf(cx,cz),top=mix3([.30,.29,.44],[.62,.42,.46],Math.pow(azc,1.6)),under=mix3([.62,.44,.52],[1.0,.66,.36],Math.pow(azc,1.3)),ca=Math.cos(a),sa=Math.sin(a),len=150+rnd()*170;
   for(let k=0;k<12;k++){const w=30+rnd()*55,j=.88+.14*rnd(),lift=(rnd()-.5)*24;
-    add(cx+(rnd()-.5)*260,y+lift,cz+(rnd()-.5)*120,1,w,4+rnd()*6,w*.35,.55,qYa(a+(rnd()-.5)*.4),base[0]*j,base[1]*j,base[2]*j,0);}}
+    add(cx+(rnd()-.5)*260,y+lift,cz+(rnd()-.5)*120,1,w,4+rnd()*6,w*.35,.4,qYa(a+(rnd()-.5)*.4),base[0]*j,base[1]*j,base[2]*j,0);}
+  for(let k=0;k<(coarse?16:34);k++){const u=rnd()*2-1,v=rnd()*2-1,w=(13+rnd()*24)*(1-.45*u*u),up=rnd(),j=.9+.15*rnd(),c=mix3(under,top,smooth(up));
+    add(cx+ca*u*len+sa*v*34,y+2+up*up*20-8*u*u,cz-sa*u*len+ca*v*34,1,w,w*(.2+.14*rnd()),w*.6,.34+.2*rnd(),qYa(a+(rnd()-.5)*.5),c[0]*j,c[1]*j,c[2]*j,0);}}
 const nProps=N;
 
 // a flat panel of surface splats in barn-local coordinates; colFn(a,b) returns a colour or null for a hole
@@ -635,13 +677,19 @@ function limb(a,b,r0,r1,bark){
       add(a[0]+d[0]*len*t,a[1]+d[1]*len*t,a[2]+d[2]*len*t,3,len/n*.55,r,r,.95,q,cc[0]*jt,cc[1]*jt,cc[2]*jt,4);}
   }
 }
+/* A clump of leaves. Each leaf is shaded by where it sits: leaves deep inside are in the others' shade, those on the side away from the
+   sun and those underneath are darker, and those on the sunward skin catch the light. That is what gives a crown its modelling. */
+const LEAFN=coarse?1.25:2.7,LEAFS=coarse?.9:.62;
 function leafBlob(c,r,nL,pal,ls,fruit){
+  nL=Math.round(nL*LEAFN);const hue=[.92+.16*rnd(),.94+.12*rnd(),.9+.2*rnd()];
   for(let k=0;k<nL;k++){
     let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
     const nv=nrm([x+(rnd()-.5)*.8,y*.6+.5+(rnd()-.5)*.8,z+(rnd()-.5)*.8]);
     const h=Math.abs(nv[1])<.9?[0,1,0]:[1,0,0],tx=nrm(cross(h,nv)),ty=cross(nv,tx);
-    const s=(.15+.11*rnd())*(ls||1),t=rnd(),col=t<.72?mix3(pal[0],pal[1],rnd()):t<.94?mix3(pal[1],pal[2],rnd()):pal[3],j=.75+.5*rnd();
-    add(c[0]+x*r,c[1]+y*r*.75,c[2]+z*r,3,s,s*(.6+.3*rnd()),.012,.93,quatFromBasis(tx,ty,nv),col[0]*j,col[1]*j,col[2]*j,.5+.5*rnd());
+    const rr=Math.sqrt(x*x+y*y+z*z),sd=x*SUN[0]+y*SUN[1]+z*SUN[2];
+    const lit=(.44+.56*Math.pow(rr,1.6))*(.62+.52*smooth(clamp(sd*.8+.5,0,1)))*(.82+.18*clamp(y+.5,0,1));
+    const s=(.15+.11*rnd())*(ls||1)*LEAFS,t=rnd()*(.55+.45*rr),col=t<.62?mix3(pal[0],pal[1],rnd()):t<.9?mix3(pal[1],pal[2],rnd()):pal[3],j=(.8+.4*rnd())*lit;
+    add(c[0]+x*r,c[1]+y*r*.75,c[2]+z*r,3,s,s*(.6+.3*rnd()),.012,.93,quatFromBasis(tx,ty,nv),col[0]*j*hue[0],col[1]*j*hue[1],col[2]*j*hue[2],.5+.5*rnd());
     if(fruit&&rnd()<fruit[3])add(c[0]+x*r*1.02,c[1]+y*r*.75-.08,c[2]+z*r*1.02,3,.05,.05,.05,.97,QID,fruit[0],fruit[1],fruit[2],4);}
 }
 function branch(p,dir,len,rad,depth,tp){
@@ -762,10 +810,34 @@ for(const gx of[92,-74]){                       // rows of weathered posts runni
     add(x,g-.4+h*.5,z,3,.085,h*.36,.085,.97,QID,.15,.125,.11,4);add(x,top-.05,z,3,.08,.06,.08,.95,QID,.2,.17,.15,4);}}
 for(let k=0;k<7;k++){const x=-160+k*62+rs()*30,c=-9.5+rs()*3,z=ZC+wig(x)-c,g=groundH(x,z),a=rs()*3.14,len=.7+rs()*1.2,q=qYa(a);
   for(let m=-1;m<=1;m++)add(x+Math.cos(a)*m*len*.6,g+.09,z-Math.sin(a)*m*len*.6,3,len*.42,.085+.02*rs(),.1,.96,q,.50,.46,.41,4);}
-for(let k=0;k<1100;k++){const x=-330+rs()*760,c=-7.2+(rs()-.5)*(rs()<.8?1.6:6),z=ZC+wig(x)-c,g=groundH(x,z),r=.025+.05*rs(),w=rs();
+for(let k=0;k<(coarse?1100:2600);k++){const x=-330+rs()*760,c=-7.2+(rs()-.5)*(rs()<.8?1.6:6),z=ZC+wig(x)-c,g=groundH(x,z),r=.025+.05*rs(),w=rs();
   if(w<.6)add(x,g+.02,z,3,r*1.5,.014,r*.8,.8,qYa(rs()*3.14),.13,.13,.08,4);       // dried weed
   else if(w<.85)add(x,g+.025,z,3,r,.02,r,.95,QID,.33,.31,.30,4);                      // pebbles
   else add(x,g+.02,z,3,r*.8,.014,r*.6,.95,qYa(rs()*3.14),.72,.68,.62,4);}             // shells
+// boulders and cobbles where the beach meets the water: each boulder a dark core under a skin of facets, so it takes the low sun on one side
+function boulder(x,z,r){
+  const g=Math.max(groundH(x,z),SEA-.35),sq=.5+.3*rs(),cy=g+r*sq*.4,n=Math.round(34+r*60),tone=.75+.5*rs(),tilt=(rs()-.5)*.5;
+  add(x,cy,z,3,r*.62,r*sq*.62,r*.62,.98,QID,.10*tone,.095*tone,.10*tone,4);
+  for(let k=0;k<n;k++){const a=rs()*6.2832,sy=clamp(rs()*1.15-.12,-.1,1),cy2=Math.sqrt(1-sy*sy),dx=Math.cos(a)*cy2,dz=Math.sin(a)*cy2;
+    const px=x+dx*r,py=cy+sy*r*sq+tilt*dx*r*.3,pz=z+dz*r,nv=nrm([dx,sy/sq+.15,dz]),h=Math.abs(nv[1])<.9?[0,1,0]:[1,0,0],tx=nrm(cross(h,nv));
+    const wetk=py<SEA+.3?.5:1,j=(.75+.5*rs())*tone*wetk,lich=rs()<.12&&!(wetk<1),sz=r*(.13+.08*rs());
+    add(px,py,pz,3,sz,sz*(.7+.3*rs()),.03,.97,quatFromBasis(tx,cross(nv,tx),nv),(lich?.52:.40)*j,(lich?.50:.37)*j,(lich?.32:.35)*j,0);}
+}
+for(const[bx,nb]of[[71,coarse?7:11],[-34,coarse?4:7]]){
+  for(let k=0;k<nb;k++){const x=bx+(rs()-.5)*20,c=-7+rs()*8.5,r=.35+Math.pow(rs(),2)*1.1;boulder(x,ZC+wig(x)-c,r);}
+  for(let k=0;k<(coarse?90:200);k++){const x=bx+(rs()-.5)*34,c=-9+rs()*10,z=ZC+wig(x)-c,g=groundH(x,z),r=.04+.13*rs()*rs(),j=.6+.6*rs(),w=c>-2?.6:1;
+    add(x,g+r*.45,z,3,r,r*.6,r*(.7+.3*rs()),.97,qYa(rs()*3.14),.27*j*w,.25*j*w,.24*j*w,4);}
+}
+// the boardwalk: weathered planks on the sand, a post-and-rope rail on each side
+{const deck=c=>{const q=bwP(c);return[q[0],groundH(q[0],q[1])+.22,q[1]];};let k=0;
+  for(let c=-88.6;c<-12.4;c+=.215,k++){const p=deck(c),p2=deck(c+.2),d=nrm([p2[0]-p[0],p2[1]-p[1],p2[2]-p[2]]),tx=nrm(cross(d,[0,1,0])),nv=cross(tx,d),j=.8+.4*rs(),sk=(rs()-.5)*.05;
+    add(p[0]+tx[0]*sk,p[1]+(rs()-.5)*.012,p[2]+tx[2]*sk,3,.56+.05*rs(),.088,.02,.97,quatFromBasis(tx,d,nv),.66*j,.60*j,.52*j,0);
+    if(k%12===0)for(const sd of[-1,1]){const bx=p[0]+tx[0]*sd*.86,bz=p[2]+tx[2]*sd*.86,q=deck(c+2.58),q2=deck(c+2.78),d2=nrm([q2[0]-q[0],0,q2[2]-q[2]]),t2=nrm(cross(d2,[0,1,0])),ex=q[0]+t2[0]*sd*.86,ez=q[2]+t2[2]*sd*.86;
+      add(bx,p[1]+.42,bz,3,.05,.5,.05,.97,QID,.30*j,.265*j,.23*j,4);add(bx,p[1]+.93,bz,3,.058,.03,.058,.96,QID,.4*j,.36*j,.31*j,4);
+      if(c+2.6<-12.4)for(let m=0;m<4;m++){const u=(m+.5)/4,sag=.16*4*u*(1-u),u2=u+.125,u0=u-.125,a=[lerp(bx,ex,u0),p[1]+.84+(q[1]-p[1])*u0-.16*4*u0*(1-u0),lerp(bz,ez,u0)],b=[lerp(bx,ex,u2),p[1]+.84+(q[1]-p[1])*u2-.16*4*u2*(1-u2),lerp(bz,ez,u2)],rd=nrm([b[0]-a[0],b[1]-a[1],b[2]-a[2]]),rt=nrm(cross(rd,[0,1,0]));
+        add(lerp(bx,ex,u),p[1]+.84+(q[1]-p[1])*u-sag,lerp(bz,ez,u),3,Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2])*.56,.016,.016,.96,quatFromBasis(rd,cross(rt,rd),rt),.55,.48,.36,4);}}
+  }
+}
 const nStatic=N;
 
 /* ------------------------------------------------------ bird bodies
@@ -805,13 +877,44 @@ function buildBird(sh){
     else F.push(T(pi,[sd*.085,0,-.018],[.06,.022*ch,.0015],q,6,.95,.2*g,0));
     if(sh.farTip)F.push(T(pi,[sd*.15,0,-.022],[.035,.021*ch,.0016],q,9,.95,.1,0));
   }
+  // The closest birds get a third tier: every flight feather its own splat. Secondaries run straight back from the arm; the primaries fan from
+  // straight back at the wrist to nearly along the wing at its tip, their lengths giving the wing its pointed, rounded or fingered outline.
+  let Hh=N;
+  if(!sh.inner){
+    // The body gets a skin: rings of small facets round a fuselage from rump to crown, each with its own normal, so the low sun
+    // models it and its outline is crisp. The soft masses the other tiers are made of shrink to a core underneath.
+    Hh=N.filter(t=>t.part===0).map(t=>t.flags===4&&t.role!==1&&t.role!==11&&Math.max(t.sig[0],t.sig[1],t.sig[2])>.006?T(0,t.pos,[t.sig[0]*.7,t.sig[1]*.7,t.sig[2]*.8],t.q,t.role,t.op,t.spec,4):t);
+    const ring=(z,cy,rx,ry,m,sz,roleTop,roleLow,gl,off)=>{for(let k=0;k<m;k++){const ph=(k+off)/m*6.2832,sn=Math.sin(ph),cs=Math.cos(ph),nv=nrm([sn/rx,cs/ry,0]),tx=[cs,-sn,0],low=cs<-.25;
+      Hh.push(T(0,[rx*sn,cy+ry*cs,z],[Math.hypot(rx*cs,ry*sn)*6.2832/m*.6,sz,.0012],quatFromBasis(tx,cross(nv,tx),nv),low?roleLow:roleTop,.97,low?.2*g:gl,0));}};
+    const prof=[[-.074,.34],[-.060,.56],[-.045,.74],[-.030,.88],[-.015,.97],[0,1],[.015,1],[.030,.94],[.044,.80],[.057,.58]];
+    prof.forEach(([z,r],k)=>ring(z*bl,-.0015*r+(z>.02?.002:0),.0205*f*r,.0185*f*r,r>.7?11:8,.0102*bl,sh.rump&&z<-.03?5:0,7,.9*g,k%2*.5));
+    if(nk){const z0=.062*bl,z1=hz-.009*hr,m=Math.max(2,Math.round((z1-z0)/.011));for(let k=0;k<m;k++){const u=(k+.5)/m;ring(lerp(z0,z1,u),lerp(.003,.008,u),lerp(.0115,.0088,u)*f,lerp(.011,.0088,u)*f,6,(z1-z0)/m*.7,8,8,.9*g,k%2*.5);}}
+    [[-.0085,.72],[0,1],[.0085,.74]].forEach(([z,r],k)=>ring(hz+z*hr,.008,.0136*hr*r,.0128*hr*r,8,.0062*hr,8,8,.9*g,k%2*.5));
+    const fq=(sd,phi,up)=>{const c=Math.cos(phi),sn=Math.sin(phi),w=[up*c,0,up*sd*sn],d=[sd*sn,0,-c];return quatFromBasis(w,d,cross(w,d));};
+    const feather=(part,sd,x,z,phi,len,wid,rt,ru,gl)=>{const cx=sd*x+sd*Math.sin(phi)*len*.5,cz=z-Math.cos(phi)*len*.5;
+      Hh.push(T(part,[cx,.0013,cz],[wid,len*.5,.0012],fq(sd,phi,1),rt,.96,gl,2),T(part,[cx,-.0013,cz],[wid,len*.5,.0012],fq(sd,phi,-1),ru,.96,.06,2));};
+    const pl=sh.tip==='point'?[.046,.050,.054,.058,.062,.066,.070,.071,.064,.052]:sh.tip==='finger'?[.050,.054,.058,.062,.066,.070,.072,.072,.068,.060]:[.048,.051,.054,.057,.059,.060,.058,.054,.048,.040];
+    const fan=sh.tip==='finger'?1.42:sh.tip==='point'?1.22:1.12,pw=sh.tip==='finger'?.0052:.0078,fr=sh.twoTone?[9,10]:[2,3];
+    for(const[sd,pi,po,q,qb]of[[1,1,2,FL,FLB],[-1,3,4,FR,FRB]]){
+      for(let k=0;k<8;k++)feather(pi,sd,.010+k*.0095,.004,.04+.03*k,(.052-.0022*k)*ch,.0072,fr[0],fr[1],.7*g);            // secondaries
+      for(let k=0;k<7;k++){const x=.008+k*.0115;                                                                             // coverts, two rows over the leading half of the arm
+        Hh.push(T(pi,[sd*x,.0019,.001],[.0088,.0085*ch,.0014],q,2,.97,.8*g,2),T(pi,[sd*x,-.0019,.001],[.0088,.0085*ch,.0014],qb,3,.97,.06,2));
+        Hh.push(T(pi,[sd*(x+.005),.0017,-.013*ch],[.0085,.0095*ch,.0013],q,2,.96,.7*g,2),T(pi,[sd*(x+.005),-.0017,-.013*ch],[.0085,.0095*ch,.0013],qb,3,.96,.06,2));}
+      if(sh.bars)for(const z of[-.026,-.039])Hh.push(T(pi,[sd*.042,.0024,z],[.032,.0035,.0012],q,13,.95,0,2));
+      for(let k=0;k<10;k++)feather(po,sd,.003+k*.0068,.002,.10+fan*k/9,pl[k]*ch*(sh.tip==='finger'?1.05:1),pw,9,10,.7*g);     // primaries
+      for(let k=0;k<5;k++){const x=.006+k*.012;Hh.push(T(po,[sd*x,.0018,-.003],[.0075,.0075*ch,.0013],q,sh.twoTone?2:9,.97,.7*g,2),T(po,[sd*x,-.0018,-.003],[.0075,.0075*ch,.0013],qb,sh.twoTone?3:10,.97,.06,2));}
+    }
+    for(let k=0;k<7;k++){const a=(k-3)*.11*(sh.tailW||1);                                                                    // the tail, as a fan of feathers
+      Hh.push(T(0,[Math.sin(a)*.021*sh.tail,.0024-.0004*Math.abs(k-3),-.058*bl-Math.cos(a)*.021*sh.tail],[.0048*(sh.tailW||1),.021*sh.tail,.0012],fq(1,a,1),4,.95,.4*g,0));}
+    for(const sd of[-1,1])Hh.push(T(0,[sd*.0128*hr,.0105,hz+.0045*hr],[.0019,.0019,.0019],QI,14,.98,.99,4));                 // eyes
+  }
   F.unshift(T(0,[0,0,.005+nk*.25],[.017*f,.015*f,.055*bl+nk*.3],QI,0,.97,.5*g,4));
   if(nk)F.push(T(0,[0,.006,.05*bl+nk*.62],[.009,.009,nk*.5+.012],QI,8,.97,0,4));
   if(sh.belly)F.push(T(0,[0,-.0125*f,.002],[.0155*f,.045*bl,.0018],FLB,7,.97,0,2));
-  return{near:N,far:F};
+  return{near:N,far:F,hero:Hh};
 }
 // palette roles: 0 body · 1 bill · 2 wing top · 3 wing under · 4 tail · 5 accent · 6 far wing · 7 belly · 8 head · 9 hand top · 10 hand under · 11 legs · 12 eye · 13 wing bar
-const mkPal=o=>[o.body,o.bill,o.wing,o.under,o.tail,o.accent||o.body,o.far||o.wing,o.belly||o.body,o.head||o.body,o.hand||o.wing,o.handUnder||o.under,o.legs||o.bill,o.eye||[.8,.8,.8],o.bar||o.body];
+const mkPal=o=>[o.body,o.bill,o.wing,o.under,o.tail,o.accent||o.body,o.far||o.wing,o.belly||o.body,o.head||o.body,o.hand||o.wing,o.handUnder||o.under,o.legs||o.bill,o.eye||[.8,.8,.8],o.bar||o.body,o.pupil||[.015,.015,.02]];
 /* Each species: how big, how fast, how it flaps, which rules it flies by. Figures are approximate field values.
    roost: [x, z, radius]. alt: preferred height = max(alt[3], alt[0] + slow swings of alt[1] and alt[2]). pose: glide dihedral, sweep, wrist, upstroke flex. */
 const SPECIES={
@@ -869,9 +972,9 @@ function prepGait(g){
   for(let i=0;i<30;i++){const k=(lo+hi)/2;if(span(k)/span(0)>g.sr)lo=k;else hi=k;}g.fk=(lo+hi)/2;return g;
 }
 const FGAIT=prepGait({morph:[.9,1.05,.13],tau:.5,th0:.08,sr:.5,sw:.1,tw:.3,style:'glide',pose:[.07,.06,.22]});
-let NEARMAX=0,FARMAX=0;
-for(const k in SPECIES){const s=SPECIES[k];prepGait(s.gait);s.gait.pose=s.pose;s.wbf=s.gait.hz;s.tpls=(s.shapes||[s.shape]).map(buildBird);s.tpl=s.tpls[0];for(const t of s.tpls){NEARMAX=Math.max(NEARMAX,t.near.length);FARMAX=Math.max(FARMAX,t.far.length);}}
-const FALCT=buildBird({gloss:.15,bill:.012,billW:1.5,tail:1.2,tip:'point',belly:true}).near,FPOSE=FGAIT.pose;
+let NEARMAX=0,FARMAX=0,HEROMAX=0;const HEROCAP=coarse?20:56;
+for(const k in SPECIES){const s=SPECIES[k];prepGait(s.gait);s.gait.pose=s.pose;s.wbf=s.gait.hz;s.tpls=(s.shapes||[s.shape]).map(buildBird);s.tpl=s.tpls[0];for(const t of s.tpls){NEARMAX=Math.max(NEARMAX,t.near.length);FARMAX=Math.max(FARMAX,t.far.length);HEROMAX=Math.max(HEROMAX,t.hero.length);}}
+const FALCT=buildBird({gloss:.15,bill:.012,billW:1.5,tail:1.2,tip:'point',belly:true}).hero,FPOSE=FGAIT.pose;
 const FALC=mkPal({body:[.26,.27,.30],bill:[.55,.48,.20],wing:[.27,.29,.33],under:[.62,.58,.52],tail:[.24,.25,.29],belly:[.72,.68,.60],head:[.18,.19,.22],hand:[.22,.24,.28],handUnder:[.55,.52,.47]});
 
 /* ---------------------------------------------------------- flock model
@@ -1361,16 +1464,17 @@ precision highp float;precision highp int;
 uniform highp sampler2D uData;
 uniform mat4 uView,uProj;uniform vec2 uViewport;uniform float uFocal;uniform vec2 uLim;
 uniform vec4 uField;uniform vec2 uScroll;uniform vec3 uSun,uCam;
+uniform vec4 uAdv;      // the advanced panel: splat size, opacity, pixel filter, colour mode
 ${MEADOW_GLSL}
 layout(location=0) in vec2 aQuad;layout(location=1) in uint aIndex;
-out vec4 vColor;out vec2 vPos;
+out vec4 vColor;out vec2 vPos;out float vSharp;
 mat3 qmat(vec4 q){float x=q.x,y=q.y,z=q.z,w=q.w;
   return mat3(1.-2.*(y*y+z*z),2.*(x*y+w*z),2.*(x*z-w*y),2.*(x*y-w*z),1.-2.*(x*x+z*z),2.*(y*z+w*x),2.*(x*z+w*y),2.*(y*z-w*x),1.-2.*(x*x+y*y));}
 void main(){
   int i=int(aIndex);ivec2 tc=ivec2((i&511)<<2,i>>9);
   vec4 t0=texelFetch(uData,tc,0),t1=texelFetch(uData,tc+ivec2(1,0),0),t2=texelFetch(uData,tc+ivec2(2,0),0),t3=texelFetch(uData,tc+ivec2(3,0),0);
   int kind=int(t0.w+.5);vec3 s=t1.xyz;float alpha=t1.w;vec3 col=t3.rgb;float aux=t3.a;
-  mat3 R=qmat(t2);vec3 wp;bool mip=false;
+  mat3 R=qmat(t2);vec3 wp;bool mip=false;vSharp=1.;
   if((kind==0&&aux>6.)||(kind==4&&aux>8.)){        // a disc of dune sand
     float sc=kind==0?1.:(aux<9.5?4.:16.),Lp=uField.x*sc,Rout=uField.y*sc;
     vec2 xz=t0.xz-uScroll;xz-=Lp*floor(xz/Lp+.5);float d=length(xz);vec2 w0=xz+uScroll;
@@ -1386,6 +1490,7 @@ void main(){
     vec3 vd=normalize(wp-uCam);float az=clamp(dot(normalize(vd.xz+1e-5),normalize(uSun.xz))*.5+.5,0.,1.);
     col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2))*.9,1.-exp(-length(wp-uCam)*.0035));
   }else if(kind==0){
+    vSharp=1.3;
     float Lp=uField.x,Rf=uField.y,tm=uField.z;
     vec2 xz=t0.xz-uScroll;xz-=Lp*floor(xz/Lp+.5);
     float d=length(xz),y=t0.y;vec2 w0=xz+uScroll;
@@ -1460,7 +1565,7 @@ void main(){
   }else if(kind==3){
     wp=t0.xyz;mip=true;
     float hang=0.;if(aux>7.9){hang=(aux-8.)*.25;aux=.45;}       // willow withies: sway grows down the strand, and whole clumps move together
-    float vol=step(3.5,aux),tr=aux-4.*vol;
+    float vol=step(3.5,aux),tr=aux-4.*vol;vSharp=1.55;
     wp.x+=sin(uField.z*1.6+wp.z*.9+wp.y*1.3)*.035*tr;
     if(hang>0.){float ph=dot(wp.xz,vec2(.35,.27)),tm=uField.z;
       wp.xz+=(vec2(sin(tm*1.1+ph),.6*sin(tm*.83+ph*1.3))*.24+vec2(sin(tm*2.7+wp.y*1.9+ph*3.),cos(tm*2.3+wp.y*1.5))*.035)*hang*hang;}
@@ -1474,11 +1579,11 @@ void main(){
     float az=clamp(dot(hd,normalize(uSun.xz))*.5+.5,0.,1.);
     col=mix(col,mix(vec3(.50,.42,.56),vec3(1.,.56,.28),pow(az,2.2)),1.-exp(-length(uCam-wp)*.0022));
   }else{
-    wp=t0.xyz;mip=true;
+    wp=t0.xyz;mip=true;vSharp=2.4;
     float fl=aux,vol=step(3.5,fl);fl-=4.*vol;float sided=step(1.5,fl);fl-=2.*sided;float spec=fl;
     vec3 v=normalize(uCam-wp),n=vol>.5?R[1]:R[2];
     float fd=dot(n,v);
-    if(sided>.5)alpha*=smoothstep(-.05,.3,fd);else if(fd<0.&&vol<.5)n=-n;
+    if(sided>.5)alpha*=smoothstep(-.03,.12,fd);else if(fd<0.&&vol<.5)n=-n;
     float lam=max(dot(n,uSun),0.);
     vec3 amb=vec3(.17,.19,.30)*(.65+.35*n.y)+vec3(.20,.12,.07)*max(-n.y,0.);
     col=col*(amb+vec3(1.,.60,.32)*1.2*lam);
@@ -1489,12 +1594,13 @@ void main(){
   }
   vec4 cam=uView*vec4(wp,1.);
   if(cam.z>-.1||alpha<.004){gl_Position=vec4(0.,0.,2.,1.);return;}
+  s*=uAdv.x;
   mat3 M=mat3(uView)*R;M[0]*=s.x;M[1]*=s.y;M[2]*=s.z;
   float iz=-1./cam.z,tx=clamp(cam.x*iz,-uLim.x,uLim.x),ty=clamp(cam.y*iz,-uLim.y,uLim.y);
   vec3 j0=vec3(uFocal*iz,0.,uFocal*tx*iz),j1=vec3(0.,uFocal*iz,uFocal*ty*iz);
   vec3 a0=j0*M,a1=j1*M;
   float a=dot(a0,a0),b=dot(a0,a1),c=dot(a1,a1);
-  float d0=max(a*c-b*b,0.);a+=.3;c+=.3;
+  float d0=max(a*c-b*b,0.);a+=uAdv.z;c+=uAdv.z;
   if(mip)alpha*=kind==2?pow(d0/(a*c-b*b),.32):sqrt(d0/(a*c-b*b));
   if(alpha<.004){gl_Position=vec4(0.,0.,2.,1.);return;}
   float mid=.5*(a+c),rad=length(vec2(.5*(a-c),b)),l1=mid+rad,l2=max(mid-rad,.1);
@@ -1507,11 +1613,20 @@ void main(){
   vec2 mj=min(sqrt(2.*l1),1500.)*dv,mn=min(sqrt(2.*l2),1500.)*vec2(dv.y,-dv.x);
   vec4 clip=uProj*cam;
   gl_Position=vec4(clip.xy/clip.w+2.*(aQuad.x*mj+aQuad.y*mn)/uViewport,0.,1.);
-  vColor=vec4(col,alpha);vPos=aQuad;
+  if(uAdv.w>.5){                      // show the splats themselves: one flat colour each, or coloured by distance
+    if(uAdv.w<1.5){float hh=fract(float(i)*.61803398875);col=.55+.45*cos(6.2832*(hh+vec3(0.,.33,.67)));}
+    else{float dd=clamp(log2(max(-cam.z,1.))/9.,0.,1.);col=.5+.5*cos(6.2832*(.72-.75*dd+vec3(0.,.33,.67)));}
+  }
+  vColor=vec4(col,min(alpha*uAdv.y,1.));vPos=aQuad;
 }`;
 const FSRC=`#version 300 es
-precision mediump float;in vec4 vColor;in vec2 vPos;out vec4 o;
-void main(){float A=dot(vPos,vPos);if(A>4.)discard;float al=exp(-A)*vColor.a;o=vec4(vColor.rgb*al,al);}`;
+precision mediump float;in vec4 vColor;in vec2 vPos;in float vSharp;out vec4 o;uniform vec2 uEdge;      // falloff exponent; 1 draws outlines only
+// Each splat fades as exp(-r^(2k)). k = 1 is a true Gaussian; birds, bark, leaves and blades use a larger k, which keeps the
+// middle of the splat solid and tightens its edge, so close things look crisp instead of out of focus.
+void main(){float A=dot(vPos,vPos);if(A>4.)discard;
+  float e=vSharp*uEdge.x,g=e==1.?exp(-A):exp(-pow(A,e));
+  if(uEdge.y>.5){float r=sqrt(A)-1.;g=exp(-r*r*70.);}
+  float al=g*vColor.a;o=vec4(vColor.rgb*al,al);}`;
 const BVS=`#version 300 es
 out vec2 vN;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2))*2.-1.;vN=p;gl_Position=vec4(p,0.,1.);}`;
 const BFS=`#version 300 es
@@ -1524,13 +1639,37 @@ vec3 sky(vec3 rd){
   vec3 c=mix(horizon(az),mix(vec3(.30,.33,.55),vec3(.66,.50,.55),pow(az,3.)),smoothstep(0.,.2,h));
   return mix(c,vec3(.07,.12,.28),smoothstep(.12,.95,h));
 }
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+// The sky as the eye sees it: on top of the gradient, a high sheet of cirrus lit from below, the first stars overhead and away from
+// the sun, and the full moon, which at sunset is just clearing the horizon directly opposite.
+vec3 skyFull(vec3 rd,float az,float sd){
+  vec3 c=sky(rd);float h=max(rd.y,0.),t=uTime*.0016;
+  vec2 uv=rd.xz/(rd.y+.14),wv=mat2(.83,.56,-.56,.83)*uv;
+  float big=texture(uMapA,wv*vec2(.012,.03)+vec2(t,.3)).b,fine=texture(uMapA,wv*vec2(.022,.085)+vec2(t*1.6,.1)).a,wisp=texture(uMapA,wv*vec2(.05,.21)+vec2(t*2.3,.6)).a;
+  float ci=smoothstep(.42,.8,big)*smoothstep(.2,.75,fine*.65+wisp*.35)*smoothstep(.015,.16,h)*(1.-.6*smoothstep(.5,1.,h));
+  vec3 cc=mix(vec3(.60,.46,.60),vec3(1.,.64,.40),pow(az,1.4))+vec3(1.,.72,.42)*pow(sd,5.)*.6;
+  c=mix(c,cc,ci*.5);
+  vec2 sp=vec2(atan(rd.z,rd.x),asin(clamp(rd.y,-1.,1.)))*110.,id=floor(sp),f=fract(sp)-.5;float hs=hash(id);
+  f+=(vec2(hash(id+7.3),hash(id+19.1))-.5)*.6;f.x*=sqrt(max(1.-rd.y*rd.y,.02));
+  float vis=smoothstep(.22,.8,h)*smoothstep(.72,.25,az)*(1.-ci);
+  c+=vec3(.9,.92,1.)*step(.955,hs)*smoothstep(.16,.02,length(f))*(.35+.65*fract(hs*61.))*(.75+.25*sin(uTime*(2.+4.*fract(hs*17.))+hs*90.))*vis*.75;
+  vec3 md=normalize(vec3(-uSun.x,.15,-uSun.z)),mx=normalize(cross(vec3(0.,1.,0.),md)),my=cross(md,mx);
+  vec2 mp=vec2(dot(rd,mx),dot(rd,my))/.0155;float mr=dot(mp,mp);
+  if(dot(rd,md)>0.&&mr<9.){
+    float mar=texture(uMapA,mp*.04+vec2(.31,.57)).b,cr=texture(uMapA,mp*.11+vec2(.7,.2)).a;
+    vec3 mc=vec3(.97,.90,.83)*(.74+.2*smoothstep(.3,.7,mar)+.08*cr)*(.82+.18*sqrt(max(1.-mr,0.)));
+    c=mix(c,mc,smoothstep(1.,.86,mr)*.88*(1.-.5*ci));
+    c+=vec3(.50,.42,.48)*exp(-mr*.9)*.07;
+  }
+  return c;
+}
 void main(){
   vec3 rd=normalize(uF+vN.x*uR+vN.y*uU);
   float az=clamp(dot(normalize(rd.xz+1e-6),normalize(uSun.xz))*.5+.5,0.,1.);
   vec3 hz=horizon(az),col;
   float sd=clamp(dot(rd,uSun),0.,1.),dn=max(-rd.y,1e-4);
   if(rd.y>0.){
-    col=sky(rd)+vec3(1.,.70,.40)*(pow(sd,2000.)*6.+pow(sd,90.)*.55+pow(sd,10.)*.28);
+    col=skyFull(rd,az,sd)+vec3(1.,.70,.40)*(pow(sd,2000.)*6.+pow(sd,90.)*.55+pow(sd,10.)*.28);
   }else{
     bool high=uCam.y>.05;
     float dist=high?min(uCam.y/dn,8000.):0.;
@@ -1552,11 +1691,22 @@ void main(){
       float ta=dist,tb=ts;
       if(cs<=shore){for(int k=0;k<9;k++){float tm=.5*(ta+tb);vec2 wm=uCam.xz+rd.xz*tm;if(uCam.y-dn*tm>baseH(coastC(wm)))ta=tm;else tb=tm;}}
       vec2 wb=uCam.xz+rd.xz*tb;float cb=coastC(wb);
-      float sl=(baseH(cb+.5)-baseH(cb-.5));vec3 nb=normalize(vec3(0.,1.,sl));
-      vec3 sand=sandLit(nb,wb)*(.95+.1*texture(uMapA,wb*.11).a);
-      float wet=smoothstep(-5.,-1.2,cb);
+      float sl=(baseH(cb+.5)-baseH(cb-.5));
+      float fpb=tb*tb*.0016/max(uCam.y-baseH(cb),.5),rk=smoothstep(.10,.02,fpb);        // ripples finer than a pixel are dropped, as on the sea
+      float grain=texture(uMapA,wb*.11).a,bigs=texture(uMapA,wb*.013).b;
+      float rip=cos(cb*30.+11.*bigs+2.2*sin(wb.x*.55+5.*grain))*rk*smoothstep(-10.,-4.,cb)*smoothstep(.3,.62,texture(uMapA,wb*.037).a)*.075;      // the ripples the last tide left across the lower beach
+      vec3 nb=normalize(vec3(.025*sin(wb.x*2.3+4.*bigs)*rk,1.,sl+rip));
+      vec3 sand=sandLit(nb,wb)*(.92+.16*grain);
+      sand*=1.-.13*smoothstep(.9,0.,abs(cb+7.+2.*(bigs-.5)));                           // the damp line at the top of the last tide
+      float shb=1.2+2.2*sin(t*.55+wb.x*.03)+1.1*sin(t*.33+wb.x*.071+1.);                 // the water's edge abreast of this bit of sand
+      float wet=max(smoothstep(-5.,-1.2,cb),smoothstep(shb-5.,shb-.4,cb));               // sand the last wave has just left is wet through
       vec3 rw=reflect(rd,nb);rw.y=abs(rw.y);
-      sand=mix(sand*mix(1.,.5,wet),sky(rw),wet*(.1+.5*pow(clamp(1.-dot(-rd,nb),0.,1.),4.)));
+      float sg=clamp(dot(normalize(rw),uSun),0.,1.);
+      sand=mix(sand*mix(1.,.5,wet),sky(rw),wet*(.1+.55*pow(clamp(1.-dot(-rd,nb),0.,1.),4.)));
+      sand+=vec3(1.,.62,.32)*(pow(sg,300.)*4.+pow(sg,40.)*.22)*wet*(.35+.65*grain);         // and holds the sun like a mirror
+      for(int k=1;k<3;k++){float tl=t-1.5*float(k),sh=1.2+2.2*sin(tl*.55+wb.x*.03)+1.1*sin(tl*.33+wb.x*.071+1.);      // lines of foam stranded as each wave draws back
+        float lace=smoothstep(.3,0.,abs(cb-sh+.12))*step(shb+.05,sh)*smoothstep(.3,.7,texture(uMapA,wb*.45+vec2(0.,float(k)*.37)).a);
+        sand=mix(sand,vec3(.78,.72,.74)+vec3(.2,.08,.0)*pow(az,2.),lace*(.75-.25*float(k)));}
       if(cs>shore){                       // the sea
         dist=ts;
         float fade=1./(1.+dist*.012),fp=dist*dist*.0016/max(uCam.y-SEA,.5);     // fp: how much sea one pixel covers along the view; ripples finer than that are dropped
@@ -1569,7 +1719,8 @@ void main(){
         vec3 n=normalize(vec3(-dx,1.,dc));
         float fr=.04+.82*pow(clamp(1.-dot(-rd,n),0.,1.),5.);
         vec3 rf=reflect(rd,n);rf.y=abs(rf.y)+.07;rf=normalize(rf);
-        vec3 deep=mix(vec3(.02,.06,.09),vec3(.06,.17,.17),exp(-max(cs,0.)*.05));
+        vec3 deep=mix(vec3(.02,.06,.09),vec3(.07,.21,.19),exp(-max(cs,0.)*.05));
+        deep+=vec3(.02,.13,.10)*smoothstep(.1,1.,sin(p1+nz.x*2.-.9))*smoothstep(60.,6.,cs)*f1;     // light coming through the thin face of a wave about to break
         col=mix(deep,sky(rf),fr);
         float sr=clamp(dot(rf,uSun),0.,1.);
         col+=vec3(1.,.66,.36)*(pow(sr,mix(120.,500.,fade))*7.+pow(sr,40.)*.5)*(.55+.9*nz.x+.5);
@@ -1585,15 +1736,16 @@ void main(){
       col+=vec3(1.,.6,.3)*pow(sd,8.)*.06;
     }
   }
+  col+=(hash(gl_FragCoord.xy+fract(uTime)*37.)-.5)*(1.6/255.);        // a little noise, so the long gradients of the sky do not band
   o=vec4(col,1.);
 }`;
 let PR,BP;
 try{PR=prog(VS,FSRC);BP=prog(BVS,BFS);}catch(e){const el=document.getElementById('err');el.textContent='Shader error: '+e.message;el.hidden=false;return;}
-const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','uField','uScroll','uSun','uCam','uTint','uMapA','uMapB'])U[n]=gl.getUniformLocation(PR,n);
+const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','uField','uScroll','uSun','uCam','uTint','uMapA','uMapB','uAdv','uEdge'])U[n]=gl.getUniformLocation(PR,n);
 const BU={};for(const n of['uR','uU','uF','uSun','uCam','uTint','uMapA','uMapB','uTime'])BU[n]=gl.getUniformLocation(BP,n);
 
 const TH0=Math.ceil(nStatic/512),DYN0=TH0*512;
-const DCAP=Math.ceil((MAXB*FARMAX+(NEARCAP+6)*NEARMAX+160)/512)*512,THD=DCAP/512;
+const DCAP=Math.ceil((MAXB*FARMAX+(NEARCAP+6)*NEARMAX+(HEROCAP+6)*Math.max(HEROMAX,FALCT.length)+160)/512)*512,THD=DCAP/512;
 const DY=new Float32Array(DCAP*16),DK=new Uint16Array(DCAP);
 const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
 gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,2048,TH0+THD,0,gl.RGBA,gl.FLOAT,null);
@@ -1684,7 +1836,7 @@ function updateCamera(dt){
     let u=[UPv[b],UPv[b+1],UPv[b+2]];const fu=u[0]*f[0]+u[1]*f[1]+u[2]*f[2];u=nrm([u[0]-f[0]*fu,u[1]-f[1]*fu,u[2]-f[2]*fu]);
     const c=Math.cos(cam.rideYaw),s=Math.sin(cam.rideYaw),bx=-f[0]*cam.rideDist,bz=-f[2]*cam.rideDist;
     const tp=[bp[0]+bx*c+bz*s,bp[1]-f[1]*cam.rideDist+.28*cam.rideDist,bp[2]-bx*s+bz*c];
-    const tl=[bp[0]+f[0]*3,bp[1]+f[1]*3,bp[2]+f[2]*3];
+    const la=Math.min(3,cam.rideDist*.55);const tl=[bp[0]+f[0]*la,bp[1]+f[1]*la,bp[2]+f[2]*la];      // look a little ahead of the bird; less when close, so it stays in frame
     if(!cam.rpos){cam.rpos=tp;cam.rlook=tl;}
     const k1=1-Math.exp(-dt/.16),k2=1-Math.exp(-dt/.1);
     for(let k=0;k<3;k++){cam.rpos[k]+=(tp[k]-cam.rpos[k])*k1;cam.rlook[k]+=(tl[k]-cam.rlook[k])*k2;}
@@ -1763,14 +1915,15 @@ function genBirds(){
     if(Math.abs(vx)>dz*tanX*1.05+mg||Math.abs(vy)>dz*tanY*1.05+mg){PX[i]=-1;continue;}
     PX[i]=.42*SC[i]*focal/dz;if(PX[i]>14)near++;}
   let thr=14;while(near>NEARCAP){thr*=1.25;near=0;for(let i=0;i<n;i++)if(PX[i]>thr)near++;}
+  let thrH=Math.max(44,thr),nh=HEROCAP+1;while(nh>HEROCAP){nh=0;for(let i=0;i<n;i++)if(PX[i]>thrH)nh++;if(nh>HEROCAP)thrH*=1.2;}      // the few closest birds are drawn feather by feather
   for(let i=0;i<n;i++){
-    if(PX[i]<0)continue;const i3=i*3,isNear=PX[i]>thr||(cam.mode==='ride'&&i===cam.rideBird);
+    if(PX[i]<0)continue;const i3=i*3,isHero=PX[i]>thrH||(cam.mode==='ride'&&i===cam.rideBird),isNear=isHero||PX[i]>thr;
     const f=[H[i3],H[i3+1],H[i3+2]];let u=[UPv[i3],UPv[i3+1],UPv[i3+2]];
     const fu=u[0]*f[0]+u[1]*f[1]+u[2]*f[2];u=nrm([u[0]-f[0]*fu,u[1]-f[1]*fu,u[2]-f[2]*fu]);
     wingAngles(PH[i],FLAP[i],TK[i],BND[i],amp*(.75+.25*DEM[i]),gait);
     const hb=-HEAVE*WA4[5];          // the body is driven up through the downstroke and falls back through the upstroke, so it sits lowest at mid-downstroke
     frames([P[i3]+u[0]*hb,P[i3+1]+u[1]*hb+BOF[i],P[i3+2]+u[2]*hb],f,u,SC[i],isNear);
-    const tp=sp.shapes?sp.tpls[PALI[i]]:tpl;emit(isNear?tp.near:tp.far,pals[PALI[i]],1,SC[i]);
+    const tp=sp.shapes?sp.tpls[PALI[i]]:tpl;emit(isHero?tp.hero:isNear?tp.near:tp.far,pals[PALI[i]],1,SC[i]);
   }
   for(const F of FALS){wingAngles(F.ph,F.flap,F.tk,0,.75,FGAIT);frames(F.p.slice(),F.f,F.u,2.4,true);emit(FALCT,FALC,.15,2.4);}
   if(sp.model==='soar'){      // thistledown carried up in the thermals, so the rising air can be seen
@@ -1784,6 +1937,7 @@ function genBirds(){
   }
 }
 
+const ADV={size:1,op:1,sharp:1,low:.3,dens:1,mode:0,ring:false,sort:true};      // the advanced panel's settings; these are the normal values
 /* ---------------------------------------------------------------- sort
    Each meadow ring is stored cell by cell, so whole cells outside the ring or the view are skipped unread. */
 const RINGS=[{L:L,R:RF,Rin:0,st:cell0,ym:.3,mg:.9},{L:L*4,R:RF*4,Rin:RF*4*.18,st:cell1,ym:.3,mg:1},{L:L*16,R:RF*16,Rin:RF*16*.18,st:cell2,ym:.5,mg:2.5},
@@ -1826,6 +1980,9 @@ function buildOrder(){
     tmpIdx[n]=i;keys[n++]=d<40?d*1500:61600+Math.min(Math.log(d*.025)*LOGK,3900);
   }
   for(let k=0;k<nd;k++){tmpIdx[n]=DYN0+k;keys[n++]=DK[k];}
+  if(ADV.dens<1){const lim=ADV.dens*4294967296;let m=0;                    // advanced panel: draw only a share of the splats, always the same ones
+    for(let i=0;i<n;i++)if((Math.imul(tmpIdx[i]+1,-1640531535)>>>0)<lim){tmpIdx[m]=tmpIdx[i];keys[m++]=keys[i];}n=m;}
+  if(!ADV.sort){order.set(tmpIdx.subarray(0,n));return n;}                  // and optionally skip the depth sort, to show what it is for
   counts.fill(0);for(let i=0;i<n;i++)counts[keys[i]]++;
   let acc=0;for(let k=65535;k>=0;k--){const c=counts[k];counts[k]=acc;acc+=c;}
   for(let i=0;i<n;i++)order[counts[keys[i]]++]=tmpIdx[i];
@@ -1881,6 +2038,7 @@ function render(){
   gl.uniform1i(U.uData,0);gl.uniform1i(U.uMapA,1);gl.uniform1i(U.uMapB,2);
   gl.uniformMatrix4fv(U.uView,false,view);gl.uniformMatrix4fv(U.uProj,false,proj);
   gl.uniform2f(U.uViewport,VW,VH);gl.uniform1f(U.uFocal,focal);gl.uniform2f(U.uLim,tanX*1.3,tanY*1.3);
+  gl.uniform4f(U.uAdv,ADV.size,ADV.op,ADV.low,ADV.mode);gl.uniform2f(U.uEdge,ADV.sharp,ADV.ring?1:0);
   gl.uniform4f(U.uField,L,RF,S.time,1);gl.uniform2f(U.uScroll,cam.pos[0],cam.pos[2]);
   gl.uniform3fv(U.uSun,SUN);gl.uniform3fv(U.uCam,cam.pos);gl.uniform3fv(U.uTint,TINT);
   gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,drawn);
@@ -1934,6 +2092,19 @@ function updateHud(){
   }
   hud.innerHTML=h;
 }
+
+/* ------------------------------------------------------- advanced panel
+   Hidden controls for the splats themselves: press G, or triple-click the title. Size scales every Gaussian; Edge changes the falloff from soft
+   (below 1) through Gaussian (1) to a hard-edged disc; Pixel filter is the blur added to keep sub-pixel splats from shimmering; Density draws only a
+   share of the splats; the colour modes and Outlines show the individual splats; switching off the depth sort shows why they are sorted. */
+const adv=document.getElementById('adv'),ADV0=Object.assign({},ADV);
+function advSync(){for(const el of adv.querySelectorAll('[data-k]')){const k=el.dataset.k;if(el.type==='checkbox')el.checked=ADV[k];else{el.value=ADV[k];const o=el.parentNode.querySelector('output');if(o)o.textContent=k==='dens'?Math.round(ADV[k]*100)+'%':(+ADV[k]).toFixed(2);}}}
+adv.addEventListener('input',e=>{const el=e.target,k=el.dataset.k;if(!k)return;ADV[k]=el.type==='checkbox'?el.checked:+el.value;advSync();});
+adv.addEventListener('change',e=>{if(e.target.blur)e.target.blur();});
+function toggleAdv(){adv.hidden=!adv.hidden;advSync();}
+document.getElementById('advX').onclick=toggleAdv;
+document.getElementById('advR').onclick=()=>{Object.assign(ADV,ADV0);advSync();};
+document.querySelector('#tag b').addEventListener('click',e=>{if(e.detail===3)toggleAdv();});
 
 /* --------------------------------------------------------------- score
    A slow pad score, made up as it goes and played by a small synth built here in Web Audio. Nothing is recorded.
@@ -2115,7 +2286,7 @@ addEventListener('keydown',e=>{
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
   if(e.repeat)return;
-  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}
+  if(c==='KeyF')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}else if(c==='KeyG')toggleAdv();
   else if(c>='Digit1'&&c<='Digit5')setMode(MODES[+c.slice(5)-1]);
 });
 addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
