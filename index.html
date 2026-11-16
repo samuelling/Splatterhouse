@@ -56,9 +56,9 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
 #chips{position:fixed;left:14px;top:96px;display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 28px)}
-#bClean,#bFinger{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
-#bFinger[hidden]{display:none}
-#bFinger[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
+#bClean,#bFinger,#bHead{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#bFinger[hidden],#bHead[hidden]{display:none}
+#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bAdv[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #adv{position:fixed;left:14px;top:128px;width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 140px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
@@ -94,7 +94,9 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #cam b{position:absolute;width:10px;height:10px;margin:-5px;border-radius:50%;border:2px solid #7fc4ff;background:#7fc4ff}
 #cam b.w{border-radius:2px;border-color:#9be28a;background:#9be28a}
 #cam u{position:absolute;width:22px;height:22px;margin:-11px;border-radius:50%;border:1px dashed rgba(247,239,230,.7)}
-#cam b[hidden],#cam u[hidden],#cam i[hidden]{display:none}
+#cam em{position:absolute;width:10px;height:10px;margin:-5px;border:2px solid #f3c96b;transform:rotate(45deg)}
+#cam em.a{background:#f3c96b}
+#cam b[hidden],#cam u[hidden],#cam i[hidden],#cam em[hidden],#cam button[hidden],#cam small[hidden]{display:none}
 #cam button{pointer-events:auto;margin-top:5px;width:100%;height:24px;padding:0;font-size:12px;letter-spacing:.08em;border-radius:7px}
 #calib{position:fixed;inset:0;pointer-events:none}
 #calib[hidden]{display:none}
@@ -140,7 +142,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button></div>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button></div>
 <button id="bShow" type="button">Show menus</button>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
   <h4>Advanced <small>Gaussian splats</small><button type="button" id="advX" aria-label="Close">×</button></h4>
@@ -156,7 +158,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 </form>
 <div id="flash"></div><div id="lens"></div>
 <div id="bag" hidden></div>
-<div id="cam" hidden><div><video playsinline muted></video><u hidden></u><i hidden></i><b hidden></b></div><span></span><small></small><button id="bCal" type="button">Calibrate</button></div>
+<div id="cam" hidden><div><video playsinline muted></video><u hidden></u><em hidden></em><i hidden></i><b hidden></b></div><span></span><small></small><small hidden></small><button id="bCal" type="button">Calibrate</button><button id="bCen" type="button" hidden>Centre head (C)</button></div>
 <div id="calib" hidden><p></p><i></i><small></small></div>
 <div id="xh" hidden><i></i><b></b></div>
 <div id="hint"></div>
@@ -1907,7 +1909,10 @@ function updateCamera(dt){
   if(cam.mode==='hunt'){
     // on foot in the barn field: W A S D walk, and the fences, the barn and the trees stop you
     const kd_=keysDown,JS=Finger.J,jw=JS.on&&JS.mode==='walk';
-    if(JS.on&&JS.mode==='look'){cam.hyaw-=JS.x*1.9*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+JS.y*1.3*cam.hzoom*dt,-.6,1.45);}              // the other hand, open: turn the head
+    const HD=Finger.H,lx_=HD.ax-(cam.hax||0),ly_=HD.ay-(cam.hay||0);
+    if(HD.live){cam.hyaw-=HD.x*1.9*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+HD.y*.8*cam.hzoom*dt,-.6,1.45);}                                // the head as a stick: turned away from the middle, the view keeps turning
+    if(lx_||ly_){cam.hyaw-=lx_;cam.hpitch=clamp(cam.hpitch+ly_,-.6,1.45);cam.hax=HD.ax;cam.hay=HD.ay;}                                       // and the small lean that follows the head at once
+    if(JS.on&&JS.mode==='look'&&!HD.on){cam.hyaw-=JS.x*1.9*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+JS.y*1.3*cam.hzoom*dt,-.6,1.45);}              // the other hand, open: turn the head
     const fw=(kd_.has('KeyW')?1:0)-(kd_.has('KeyS')?1:0)+(jw?JS.y:0),rt=(kd_.has('KeyD')?1:0)-(kd_.has('KeyA')?1:0)+(jw?JS.x:0),sy=Math.sin(cam.hyaw),cy=Math.cos(cam.hyaw);       // as a fist: walk
     let mx=sy*fw-cy*rt,mz=cy*fw+sy*rt;const ml=Math.hypot(mx,mz),spd=kd_.has('Shift')?6.5:3.6,k=1-Math.exp(-dt/.12);
     if(ml>1e-3){const mg=Math.min(1,ml);mx*=spd*mg/ml;mz*=spd*mg/ml;}
@@ -2646,9 +2651,9 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     if(!cam.hpos||!canStand(cam.hpos[0],cam.hpos[1])){cam.hpos=[GATE[0]+2,GATE[1]-6];cam.hyaw=Math.atan2(RSX-cam.hpos[0],RSZ-cam.hpos[1]);cam.hpitch=.25;cam.hzoom=1.05;cam.hvel=[0,0];cam.hbob=0;}
     aim.x=aim.y=0;if(!gvao)try{build();}catch(e){console.error(e);}
     {const d=bw([0,0,11]);dog.on=true;dog.p=[d[0],d[2]];dog.mode='heel';dog.tg=null;dog.spd=0;dog.ph=0;}      // the dog comes out from the barn
-    document.getElementById('bFinger').hidden=false;Score.sfxMode(true);sync();
+    document.getElementById('bFinger').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
   }
-  function leave(){Finger.stop();document.getElementById('bFinger').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
+  function leave(){Finger.stop();document.getElementById('bFinger').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
   function pointAt(cx,cy){const r=canvas.getBoundingClientRect();aim.x=clamp((cx-r.left)/r.width*2-1,-1,1);aim.y=clamp(1-(cy-r.top)/r.height*2,-1,1);}
   function step(h){
     stepFx(h);stepDead(h);dogStep(h);
@@ -2735,7 +2740,9 @@ const Finger=(()=>{
   const F={on:false,gun:false,cocked:false,x:0,y:0,fires:0,err:'',inN:0,outN:0,lost:0,lowN:0,hi:0,gp:null,lp:null,gT:-9},hist=[];
   const box=document.getElementById('cam'),video=box.querySelector('video'),note=box.querySelector('span'),nums=box.querySelector('small'),dot=box.querySelector('i'),dot2=box.querySelector('b'),ring=box.querySelector('u'),btn=document.getElementById('bFinger'),bCal=document.getElementById('bCal');
   const ov=document.getElementById('calib'),ovT=ov.querySelector('p'),ovD=ov.querySelector('i'),ovS=ov.querySelector('small');
-  let lm=null,stream=null,lastT=-1,starting=false,cal=null;
+  const FACE=SRC.face||'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+  const bHead=document.getElementById('bHead'),bCen=document.getElementById('bCen'),hm=box.querySelector('em'),hn=box.querySelectorAll('small')[1],want={gun:false,head:false};
+  let lm=null,fm=null,vis=null,fset=null,stream=null,lastT=-1,cal=null,busy=Promise.resolve();
   const sub=(a,b)=>[a.x-b.x,a.y-b.y,a.z-b.z],len=v=>Math.hypot(v[0],v[1],v[2]),med=a=>{const b=a.slice().sort((x,y)=>x-y);return b[b.length>>1];};
   // One hand, as 21 points in the picture (l) and in metres (w). How far a finger is out is the distance from wrist to fingertip over wrist to
   // knuckle: about 1.8 for a straight finger, 1 or less for a folded one. The score is how much further out the index finger is than the
@@ -2790,6 +2797,26 @@ const Finger=(()=>{
       const dx=r.px-J.ax,dy=J.ay-r.py,d=Math.hypot(dx,dy),k=d>.03?Math.pow(Math.min(1,(d-.03)/.14),1.4)/d:0;J.on=true;J.x=dx*k;J.y=dy*k;}
     ring.style.left=(J.ax*100).toFixed(1)+'%';ring.style.top=(J.ay*100).toFixed(1)+'%';dot2.className=J.mode==='walk'?'w':'';
   }
+  /* Head look. The face tracker gives the head's attitude as a matrix, and from it the way the face points. Measured from where it pointed
+     when you looked at the middle of the screen, that steers the view like a stick: a small turn leans the view at once, and past a dead
+     patch the view keeps turning that way, faster the further you turn. Bring your head back to the middle and the view stays where it
+     has got to, so the bird you turned towards is still in front of you. In the tracker's frame x is to the right of the picture, y is up
+     and z is towards the camera; the picture is not mirrored, so a face pointing to the picture's left is a head turned to its own right. */
+  const Hd={on:false,live:false,x:0,y:0,ax:0,ay:0,yaw:0,pitch:0,y0:0,p0:0,buf:null,seen:-9,n:0},hx={t:null},hy={t:null},HDZ=3,HYF=20,HPF=14;     // degrees: dead patch, and the turn that gives full speed across and up
+  function headCentre(){Hd.buf=[];Hd.x=Hd.y=0;hx.t=hy.t=null;}
+  function head(m,nose,t){
+    if(!m){if(t-Hd.seen>.4){Hd.live=false;Hd.x*=.8;Hd.y*=.8;Hd.ax*=.9;Hd.ay*=.9;hm.hidden=true;hn.textContent=Hd.seen<0?'head: looking for your face':'head: no face in view';}return;}
+    const dtH=clamp(t-Hd.seen,0,.2),yw=Math.atan2(-m[8],m[10])*57.296,pt=Math.asin(clamp(m[9],-1,1))*57.296;Hd.seen=t;
+    hm.hidden=false;hm.style.left=((1-nose.x)*100).toFixed(1)+'%';hm.style.top=(nose.y*100).toFixed(1)+'%';
+    if(Hd.buf){Hd.buf.push([t,yw,pt]);Hd.live=false;hm.className='';hn.textContent='head: look at the middle of the screen';                // half a second of looking straight ahead is "the middle"
+      if(t-Hd.buf[0][0]>.6){Hd.y0=med(Hd.buf.map(q=>q[1]));Hd.p0=med(Hd.buf.map(q=>q[2]));Hd.buf=null;}return;}
+    const a=euro(hx,(yw-Hd.y0)/HYF,t)*HYF,b=euro(hy,(pt-Hd.p0)/HPF,t)*HPF,st=(v,full)=>Math.sign(v)*Math.pow(clamp((Math.abs(v)-HDZ)/(full-HDZ),0,1),1.5);
+    Hd.yaw=a;Hd.pitch=b;Hd.live=!cal;Hd.x=cal?0:st(a,HYF);Hd.y=cal?0:st(b,HPF);Hd.ax=clamp(a,-25,25)*.7/57.296;Hd.ay=clamp(b,-20,20)*.6/57.296;
+    // a head resting near the middle slowly becomes the new middle, so a change of posture does not leave the view creeping
+    if(Math.abs(a)<HDZ*.8&&Math.abs(b)<HDZ*.8){const k=1-Math.exp(-dtH/4);Hd.y0+=(yw-Hd.y0)*k;Hd.p0+=(pt-Hd.p0)*k;}
+    hm.className=Hd.x||Hd.y?'a':'';const q=(v,p,n)=>Math.round(Math.abs(v))?Math.round(Math.abs(v))+'\u00b0 '+(v>0?p:n):'';
+    hn.textContent='head: '+([q(a,'right','left'),q(b,'up','down')].filter(Boolean).join(' \u00b7 ')||'centred')+(Hd.x||Hd.y?' \u00b7 turning':'');
+  }
   // Which hand is which. The gun hand is the one that looks like a finger gun; once the two are told apart they are followed by where
   // they are, so a gun hand that relaxes for a moment is not taken for the other one.
   const dist2=(r,p)=>Math.hypot(r.px-p[0],r.py-p[1]);
@@ -2799,10 +2826,10 @@ const Finger=(()=>{
     const gOK=F.gp&&t-F.gT<.6,lOK=F.lp&&t-J.seen<.6;
     if(H.length>=2){if(gOK&&lOK)g=dist2(H[0],F.gp)+dist2(H[1],F.lp)<=dist2(H[1],F.gp)+dist2(H[0],F.lp)?0:1;else g=H[0].score>=H[1].score?0:1;
       if(H[1-g].score>enter&&H[g].score<exit)g=1-g;k=1-g;}
-    else if(H.length===1){const r=H[0],nG=gOK?dist2(r,F.gp):9,nL=lOK?dist2(r,F.lp):9;if(r.score>enter||(r.score>exit&&nG<=nL)||(nG<nL&&nG<.12))g=0;else k=0;}
+    else if(H.length===1){const r=H[0],nG=gOK?dist2(r,F.gp):9,nL=lOK?dist2(r,F.lp):9;if(r.score>enter||(r.score>exit&&nG<=nL)||(nG<nL&&nG<.12))g=0;else if(!Hd.on)k=0;}       // with head look on, a lone hand is the gun or nothing
     if(g>=0){F.gp=[H[g].px,H[g].py];F.gT=t;}if(k>=0)F.lp=[H[k].px,H[k].py];
     gun(g>=0?H[g]:null);look(k>=0?H[k]:null,t);
-    if(g>=0||k>=0)nums.textContent=(g>=0?(H[g].two?'fingers ':'finger ')+H[g].score.toFixed(2)+' · thumb '+H[g].thumb.toFixed(2):'no gun hand')+(k>=0?' · other hand: '+(J.on?J.mode:'steadying'):'');
+    if(g>=0||k>=0)nums.textContent=(g>=0?(H[g].two?'fingers ':'finger ')+H[g].score.toFixed(2)+' · thumb '+H[g].thumb.toFixed(2):'no gun hand')+(k>=0?' · other hand: '+(J.on?(J.mode==='look'&&Hd.on?'resting':J.mode):'steadying'):'');
   }
   const feed=(l,w)=>feedHands(l&&w?[[l,w]]:[]);
   function gun(r){
@@ -2828,28 +2855,50 @@ const Finger=(()=>{
       if(cam.mode==='hunt'){const h=hist[0];Hunt.aim.x=h[0];Hunt.aim.y=h[1];Hunt.fire();Hunt.aim.x=F.x;Hunt.aim.y=F.y;}}}       // fired from where it pointed a moment ago, before the thumb jogged the hand
     else F.lowN=0;
   }
-  async function start(){
-    if(F.on||starting)return;starting=true;F.err='';box.hidden=false;note.textContent='asking for the camera';nums.textContent='';btn.setAttribute('aria-pressed','true');
+  // The camera and the two trackers are shared: each is fetched the first time something wants it, and the camera is let go when nothing does.
+  function sync(){btn.setAttribute('aria-pressed',String(want.gun));bHead.setAttribute('aria-pressed',String(want.head));bCal.hidden=nums.hidden=!want.gun;bCen.hidden=hn.hidden=!want.head;}
+  function shut(){F.on=false;F.gun=false;Hd.on=Hd.live=false;Hd.x=Hd.y=Hd.ax=Hd.ay=0;hm.hidden=dot.hidden=dot2.hidden=ring.hidden=true;J.on=false;J.since=0;J.x=J.y=0;if(cal){cal=null;ov.hidden=true;}if(stream){for(const t of stream.getTracks())t.stop();stream=null;}video.srcObject=null;box.hidden=true;}
+  function stop(){want.gun=want.head=false;sync();shut();}
+  function set(what,on){want[what]=!!on;sync();busy=busy.then(ensure);return busy;}
+  const start=()=>set('gun',true);
+  async function ensure(){
+    if(!want.gun&&!want.head){shut();return;}
+    F.err='';box.hidden=false;
     try{
-      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('no camera access in this browser or page');
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:30}},audio:false});
-      video.srcObject=stream;await video.play();
-      if(!lm){note.textContent='fetching the hand tracker';const vis=await import(SRC.mjs),fs=await vis.FilesetResolver.forVisionTasks(SRC.wasm);
-        const mk=dg=>vis.HandLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:SRC.model,delegate:dg},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.35,minHandPresenceConfidence:.35,minTrackingConfidence:.35});      // readier to keep hold of a hand than the standard settings
+      if(!stream){note.textContent='asking for the camera';nums.textContent='';
+        if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('no camera access in this browser or page');
+        const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:30}},audio:false});
+        if(!want.gun&&!want.head){for(const t of s.getTracks())t.stop();return;}
+        stream=s;video.srcObject=s;await video.play();}
+      if(!vis){note.textContent='fetching the tracker';vis=await import(SRC.mjs);fset=await vis.FilesetResolver.forVisionTasks(SRC.wasm);}
+      if(want.gun&&!lm){note.textContent='fetching the hand tracker';
+        const mk=dg=>vis.HandLandmarker.createFromOptions(fset,{baseOptions:{modelAssetPath:SRC.model,delegate:dg},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.35,minHandPresenceConfidence:.35,minTrackingConfidence:.35});      // readier to keep hold of a hand than the standard settings
         try{lm=await mk('GPU');}catch(e){lm=await mk('CPU');}}
-      F.on=true;note.textContent='show the camera a finger gun';if(!C.done)calStart();
-    }catch(e){F.err=String(e&&e.message||e);stop();box.hidden=false;
-      note.textContent=/denied|NotAllowed|Permission/i.test(F.err+(e&&e.name||''))?'The camera is blocked on this page. Open the page on its own, not inside another site.':/import|fetch|module|network|load/i.test(F.err)?'Could not fetch the hand tracker. It needs a network connection.':'No finger gun here: '+F.err;}
-    starting=false;
+      if(want.head&&!fm){note.textContent='fetching the face tracker';
+        const mk=dg=>vis.FaceLandmarker.createFromOptions(fset,{baseOptions:{modelAssetPath:FACE,delegate:dg},runningMode:'VIDEO',numFaces:1,outputFacialTransformationMatrixes:true});
+        try{fm=await mk('GPU');}catch(e){fm=await mk('CPU');}}
+      if(!want.gun&&!want.head){shut();return;}
+      if(want.gun&&!F.on){F.on=true;note.textContent='show the camera a finger gun';if(!C.done)calStart();}
+      else if(!want.gun&&F.on){F.on=false;F.gun=false;J.on=false;J.since=0;J.x=J.y=0;if(cal){cal=null;ov.hidden=true;}dot.hidden=dot2.hidden=ring.hidden=true;nums.textContent='';}
+      if(want.head&&!Hd.on){Hd.on=true;Hd.seen=-9;headCentre();hn.textContent='head: looking for your face';}
+      else if(!want.head&&Hd.on){Hd.on=Hd.live=false;Hd.x=Hd.y=Hd.ax=Hd.ay=0;hm.hidden=true;}
+      if(!want.gun){note.textContent='turn your head to look around';nums.textContent='';}
+    }catch(e){
+      if(!want.gun&&!want.head){shut();return;}                                      // switched off while it was still starting
+      F.err=String(e&&e.message||e);stop();box.hidden=false;
+      note.textContent=/denied|NotAllowed|Permission/i.test(F.err+(e&&e.name||''))?'The camera is blocked on this page. Open the page on its own, not inside another site.':/import|fetch|module|network|load/i.test(F.err)?'Could not fetch the tracker. It needs a network connection.':'No camera control here: '+F.err;}
   }
-  function stop(){F.on=false;F.gun=false;J.on=false;J.since=0;J.x=J.y=0;if(cal){cal=null;ov.hidden=true;}if(stream){for(const t of stream.getTracks())t.stop();stream=null;}video.srcObject=null;box.hidden=true;btn.setAttribute('aria-pressed','false');}
   function tick(){
-    if(!F.on||!lm||video.readyState<2||video.currentTime===lastT)return;lastT=video.currentTime;
-    try{const r=lm.detectForVideo(video,performance.now()),hs=[];for(let i=0;r.landmarks&&i<r.landmarks.length&&i<2;i++)if(r.worldLandmarks&&r.worldLandmarks[i])hs.push([r.landmarks[i],r.worldLandmarks[i]]);feedHands(hs);}catch(e){F.err=String(e);}
+    if((!F.on&&!Hd.on)||video.readyState<2||video.currentTime===lastT)return;lastT=video.currentTime;const now=performance.now();
+    if(F.on&&lm)try{const r=lm.detectForVideo(video,now),hs=[];for(let i=0;r.landmarks&&i<r.landmarks.length&&i<2;i++)if(r.worldLandmarks&&r.worldLandmarks[i])hs.push([r.landmarks[i],r.worldLandmarks[i]]);feedHands(hs);}catch(e){F.err=String(e);}
+    // the head moves slowly beside a hand, so with both running the face is read on every other picture
+    if(Hd.on&&fm&&(!F.on||(Hd.n++&1)===0))try{const r=fm.detectForVideo(video,now),m=r.facialTransformationMatrixes&&r.facialTransformationMatrixes[0],l=r.faceLandmarks&&r.faceLandmarks[0];head(m&&l?m.data:null,l&&l[1],clock());}catch(e){F.err=String(e);}
   }
-  btn.onclick=e=>{if(F.on||starting)stop();else start();e.currentTarget.blur();};
+  btn.onclick=e=>{set('gun',!want.gun);e.currentTarget.blur();};
+  bHead.onclick=e=>{set('head',!want.head);e.currentTarget.blur();};
+  bCen.onclick=e=>{headCentre();e.currentTarget.blur();};
   bCal.onclick=e=>{if(cal)calCancel();else calStart();e.currentTarget.blur();};
-  return{F,J,read,feed,feedHands,start,stop,tick,calStart,calCancel,get cal(){return cal;},get C(){return C;},reset(){C=Object.assign({},DEF);try{localStorage.removeItem(KEY);}catch(e){}}};
+  return{F,J,H:Hd,want,set,headCentre,feedHead:(m,n)=>head(m,n||{x:.5,y:.4},clock()),read,feed,feedHands,start,stop,tick,calStart,calCancel,get cal(){return cal;},get C(){return C;},reset(){C=Object.assign({},DEF);try{localStorage.removeItem(KEY);}catch(e){}}};
 })();
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
@@ -2974,6 +3023,7 @@ addEventListener('keydown',e=>{
   if(cam.mode==='hunt'){
     if(c==='Space'||c==='Enter'){e.preventDefault();if(!e.repeat)Hunt.fire();return;}
     if(c==='KeyR'){Hunt.reload();return;}
+    if(c==='KeyC'&&Finger.H.on){if(!e.repeat)Finger.headCentre();return;}
     if(MOVE.has(c)){e.preventDefault();keysDown.add(c);return;}}
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
