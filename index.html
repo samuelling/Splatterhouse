@@ -38,18 +38,21 @@ canvas:active{cursor:grabbing}
 .row{display:flex;gap:8px;align-items:center;justify-content:center}
 button{font:600 17px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);
   height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--edge);background:rgba(247,239,230,.07);cursor:pointer;white-space:nowrap}
-button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select{font:600 15px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);height:34px;padding:0 6px;border-radius:10px;
+  border:1px solid var(--edge);background:rgba(247,239,230,.09);cursor:pointer;max-width:9.5em}
+select option{color:#1b1a22;background:#f3ece2;text-transform:none}
+button[aria-disabled="true"]{opacity:.42;cursor:default}
 .seg{display:flex;border:1px solid var(--edge);border-radius:12px;overflow:hidden}
 .seg button{border:0;border-radius:0;background:transparent;color:var(--ink-dim)}
 .seg button[aria-pressed="true"],#bSlow[aria-pressed="true"]{background:var(--accent);color:#2b1d0c}
 #bSplit:active{background:var(--accent);color:#2b1d0c}
 #bFalcon{color:var(--hot);border-color:rgba(255,106,74,.5)}
 #bFalcon:active,#bFalcon[data-on="1"]{background:var(--hot);color:#2a0d06}
-#bFalcon[aria-disabled="true"]{opacity:.6}
 .sl{gap:12px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
 .sl span{white-space:nowrap}
 .sl output{font-family:var(--mono);font-size:12px;min-width:4ch;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
-input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:24px}
+input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){#hint{transition:none}}
@@ -57,7 +60,7 @@ input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:24px}
 </head>
 <body>
 <canvas id="c" tabindex="0"></canvas>
-<div id="tag"><b>Splatterhouse</b><i>Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
+<div id="tag"><b>Splatterhouse</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hint"></div>
 <div id="dock">
   <div class="row">
@@ -73,8 +76,12 @@ input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:24px}
     <button id="bSplit" type="button">Split</button>
     <button id="bSlow" type="button" aria-pressed="false">Slow-mo</button>
   </div>
-  <label class="row sl" for="count"><span>Starlings</span>
-    <input id="count" type="range" min="150" max="2400" step="50" value="1000"><output id="countOut" for="count">1000</output></label>
+  <div class="row sl">
+    <select id="species" aria-label="Species">
+      <option value="starling">Starlings</option><option value="dunlin">Dunlin</option><option value="jackdaw">Jackdaws</option>
+      <option value="pigeon">Pigeons</option><option value="goose">Geese</option><option value="stork">White storks</option>
+    </select>
+    <input id="count" type="range" aria-label="Number of birds" min="150" max="2400" step="50" value="1000"><output id="countOut" for="count">1000</output></div>
 </div>
 <div id="err" hidden>This demo needs WebGL2, which this browser did not provide. Try a current Safari, Chrome or Firefox.</div>
 <script>
@@ -674,41 +681,101 @@ for(const line of FENCES)for(let k=0;k<line.length-1;k++){
     bush(x+(rnd()-.5),z-.8-rnd(),1+rnd()*.9,rnd()<.4);}}
 const nStatic=N;
 
-/* ------------------------------------------------------ bird templates */
-// bird frame: +z forward, +y up, +x the bird's left. Splat thin axis = local z (used as normal).
+/* ------------------------------------------------------ bird bodies
+   One parametric body and six species. Model units are a starling's (wingspan 0.40 m); each species scales it.
+   Bird frame: +z forward, +y up, +x the bird's left. A splat's thin axis is its local z, used as the normal. */
 const QI=[0,0,0,1];
 const FL=quatFromBasis([1,0,0],[0,0,-1],[0,1,0]),FLB=quatFromBasis([1,0,0],[0,0,1],[0,-1,0]);
 const FR=quatFromBasis([-1,0,0],[0,0,1],[0,1,0]),FRB=quatFromBasis([-1,0,0],[0,0,-1],[0,-1,0]);
 const T=(part,pos,sig,q,role,op,spec,flags)=>({part,pos,sig,q,role,op,spec,flags});
-const NEAR=[],FAR=[];
-NEAR.push(T(0,[0,0,0],[.017,.015,.036],QI,0,.97,.9,4));
-NEAR.push(T(0,[0,-.006,.034],[.015,.014,.02],QI,0,.97,.7,4));
-NEAR.push(T(0,[0,.008,.07],[.012,.011,.013],QI,0,.98,.9,4));
-NEAR.push(T(0,[0,.004,.094],[.0028,.0024,.009],QI,1,.98,.3,4));
-NEAR.push(T(0,[0,.002,-.044],[.013,.011,.022],QI,0,.97,.6,4));
-NEAR.push(T(0,[0,.002,-.083],[.014,.019,.0018],FL,4,.95,.4,0));
-for(let k=0;k<7;k++){const a=(rnd()-.5)*2.6;NEAR.push(T(0,[Math.sin(a)*.016,Math.cos(a)*.0135,(rnd()-.45)*.07],[.0026,.0026,.0026],QI,5,.8,0,4));}
-for(const[x,cs]of[[.014,.026],[.040,.024],[.064,.022]]){
-  NEAR.push(T(1,[x,.0012,-.016],[.014,cs,.0015],FL,2,.97,.75,2),T(1,[x,-.0012,-.016],[.014,cs,.0015],FLB,3,.97,.08,2));
-  NEAR.push(T(3,[-x,.0012,-.016],[.014,cs,.0015],FR,2,.97,.75,2),T(3,[-x,-.0012,-.016],[.014,cs,.0015],FRB,3,.97,.08,2));}
-for(const[x,cs,zc,ss]of[[.013,.022,-.016,.013],[.037,.018,-.018,.013],[.060,.014,-.021,.013],[.081,.009,-.025,.012],[.097,.005,-.028,.008]]){
-  NEAR.push(T(2,[x,.0012,zc],[ss,cs,.0015],FL,2,.97,.75,2),T(2,[x,-.0012,zc],[ss,cs,.0015],FLB,3,.97,.08,2));
-  NEAR.push(T(4,[-x,.0012,zc],[ss,cs,.0015],FR,2,.97,.75,2),T(4,[-x,-.0012,zc],[ss,cs,.0015],FRB,3,.97,.08,2));}
-FAR.push(T(0,[0,0,.005],[.017,.015,.055],QI,0,.97,.5,4));
-FAR.push(T(1,[.085,0,-.018],[.06,.022,.0015],FL,6,.95,.2,0),T(3,[-.085,0,-.018],[.06,.022,.0015],FR,6,.95,.2,0));
-// roles: body, beak, wing top, wing underside, tail, spot, far wing
-const STAR=[[.032,.031,.037],[.30,.26,.13],[.028,.028,.033],[.20,.18,.16],[.035,.034,.04],[.70,.62,.48],[.045,.043,.046]];
-const FALC=[[.26,.27,.30],[.55,.48,.20],[.27,.29,.33],[.62,.58,.52],[.24,.25,.29],[.80,.77,.70],[.3,.3,.33]];
+function buildBird(sh){
+  const N=[],F=[],f=sh.fat||1,bl=sh.len||1,nk=sh.neck||0,hr=sh.head||1,ch=sh.chord||1,g=sh.gloss||0,hz=.07*bl+nk;
+  N.push(T(0,[0,0,0],[.017*f,.015*f,.036*bl],QI,0,.97,.9*g,4));
+  N.push(T(0,[0,-.006*f,.034*bl],[.015*f,.014*f,.02*bl],QI,7,.97,.7*g,4));
+  if(sh.belly)N.push(T(0,[0,-.0125*f,.002],[.0155*f,.042*bl,.0018],FLB,7,.97,0,2));
+  if(nk)N.push(T(0,[0,.007,.05*bl+nk*.5],[.0075*f,.0075*f,nk*.45],QI,8,.97,.9*g,4));
+  N.push(T(0,[0,.008,hz],[.012*hr,.011*hr,.013*hr],QI,8,.98,.9*g,4));
+  N.push(T(0,[0,.004,hz+.011*hr+sh.bill*.5],[.0028*sh.billW,.0024*sh.billW,sh.bill*.5],QI,1,.98,.3,4));
+  N.push(T(0,[0,.002,-.044*bl],[.013*f,.011*f,.022*bl],QI,sh.rump?5:0,.97,.6*g,4));
+  N.push(T(0,[0,.002,-.064*bl-.019*sh.tail],[.014*(sh.tailW||1),.019*sh.tail,.0018],FL,4,.95,.4*g,0));
+  for(const a of sh.accents||[])N.push(T(0,a[0],a[1],QI,a[2],.96,a[3]||0,4));
+  if(sh.legs)for(const s of[-1,1])N.push(T(0,[s*.006,-.009,-.07*bl-sh.legs*.5],[.0028,.0028,sh.legs*.5],QI,11,.97,0,4));
+  if(sh.spots)for(let k=0;k<7;k++){const a=(rnd()-.5)*2.6;N.push(T(0,[Math.sin(a)*.016,Math.cos(a)*.0135,(rnd()-.45)*.07],[.0026,.0026,.0026],QI,5,.8,0,4));}
+  const tipc=sh.tip==='point'?[.022,.018,.014,.009,.005]:sh.tip==='finger'?[.025,.025,.024,.022,.017]:[.023,.022,.019,.015,.009];
+  const ox=[.013,.037,.060,.081,.097],oz=[-.016,-.018,-.021,-.025,-.028],os=[.013,.013,.013,.012,.008];
+  for(const[sd,pi,po,q,qb]of[[1,1,2,FL,FLB],[-1,3,4,FR,FRB]]){
+    for(const[x,cs0]of[[.014,.026],[.040,.024],[.064,.022]]){const cs=cs0*ch;
+      if(sh.twoTone){     // pale coverts in front, dark flight feathers behind
+        N.push(T(pi,[sd*x,.0012,-.016+cs*.42],[.014,cs*.6,.0015],q,2,.97,.75*g,2),T(pi,[sd*x,-.0012,-.016+cs*.42],[.014,cs*.6,.0015],qb,3,.97,.08,2));
+        N.push(T(pi,[sd*x,.0012,-.016-cs*.55],[.014,cs*.5,.0015],q,9,.97,.3,2),T(pi,[sd*x,-.0012,-.016-cs*.55],[.014,cs*.5,.0015],qb,10,.97,.08,2));
+      }else N.push(T(pi,[sd*x,.0012,-.016],[.014,cs,.0015],q,2,.97,.75*g,2),T(pi,[sd*x,-.0012,-.016],[.014,cs,.0015],qb,3,.97,.08,2));}
+    if(sh.bars)for(const z of[-.026,-.039])N.push(T(pi,[sd*.042,.0017,z],[.032,.0035,.0012],q,13,.95,0,2));
+    for(let k=0;k<5;k++){const cs=tipc[k]*ch;
+      N.push(T(po,[sd*ox[k],.0012,oz[k]],[os[k],cs,.0015],q,9,.97,.75*g,2),T(po,[sd*ox[k],-.0012,oz[k]],[os[k],cs,.0015],qb,10,.97,.08,2));}
+    if(sh.tip==='finger')for(let k=0;k<5;k++){const a=.5-k*.26;                     // splayed primaries
+      N.push(T(po,[sd*(.112-Math.abs(k-1.2)*.004),0,.006-k*.0105],[.02,.0034,.0012],qmul(q,qZ(sd>0?-a:a)),9,.96,.2,0));}
+    if(sh.sided)F.push(T(pi,[sd*.085,.0012,-.018],[.06,.022*ch,.0015],q,6,.95,.2*g,2),T(pi,[sd*.085,-.0012,-.018],[.06,.022*ch,.0015],qb,3,.95,.05,2));
+    else F.push(T(pi,[sd*.085,0,-.018],[.06,.022*ch,.0015],q,6,.95,.2*g,0));
+    if(sh.farTip)F.push(T(pi,[sd*.15,0,-.022],[.035,.021*ch,.0016],q,9,.95,.1,0));
+  }
+  F.unshift(T(0,[0,0,.005+nk*.25],[.017*f,.015*f,.055*bl+nk*.3],QI,0,.97,.5*g,4));
+  if(nk)F.push(T(0,[0,.006,.05*bl+nk*.62],[.009,.009,nk*.5+.012],QI,8,.97,0,4));
+  if(sh.belly)F.push(T(0,[0,-.0125*f,.002],[.0155*f,.045*bl,.0018],FLB,7,.97,0,2));
+  return{near:N,far:F};
+}
+// palette roles: 0 body · 1 bill · 2 wing top · 3 wing under · 4 tail · 5 accent · 6 far wing · 7 belly · 8 head · 9 hand top · 10 hand under · 11 legs · 12 eye · 13 wing bar
+const mkPal=o=>[o.body,o.bill,o.wing,o.under,o.tail,o.accent||o.body,o.far||o.wing,o.belly||o.body,o.head||o.body,o.hand||o.wing,o.handUnder||o.under,o.legs||o.bill,o.eye||[.8,.8,.8],o.bar||o.body];
+/* Each species: how big, how fast, how it flaps, which rules it flies by. Figures are approximate field values.
+   roost: [x, z, radius]. alt: preferred height = max(alt[3], alt[0] + slow swings of alt[1] and alt[2]). pose: glide dihedral, sweep, wrist, upstroke flex. */
+const SPECIES={
+  starling:{label:'Starlings',tag:'Murmuration',word:['flock','flocks'],model:'flock',size:1,n:[1000,600],min:150,max:2400,step:50,
+    v0:10,wbf:13.3,amp:.82,flap:'mix',K:7,rh:.2,sepw:.45,ws:7,wa:2.7,wc:2.2,noise:1.9,space:1,roost:[0,-70,48],alt:[24,13,7,9],start:[-40,27,-70],
+    treact:.07,turnEvery:[5,7],partial:.5,pose:[.07,.06,.22,1],falcon:true,
+    shape:{gloss:1,bill:.018,billW:1,tail:1,tip:'point',spots:true},
+    pals:[mkPal({body:[.032,.031,.037],bill:[.30,.26,.13],wing:[.028,.028,.033],under:[.20,.18,.16],tail:[.035,.034,.04],accent:[.70,.62,.48],far:[.045,.043,.046]})]},
+  dunlin:{label:'Dunlin',tag:'Flashing flock',word:['flock','flocks'],model:'flock',size:.9,n:[1200,700],min:150,max:2400,step:50,
+    v0:14,wbf:12,amp:.85,flap:'always',K:7,rh:.16,sepw:.36,ws:7,wa:3.2,wc:2.8,noise:1.5,space:.8,roost:[0,-62,58],alt:[15,6,3,7],start:[-40,14,-66],
+    treact:.03,turnEvery:[2.5,3.5],partial:.2,pose:[.07,.06,.22,1],falcon:true,
+    shape:{gloss:.1,bill:.03,billW:.8,tail:.7,tip:'point',belly:true,sided:true,chord:.9},
+    pals:[mkPal({body:[.33,.30,.26],bill:[.05,.05,.05],wing:[.27,.25,.22],under:[.93,.93,.91],tail:[.20,.19,.18],far:[.28,.26,.23],belly:[.95,.95,.93],head:[.36,.33,.29],hand:[.16,.15,.14],handUnder:[.86,.86,.85]})]},
+  jackdaw:{label:'Jackdaws',tag:'Flock of pairs',word:['flock','flocks'],model:'flock',size:1.75,n:[240,160],min:40,max:600,step:20,
+    v0:12,wbf:5.5,amp:.7,flap:'mix',K:3,rh:.35,sepw:.8,ws:7,wa:2.0,wc:1.8,noise:2.4,space:1.7,roost:[0,-70,55],alt:[30,10,6,14],start:[-40,30,-70],
+    treact:.09,turnEvery:[7,9],partial:.4,pairs:true,pose:[.09,.05,.16,.8],falcon:true,
+    shape:{gloss:.5,bill:.016,billW:1.4,tail:1.25,tailW:1.2,tip:'round',chord:1.2,
+      accents:[[[0,.012,.058],[.011,.008,.01],5],[[.0088,.012,.076],[.0022,.0022,.0022],12],[[-.0088,.012,.076],[.0022,.0022,.0022],12]]},
+    pals:[mkPal({body:[.04,.04,.046],bill:[.03,.03,.03],wing:[.032,.032,.038],under:[.09,.09,.10],tail:[.03,.03,.035],accent:[.40,.41,.45],belly:[.07,.07,.08],handUnder:[.11,.11,.12],eye:[.85,.88,.92]})]},
+  pigeon:{label:'Pigeons',tag:'Kit with leaders',word:['kit','kits'],model:'flock',size:1.7,n:[40,30],min:10,max:150,step:5,
+    v0:15,wbf:7,amp:.95,flap:'always',K:7,rh:.3,sepw:.6,ws:8,wa:3.0,wc:2.4,noise:1.2,wr:6.5,space:1.4,roost:[BARN.x,BARN.z,40],alt:[26,8,4,13],start:[BARN.x-22,24,BARN.z+6],
+    treact:.07,turnEvery:null,partial:0,hier:true,pose:[.10,.05,.2,.9],falcon:true,
+    shape:{gloss:.25,fat:1.15,bill:.012,billW:1.2,tail:1.1,tailW:1.2,tip:'round',chord:1.1,rump:true,bars:true,sided:true,accents:[[[0,.004,.052],[.0125,.012,.012],8,2.2]]},
+    pals:[mkPal({body:[.40,.44,.50],bill:[.18,.16,.16],wing:[.52,.55,.60],under:[.82,.84,.86],tail:[.26,.29,.34],accent:[.93,.93,.93],far:[.48,.51,.56],belly:[.44,.47,.53],head:[.26,.30,.36],hand:[.20,.22,.26],handUnder:[.62,.64,.67],bar:[.06,.06,.07]}),
+      mkPal({body:[.20,.22,.26],bill:[.18,.16,.16],wing:[.22,.24,.28],under:[.60,.62,.65],tail:[.14,.15,.18],accent:[.85,.85,.85],belly:[.22,.24,.28],head:[.14,.16,.20],hand:[.12,.13,.15],handUnder:[.50,.52,.55],bar:[.05,.05,.06]}),
+      mkPal({body:[.90,.89,.86],bill:[.6,.4,.4],wing:[.88,.87,.84],under:[.93,.93,.91],tail:[.85,.84,.82],accent:[.95,.95,.95],belly:[.93,.92,.9],hand:[.55,.56,.60],handUnder:[.9,.9,.9],bar:[.5,.5,.55]})]},
+  goose:{label:'Geese',tag:'V formation',word:['skein','skeins'],model:'vee',size:4,n:[45,33],min:7,max:120,step:1,
+    v0:16,wbf:3.8,amp:.5,flap:'always',roost:[0,-70,85],alt:[58,10,5,40],pose:[.05,.04,.1,.45],falcon:false,
+    shape:{fat:1.15,len:1.05,neck:.055,head:.8,bill:.016,billW:1.5,tail:.6,tailW:1.3,tip:'round',chord:1.1,belly:true,sided:true,
+      accents:[[[0,.002,.1265],[.0105,.006,.006],5],[[0,.006,-.068],[.012,.004,.008],5]]},
+    pals:[mkPal({body:[.34,.27,.20],bill:[.03,.03,.03],wing:[.27,.22,.17],under:[.38,.33,.28],tail:[.04,.04,.04],accent:[.94,.93,.90],belly:[.70,.66,.58],head:[.035,.035,.035],hand:[.13,.11,.10],handUnder:[.27,.24,.22]})]},
+  stork:{label:'White storks',tag:'Thermal kettle',word:['kettle','kettles'],model:'soar',size:5,n:[36,26],min:8,max:80,step:2,
+    v0:10.5,wbf:2.6,amp:.45,flap:'soar',roost:[0,-70,160],alt:[60,0,0,20],pose:[.09,.02,.05,.3],falcon:false,
+    shape:{neck:.05,head:.8,bill:.04,billW:1.1,tail:.6,tip:'finger',chord:1.25,twoTone:true,legs:.075,farTip:true},
+    pals:[mkPal({body:[.93,.92,.88],bill:[.80,.18,.09],wing:[.93,.92,.88],under:[.93,.92,.89],tail:[.93,.92,.88],hand:[.04,.04,.05],handUnder:[.07,.07,.08],legs:[.78,.22,.12]})]}
+};
+let NEARMAX=0,FARMAX=0;
+for(const k in SPECIES){const s=SPECIES[k];s.tpl=buildBird(s.shape);NEARMAX=Math.max(NEARMAX,s.tpl.near.length);FARMAX=Math.max(FARMAX,s.tpl.far.length);}
+const FALCT=buildBird({gloss:.15,bill:.012,billW:1.5,tail:1.2,tip:'point',belly:true}).near,FPOSE=[.07,.06,.22,1];
+const FALC=mkPal({body:[.26,.27,.30],bill:[.55,.48,.20],wing:[.27,.29,.33],under:[.62,.58,.52],tail:[.24,.25,.29],belly:[.72,.68,.60],head:[.18,.19,.22],hand:[.22,.24,.28],handUnder:[.55,.52,.47]});
 
 /* ---------------------------------------------------------- flock model
    After StarDisplay (Hildenbrandt, Carere & Hemelrijk 2010): topological neighbours,
    cruise speed with relaxation, lift ∝ v², turning only by banking, roost attraction. */
-const MAXB=2400,K=7,NEARCAP=coarse?160:260;
-const G=9.81,V0C=10,TAUV=1.0,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,WR=4.0,BMAX=1.2;
-const REACT=.1,REFR=1.6,ZIG=.5,DAMP=.985,WBF=13.3,FLEE=11,DETECT=24;
-const TREACT=.07,TREFR=3,TPEAK=11,HOPM=2.3;          // turning waves
+const MAXB=2400,KMAX=7,NEARCAP=coarse?160:260;
+const G=9.81,TAUV=1.0,BMAX=1.2;
+const REACT=.1,REFR=1.6,ZIG=.5,DAMP=.985,FLEE=11,DETECT=24;
+const TREFR=3,TPEAK=11,PAIRD=1.3;                    // turning waves; how close a mated pair keeps
+// flight parameters of the current species, set by setSpecies()
+let sp=SPECIES.starling,K=7,V0C=10,VMIN=5,VMAX=20,RH=.2,SEPW=.45,WS=7,WA=2.7,WC=2.2,NOISE=1.9,WR=4,WBF=13.3,TREACT=.07,HOPM=2.3,SPACE=1,RSX=0,RSZ=-70,R0=48,SIZE=1,PAIRS=false,HIER=false,FLAPMODE='mix';
 const MAXC=12,LINK2=49,RVIS=140,WV=1.3,WVS=3.5,WJ=3.2,WO=2.6;       // flocks and the pull between them
-const ROOST=[0,0,-70],R0=48;
 let P=new Float32Array(MAXB*3),H=new Float32Array(MAXB*3),Pn=new Float32Array(MAXB*3),Hn=new Float32Array(MAXB*3);
 const V=new Float32Array(MAXB),V0=new Float32Array(MAXB),BETA=new Float32Array(MAXB),UPv=new Float32Array(MAXB*3);
 const NZ=new Float32Array(MAXB*3),CEN=new Float32Array(MAXB),SC=new Float32Array(MAXB),WB=new Float32Array(MAXB);
@@ -719,25 +786,42 @@ const TT=new Float32Array(MAXB).fill(-99),TD=new Float32Array(MAXB),TAc=new Floa
 const UF=new Int32Array(MAXB),LAB=new Int16Array(MAXB).fill(-1),ccnt=new Int32Array(MAXB),cmap=new Int16Array(MAXB);
 const CLn=new Float32Array(MAXC),CLx=new Float32Array(MAXC),CLy=new Float32Array(MAXC),CLz=new Float32Array(MAXC),CLr=new Float32Array(MAXC);
 const CLq=new Float32Array(MAXC),CLhx=new Float32Array(MAXC),CLhy=new Float32Array(MAXC),CLhz=new Float32Array(MAXC);
+const RANK=new Float32Array(MAXB),MATE=new Int16Array(MAXB).fill(-1),PALI=new Uint8Array(MAXB);                           // pecking order, mates, colour morph
+const SLOT=new Float32Array(MAXB),OM=new Float32Array(MAXB),ROOT=new Int16Array(MAXB),SIDE=new Int8Array(MAXB),LEADI=new Int16Array(MAXB).fill(-1),SWT=new Float32Array(MAXB),
+  OCC=new Int16Array(MAXB*2),CNT=new Int16Array(MAXB*2),TAIL=new Int16Array(MAXB*2),HASF=new Uint8Array(MAXB),GS=new Float32Array(48),TIRE=new Float32Array(MAXB).fill(-99),LEADT=new Float32Array(MAXB),LEADD=new Float32Array(MAXB);                        // geese: leading and resting
+const MODE=new Uint8Array(MAXB),TGT=new Int8Array(MAXB),PREV=new Int8Array(MAXB),RADP=new Float32Array(MAXB),BOLD=new Float32Array(MAXB),VYa=new Float32Array(MAXB);   // storks
 let NC=0,clusterNow=false,lastCluster=-9;
-const S={n:0,time:0,pol:0,gpol:0,nn:0,cen:[0,30,-70],rad:15,flocks:[],nextTurn:7,auto:true,frozen:false,slow:false};
-const hPref=t=>Math.max(9,24+13*Math.sin(t*.043)+7*Math.sin(t*.117+1.3));
+const S={n:0,time:0,pol:0,gpol:0,nn:0,cen:[0,30,-70],rad:15,flocks:[],nextTurn:7,auto:true,frozen:false,slow:false,swaps:0,inForm:0,climb:0};
+const hPref=t=>{const a=sp.alt;return Math.max(a[3],a[0]+a[1]*Math.sin(t*.043)+a[2]*Math.sin(t*.117+1.3));};
 
 function initBird(i,px,py,pz,fx,fy,fz){
   const i3=i*3;P[i3]=px;P[i3+1]=py;P[i3+2]=pz;const f=nrm([fx,fy,fz]);H[i3]=f[0];H[i3+1]=f[1];H[i3+2]=f[2];
-  V0[i]=V0C*(.96+.08*rnd());V[i]=V0[i];BETA[i]=0;UPv[i3]=0;UPv[i3+1]=1;UPv[i3+2]=0;NZ[i3]=NZ[i3+1]=NZ[i3+2]=0;
-  SC[i]=.95+.1*rnd();WB[i]=WBF*(.95+.1*rnd());PH[i]=rnd()*6.28;FS[i]=1;FLAP[i]=1;FT[i]=rnd();TK[i]=0;DEM[i]=.5;
+  RANK[i]=rnd();V0[i]=V0C*(HIER?.95+.09*RANK[i]:.96+.08*rnd());V[i]=V0[i];BETA[i]=0;UPv[i3]=0;UPv[i3+1]=1;UPv[i3+2]=0;NZ[i3]=NZ[i3+1]=NZ[i3+2]=0;
+  SC[i]=SIZE*(.95+.1*rnd());WB[i]=WBF*(sp.model==='vee'?.99+.02*rnd():.95+.1*rnd());PH[i]=rnd()*6.28;FS[i]=1;FLAP[i]=1;FT[i]=rnd();TK[i]=0;DEM[i]=.5;
   ESC[i]=-99;ESCA[i]=0;CEN[i]=0;TT[i]=-99;THop[i]=0;LAB[i]=-1;
+  MATE[i]=PAIRS&&hash((i>>1)*1.37+.5)<.8?i^1:-1;PALI[i]=sp.pals.length>1?(rnd()<.68?0:rnd()<.6?1:2):0;
+  TIRE[i]=-99;ROOT[i]=i;SIDE[i]=0;LEADI[i]=-1;SWT[i]=0;SLOT[i]=0;LEADT[i]=S.time;LEADD[i]=25+rnd()*30;MODE[i]=0;TGT[i]=0;PREV[i]=0;RADP[i]=11+rnd()*15;BOLD[i]=rnd();VYa[i]=0;
 }
 function spawn(n){
-  const k=Math.cbrt(n/1000);
-  for(let i=0;i<n;i++){let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
-    initBird(i,-40+x*13*k,27+y*4*k,-70+z*9*k,1,0,.2+(rnd()-.5)*.2);}
+  S.n=0;
+  if(sp.model==='soar'){initThermals();const th=TH[0];
+    for(let i=0;i<n;i++){initBird(i,0,0,0,1,0,0);const a=rnd()*6.2832,r=RADP[i],i3=i*3;
+      P[i3]=th.x+Math.cos(a)*r;P[i3+1]=26+rnd()*50;P[i3+2]=th.z+Math.sin(a)*r;H[i3]=-Math.sin(a)*th.dir;H[i3+1]=0;H[i3+2]=Math.cos(a)*th.dir;
+      BETA[i]=.5*th.dir;V[i]=10.5;FLAP[i]=0;FS[i]=0;}
+  }else if(sp.model==='vee'){
+    {const y0=hPref(S.time),K=Math.ceil(n/29);for(let i=0;i<n;i++){const g=i%K;initBird(i,-70-g*55+(rnd()-.5)*30,y0+(g-(K-1)/2)*13+(rnd()-.5)*5,-120+g*30+(rnd()-.5)*24,1,0,.5);}}
+  }else{
+    const k=Math.cbrt(n/1000)*SPACE*(n<200?1.6:1),c=sp.start;
+    for(let i=0;i<n;i++){let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
+      initBird(i,c[0]+x*13*k,c[1]+y*4*k,c[2]+z*9*k,1,0,.2+(rnd()-.5)*.2);
+      if(PAIRS&&(i&1)&&MATE[i]>=0){const i3=i*3;P[i3]=P[i3-3]+.5;P[i3+1]=P[i3-2];P[i3+2]=P[i3-1]+.8;}}
+  }
   S.n=n;
 }
 function resizeFlock(n){
-  if(n>S.n){for(let i=S.n;i<n;i++){const j=(rnd()*S.n)|0,j3=j*3;
-    initBird(i,P[j3]+(rnd()-.5)*3,P[j3+1]+(rnd()-.5)*2,P[j3+2]+(rnd()-.5)*3,H[j3]+(rnd()-.5)*.1,H[j3+1],H[j3+2]+(rnd()-.5)*.1);LAB[i]=LAB[j];}}
+  if(n>S.n){for(let i=S.n;i<n;i++){const j=(rnd()*S.n)|0,j3=j*3,d=3*Math.max(1,SIZE*.6);
+    initBird(i,P[j3]+(rnd()-.5)*d,P[j3+1]+(rnd()-.5)*d*.7,P[j3+2]+(rnd()-.5)*d,H[j3]+(rnd()-.5)*.1,H[j3+1],H[j3+2]+(rnd()-.5)*.1);
+    LAB[i]=LAB[j];MODE[i]=MODE[j];TGT[i]=TGT[j];PREV[i]=PREV[j];if(sp.model==='soar'){FLAP[i]=0;FS[i]=0;V[i]=V[j];}}}
   S.n=n;if(cam.rideBird>=n)cam.rideBird=0;
 }
 
@@ -752,7 +836,7 @@ function buildGrid(n){
   cFill.set(cStart.subarray(0,HS));
   for(let i=0;i<n;i++)cItem[cFill[BH[i]]++]=i;
 }
-const kd=new Float32Array(K),kj=new Int32Array(K);let nnMin=0;
+const kd=new Float32Array(KMAX),kj=new Int32Array(KMAX);let nnMin=0;
 function knn(i){
   const i3=i*3,px=P[i3],py=P[i3+1],pz=P[i3+2],fx=H[i3],fy=H[i3+1],fz=H[i3+2],cx=CI[i3],cy=CI[i3+1],cz=CI[i3+2];
   let n=0;nnMin=1e9;
@@ -792,7 +876,7 @@ function finishClusters(n){
   if(!NC){S.pol=S.gpol;return;}
   S.cen=[sx/tot,sy/tot,sz/tot];S.pol=pol/all;let rr=0;
   for(let c=0;c<NC;c++){const dx=CLx[c]-S.cen[0],dy=CLy[c]-S.cen[1],dz=CLz[c]-S.cen[2];if(CLn[c]>=thr||!c)rr+=CLr[c]+CLn[c]*(dx*dx+dy*dy+dz*dz);
-    CLr[c]=Math.sqrt(CLr[c]/CLn[c]);CLq[c]=1.3*Math.cbrt(CLn[c]);if(CLn[c]>=thr)S.flocks.push(CLn[c]);}
+    CLr[c]=Math.sqrt(CLr[c]/CLn[c]);CLq[c]=1.3*SPACE*Math.cbrt(CLn[c]);if(CLn[c]>=thr)S.flocks.push(CLn[c]);}
   S.rad=Math.sqrt(rr/tot);
 }
 
@@ -801,7 +885,7 @@ function stepFlock(h){
   buildGrid(n0);
   ESCp.set(ESC.subarray(0,n0));ESCSp.set(ESCS.subarray(0,n0));ESCAp.set(ESCA.subarray(0,n0));
   const doC=clusterNow;if(doC)for(let i=0;i<n0;i++)UF[i]=i;
-  const hp=hPref(now),nf=FALS.length,ou=Math.exp(-h/.8),os=1.9*Math.sqrt(h),nob=OBST.length;
+  const hp=hPref(now),nf=FALS.length,ou=Math.exp(-h/.8),os=NOISE*Math.sqrt(h),nob=OBST.length;
   let ox=0,oy=0,oz=0,nn=0;
   for(let i=0;i<n0;i++){
     const i3=i*3,px=P[i3],py=P[i3+1],pz=P[i3+2],fx=H[i3],fy=H[i3+1],fz=H[i3+2],v=V[i];
@@ -811,11 +895,11 @@ function stepFlock(h){
     const n=knn(i);nn+=Math.min(Math.sqrt(nnMin),10);
     let ax=0,ay=0,az=0,trig=-1,ttrig=-1;
     if(n){
-      let alx=0,aly=0,alz=0,chx=0,chy=0,chz=0,cux=0,cuy=0,cuz=0,spx=0,spy=0,spz=0;
+      let alx=0,aly=0,alz=0,chx=0,chy=0,chz=0,cux=0,cuy=0,cuz=0,spx=0,spy=0,spz=0,wsum=0;
       const ok=now-ESC[i]>REFR,okT=now-TT[i]>TREFR;
       for(let m=0;m<n;m++){
         const j=kj[m],j3=j*3,ex=P[j3]-px,ey=P[j3+1]-py,ez=P[j3+2]-pz,d=Math.sqrt(kd[m])+1e-6,id=1/d;
-        alx+=H[j3];aly+=H[j3+1];alz+=H[j3+2];
+        const wj=HIER?.25+1.5*RANK[j]:1;alx+=H[j3]*wj;aly+=H[j3+1]*wj;alz+=H[j3+2]*wj;wsum+=wj;   // pigeons heed birds above them in the pecking order
         chx+=ex;chy+=ey;chz+=ez;cux+=ex*id;cuy+=ey*id;cuz+=ez*id;
         const qd=(d-RH)/SEPW,w=d<RH?1:Math.exp(-qd*qd);spx-=ex*id*w;spy-=ey*id*w;spz-=ez*id*w;
         if(ok&&trig<0){const te=now-ESCp[j];if(te>=REACT&&te<REACT+.25&&ESCAp[j]>.3)trig=j;}
@@ -823,12 +907,16 @@ function stepFlock(h){
         if(doC&&kd[m]<LINK2){const ra=ufFind(i),rb=ufFind(j);if(ra!==rb)UF[ra]=rb;}
       }
       const inv=1/n,C=Math.hypot(cux,cuy,cuz)*inv,cl=Math.hypot(chx,chy,chz)||1;CEN[i]=C;
-      ax+=WS*spx+WA*(alx*inv-fx)+WC*C*chx/cl;
-      ay+=WS*spy+WA*(aly*inv-fy)+WC*C*chy/cl;
-      az+=WS*spz+WA*(alz*inv-fz)+WC*C*chz/cl;
+      ax+=WS*spx+WA*(alx/wsum-fx)+WC*C*chx/cl;
+      ay+=WS*spy+WA*(aly/wsum-fy)+WC*C*chy/cl;
+      az+=WS*spz+WA*(alz/wsum-fz)+WC*C*chz/cl;
     }
     if(trig>=0){ESC[i]=now;ESCS[i]=ESCSp[trig];ESCA[i]=ESCAp[trig]*DAMP;}
     if(ttrig>=0){TT[i]=now;TD[i]=TD[ttrig];TAc[i]=TAc[ttrig];THop[i]=THop[ttrig]-1;}
+    if(PAIRS){const m=MATE[i];if(m>=0&&m<n0){      // jackdaws: stay beside your mate and fly its course
+      const m3=m*3,dx=P[m3]-px,dy=P[m3+1]-py,dz=P[m3+2]-pz,d=Math.hypot(dx,dy,dz)+1e-6,e=d-PAIRD;
+      if(e>0){const kq=Math.min(e*3.5,8)/d;ax+=dx*kq;ay+=dy*kq;az+=dz*kq;}
+      ax+=2.4*(H[m3]-fx);ay+=2.4*(H[m3+1]-fy);az+=2.4*(H[m3+2]-fz);}}
     // other flocks in view pull this bird toward them; small groups feel big ones most
     {const lc=LAB[i],nc=lc>=0?CLn[lc]:1;let gx=0,gy=0,gz=0;
       if(lc>=0){const dx=CLx[lc]-px,dy=CLy[lc]-py,dz=CLz[lc]-pz,d=Math.hypot(dx,dy,dz),q0=CLq[lc];
@@ -839,7 +927,7 @@ function stepFlock(h){
         if(d>RVIS||d<1e-3)continue;const sh=CLn[c]/(CLn[c]+nc),w=sh*(1+1.2*sh*sh)*(d>RVIS-40?(RVIS-d)/40:1)/d;gx+=dx*w;gy+=dy*w;gz+=dz*w;
         const reach=CLr[c]*1.5+12;if(d<CLr[c]+reach){const jn=WJ*sh*Math.min(1,(CLr[c]+reach-d)/reach);ax+=jn*(CLhx[c]-fx);ay+=jn*(CLhy[c]-fy);az+=jn*(CLhz[c]-fz);}}
       const gm=Math.hypot(gx,gy,gz);if(gm>1e-4){const kk=(lc<0?WVS:WV)*Math.min(gm,2.2)/gm;ax+=gx*kk;ay+=gy*kk;az+=gz*kk;}}
-    NZ[i3]=NZ[i3]*ou+os*gauss();NZ[i3+1]=NZ[i3+1]*ou+os*gauss();NZ[i3+2]=NZ[i3+2]*ou+os*gauss();
+    {const on=HIER?os*(.4+2.4*RANK[i]*RANK[i]):os;NZ[i3]=NZ[i3]*ou+on*gauss();NZ[i3+1]=NZ[i3+1]*ou+on*gauss();NZ[i3+2]=NZ[i3+2]*ou+on*gauss();}   // leaders have a mind of their own
     ax+=NZ[i3];ay+=NZ[i3+1]*.4;az+=NZ[i3+2];
     ay+=clamp(.35*(hp-py)-.7*fy*v,-4,4);
     // stay clear of the ground, the barn and the treetops
@@ -850,7 +938,7 @@ function stepFlock(h){
       if(d<FLEE){const kf=11*(1-d/FLEE)/d;ax+=rx*kf;ay+=ry*kf;az+=rz*kf;}
       if(d<DETECT&&now-ESC[i]>REFR){ESC[i]=now;ESCS[i]=(rx*sx+ry*sy+rz*sz)>=0?1:-1;ESCA[i]=1;}}
     let lat=ax*sx+ay*sy+az*sz;ax-=sx*lat;ay-=sy*lat;az-=sz*lat;
-    {const rx=ROOST[0]-px,rz=ROOST[2]-pz,dh=Math.hypot(rx,rz);
+    {const rx=RSX-px,rz=RSZ-pz,dh=Math.hypot(rx,rz);
       if(dh>R0){const k=Math.min((dh-R0)/30,1),tx=rx/dh,tz=rz/dh,fh=Math.hypot(fx,fz)||1,c=(fx*tx+fz*tz)/fh,s=sx*tx+sz*tz;
         lat+=WR*k*((s>=0?1:-1)*(.5-.5*c)+.3*s);}}
     {const tq=now-TT[i];if(tq>=0&&tq<TD[i])lat+=TAc[i]*Math.sin(Math.PI*tq/TD[i]);}   // riding a turning wave
@@ -870,7 +958,8 @@ function stepFlock(h){
     // flap–glide: starlings mix wingbeat bursts with short glides
     const dem=clamp(.45+(V0[i]-v2)*.35+ay*.10+(1-cb)*1.2,0,1);DEM[i]=dem;
     FT[i]-=h;
-    if(FT[i]<=0){if(FS[i]){if(dem<.7){FS[i]=0;FT[i]=.12+.35*rnd();}else FT[i]=.25+.5*rnd();}else{FS[i]=1;FT[i]=.35+.8*rnd();}}
+    if(FLAPMODE==='always')FS[i]=1;
+    else if(FT[i]<=0){if(FS[i]){if(dem<.7){FS[i]=0;FT[i]=.12+.35*rnd();}else FT[i]=.25+.5*rnd();}else{FS[i]=1;FT[i]=.35+.8*rnd();}}
     else if(!FS[i]&&dem>.85){FS[i]=1;FT[i]=.3+.5*rnd();}
     FLAP[i]+=(FS[i]-FLAP[i])*(1-Math.exp(-h/.05));
     PH[i]+=6.2832*WB[i]*h;
@@ -899,14 +988,161 @@ function startTurn(c,partial,frac,sharp){
   return true;
 }
 function autoTurn(){
-  S.nextTurn=S.time+5-7*Math.log(1-rnd()*.999);
+  if(!sp.turnEvery){S.nextTurn=S.time+5;return;}
+  S.nextTurn=S.time+sp.turnEvery[0]-sp.turnEvery[1]*Math.log(1-rnd()*.999);
   if(!NC)return;
   let tot=0;for(let c=0;c<NC;c++)tot+=CLn[c];
   let r=rnd()*tot,c=0;for(;c<NC-1;c++){r-=CLn[c];if(r<0)break;}
-  const partial=CLn[c]>=120&&S.flocks.length<4&&rnd()<.5;
+  const partial=CLn[c]>=120&&S.flocks.length<4&&rnd()<sp.partial;
   startTurn(c,partial,.2+.3*rnd());
 }
-function forceSplit(){if(NC&&CLn[0]>=40){startTurn(0,true,.3+.2*rnd(),true);S.nextTurn=Math.max(S.nextTurn,S.time+8);}}
+function forceSplit(){if(sp.model==='flock'&&NC&&CLn[0]>=16){startTurn(0,true,.3+.2*rnd(),true);S.nextTurn=Math.max(S.nextTurn,S.time+8);}}
+
+/* ---- geese: V formation ----
+   Each goose stations itself behind and to one side of the nearest bird ahead, where that bird's wingtip leaves rising air.
+   The bird at the front steers; after a spell in the lead it eases off and another takes over. */
+function flyStep(i,h,ax,ay,az){          // shared banked flight: (ax,ay,az) is the steering demand in m/s²
+  const i3=i*3,fx=H[i3],fy=H[i3+1],fz=H[i3+2],v=V[i];
+  let u0x=-fx*fy,u0y=1-fy*fy,u0z=-fz*fy;const ul=Math.hypot(u0x,u0y,u0z)||1;u0x/=ul;u0y/=ul;u0z/=ul;
+  const sx=fy*u0z-fz*u0y,sy=fz*u0x-fx*u0z,sz=fx*u0y-fy*u0x,lat=ax*sx+ay*sy+az*sz;ax-=sx*lat;ay-=sy*lat;az-=sz*lat;
+  let b=BETA[i];b+=(clamp(Math.atan2(lat,G),-1,1)-b)*(1-Math.exp(-h/.3));BETA[i]=b;OM[i]=G*Math.tan(b)/Math.max(v,6);
+  const cb=Math.cos(b),sb=Math.sin(b),Ux=u0x*cb+sx*sb,Uy=u0y*cb+sy*sb,Uz=u0z*cb+sz*sb;
+  const lift=G/Math.max(cb,.6)/Math.max(ul,.8),thr=(V0[i]-v)/TAUV;      // geese trim their wings to hold height at any speed
+  const vx=fx*v+(ax+fx*thr+Ux*lift)*h,vy=fy*v+(ay+fy*thr+Uy*lift-G)*h,vz=fz*v+(az+fz*thr+Uz*lift)*h;
+  const nv=Math.hypot(vx,vy,vz)||1,v2=clamp(nv,VMIN,VMAX);let nfx=vx/nv,nfy=vy/nv,nfz=vz/nv;
+  if(Math.abs(nfy)>.4){            // a goose never stands on its tail
+    nfy=nfy>0?.4:-.4;let hx=nfx,hz=nfz,hl=Math.hypot(hx,hz);if(hl<.05){hx=fx;hz=fz;hl=Math.hypot(hx,hz)||1;}const k=.9165/hl;nfx=hx*k;nfz=hz*k;}
+  Hn[i3]=nfx;Hn[i3+1]=nfy;Hn[i3+2]=nfz;V[i]=v2;
+  Pn[i3]=P[i3]+nfx*v2*h;Pn[i3+1]=P[i3+1]+nfy*v2*h;Pn[i3+2]=P[i3+2]+nfz*v2*h;
+  UPv[i3]=Ux;UPv[i3+1]=Uy;UPv[i3+2]=Uz;
+  FLAP[i]+=(1-FLAP[i])*(1-Math.exp(-h/.2));PH[i]+=6.2832*WB[i]*h;TK[i]*=Math.exp(-h/.3);DEM[i]=.5;
+}
+function stepVee(h){
+  const n=S.n,now=S.time;if(!n)return;
+  const K=Math.ceil(n/29);       // a skein here is at most 29 geese; a bigger gathering flies as several, each keeping to itself (goose i belongs to skein i mod K)
+  const doC=clusterNow;if(doC)for(let i=0;i<n;i++)UF[i]=i;
+  const span=.4*SIZE,latS=span*1.06,backS=span*1.4,lam=V0C/WBF,hp=hPref(now),sep2=span*span*1.69;
+  GS.fill(0);for(let i=0;i<n;i++){const g=(i%K)*6;GS[g]+=P[i*3];GS[g+1]+=P[i*3+1];GS[g+2]+=P[i*3+2];GS[g+3]+=H[i*3]*V[i];GS[g+4]+=H[i*3+2]*V[i];GS[g+5]++;}
+  // Who holds which place. A place is "behind goose l, on side s". The goose nearest a place keeps it and later arrivals queue behind that goose,
+  // so each arm of the V is a single file. CNT counts the geese on each arm of a front bird; TAIL is the last goose of each arm.
+  for(let i=0;i<n;i++){OCC[i*2]=OCC[i*2+1]=-1;HASF[i]=0;CNT[i*2]=CNT[i*2+1]=0;TAIL[i*2]=TAIL[i*2+1]=-1;if(ROOT[i]>=n)ROOT[i]=i;if(LEADI[i]>=n)LEADI[i]=-1;}
+  for(let i=0;i<n;i++){const l=LEADI[i];if(l<0)continue;const k=l*2+(SIDE[i]>0?1:0);HASF[l]=1;CNT[ROOT[i]*2+(SIDE[i]>0?1:0)]++;if(OCC[k]<0||SLOT[i]<SLOT[OCC[k]])OCC[k]=i;}
+  for(let i=0;i<n;i++)if(LEADI[i]>=0&&!HASF[i])TAIL[ROOT[i]*2+(SIDE[i]>0?1:0)]=i;
+  let inForm=0;
+  for(let i=0;i<n;i++){
+    const i3=i*3,px=P[i3],py=P[i3+1],pz=P[i3+2],fx=H[i3],fy=H[i3+1],fz=H[i3+2],v=V[i],fh=Math.hypot(fx,fz)||1,rx=-fz/fh,rz=fx/fh;
+    let ax=0,ay=0,az=0;const tired=TIRE[i]>now,grp=i%K,g6=grp*6,gn=GS[g6+5],cx=GS[g6]/gn,cy=GS[g6+1]/gn,cz=GS[g6+2]/gn,mvx=GS[g6+3]/gn,mvz=GS[g6+4]/gn;
+    for(let j=0;j<n;j++){if(j===i)continue;const j3=j*3,dx=P[j3]-px,dy=P[j3+1]-py,dz=P[j3+2]-pz,d2=dx*dx+dy*dy+dz*dz;
+      if(d2<sep2){const d=Math.sqrt(d2)+1e-6,w=(1-d/(span*1.3))*10/d;ax-=dx*w;ay-=dy*w*.3;az-=dz*w;}}
+    let lead=tired?-1:LEADI[i];
+    if(lead>=0){const l3=lead*3,dx=P[l3]-px,dz=P[l3+2]-pz;if(lead%K!==grp||TIRE[lead]>now||dx*fx+dz*fz<-2*fh||dx*dx+dz*dz>3600)lead=-1;
+      else{let q=LEADI[lead],k=0;while(q>=0&&q!==i&&k<=n){q=LEADI[q];k++;}if(q>=0)lead=-1;}}   // guide lost, or the line has closed into a ring
+    if(lead<0&&!tired){                          // look for a guide: the nearest goose ahead
+      let bd=1e9;
+      for(let j=grp;j<n;j+=K){if(j===i||TIRE[j]>now||LEADI[j]===i)continue;const j3=j*3,dx=P[j3]-px,dy=P[j3+1]-py,dz=P[j3+2]-pz,d2=dx*dx+dy*dy+dz*dz,al=(dx*fx+dz*fz)/fh;
+        if(d2<bd&&(al>.6||(al>-.6&&d2<36&&j<i))){        // two geese left level at the front: the second falls in behind the first
+          let q=LEADI[j],k=0;while(q>=0&&q!==i&&k<=n){q=LEADI[q];k++;}if(q<0){bd=d2;lead=j;}}}      // but never follow a goose that is, down the line, following you
+      if(lead>=0&&(LEADI[lead]<0||TIRE[LEADI[lead]]>now)){                // joining right behind a front bird: take its shorter arm, or the side you are already on
+        const l3=lead*3,cl=CNT[lead*2],cr=CNT[lead*2+1],so=(px-P[l3])*-H[l3+2]+(pz-P[l3+2])*H[l3];SIDE[i]=cl<cr?-1:cr<cl?1:so>=0?1:-1;}
+    }
+    if(tired){
+      // resting: fly the skein's course a little slower, so the line slides past and the tired goose falls in further back
+      SLOT[i]=-2;SIDE[i]=0;ROOT[i]=i;LEADI[i]=-1;ax+=1.6*(mvx*.84-fx*v);az+=1.6*(mvz*.84-fz*v);ay+=clamp(.5*(cy-py)-.6*fy*v,-3,3);LEADT[i]=now;
+    }else if(lead>=0){
+      if(LEADI[lead]>=0&&TIRE[LEADI[lead]]<=now)SIDE[i]=SIDE[lead];else if(!SIDE[i])SIDE[i]=i&1?1:-1;                 // keep to the arm your guide is on
+      let sI=SIDE[i]>0?1:0;const o=OCC[lead*2+sI];
+      if(o>=0&&o!==i&&TIRE[o]<=now&&LEADI[o]===lead)lead=o;                                   // place taken: queue behind whoever holds it
+      const r=ROOT[lead];
+      if(!HASF[i]&&LEADI[i]>=0&&now>SWT[i]&&CNT[r*2+sI]>=CNT[r*2+1-sI]+2){   // last goose of the longer arm crosses to the shorter
+        const t=TAIL[r*2+1-sI];lead=t>=0&&t!==i?t:r;SIDE[i]=-SIDE[i];SWT[i]=now+10;}
+      LEADI[i]=lead;const rt=ROOT[lead];ROOT[i]=rt;
+      const side=SIDE[i],l3=lead*3,r3=rt*3,lh=Math.hypot(H[l3],H[l3+2])||1,lfx=H[l3]/lh,lfz=H[l3+2]/lh,lsx=-lfz,lsz=lfx,ox=px-P[l3],oz=pz-P[l3+2];
+      const ex=P[l3]-lfx*backS+lsx*latS*side-px,ey=P[l3+1]-py,ez=P[l3+2]-lfz*backS+lsz*latS*side-pz;
+      // match speed partly with the bird ahead and partly with the front bird: following only your neighbour makes a long line crack like a whip
+      // The front bird's course is taken as it was when it passed this point, so in a turn the whole V wheels round together.
+      const th=clamp(OM[rt]*((P[r3]-px)*H[r3]+(P[r3+2]-pz)*H[r3+2])/Math.max(V[rt],6),-.8,.8),qx=H[r3]+th*H[r3+2],qz=H[r3+2]-th*H[r3],qs=.45*V[rt]/(Math.hypot(qx,qz)||1);
+      const rvx=.55*H[l3]*V[lead]+qx*qs,rvy=.55*H[l3+1]*V[lead]+.45*H[r3+1]*V[rt],rvz=.55*H[l3+2]*V[lead]+qz*qs;
+      let gx=4*ex+3.6*(rvx-fx*v),gy=2*ey+2.6*(rvy-fy*v),gz=4*ez+3.6*(rvz-fz*v);
+      gy=clamp(gy,-4,4);const gm=Math.hypot(gx,gz);if(gm>9){gx*=9/gm;gz*=9/gm;}
+      ax+=gx;ay+=gy;az+=gz;LEADT[i]=now;
+      SLOT[i]=Math.hypot(ex,ey,ez);if(SLOT[i]<span)inForm++;
+      // flap in step with the bird ahead, delayed by the distance between them
+      let dp=PH[lead]+6.2832*(ox*lfx+oz*lfz)/lam-PH[i];dp-=6.2832*Math.round(dp/6.2832);PH[i]+=dp*(1-Math.exp(-h/.6));
+      if(doC){const ra=ufFind(i),rb=ufFind(lead);if(ra!==rb)UF[ra]=rb;}
+    }else{                                       // nobody ahead: this goose is the front bird and does the steering
+      SLOT[i]=-1;SIDE[i]=0;ROOT[i]=i;LEADI[i]=-1;
+      const ga=K>1?grp*6.2832/K+now*.01:0,go=K>1?45:0,dxr=RSX+Math.cos(ga)*go-px,dzr=RSZ+Math.sin(ga)*go-pz,dh=Math.hypot(dxr,dzr);      // each skein has its own circuit and height
+      if(dh>R0){const k=Math.min((dh-R0)/35,1),tx=dxr/dh,tz=dzr/dh,c=(fx*tx+fz*tz)/fh,s=rx*tx+rz*tz,lt=3*k*((s>=0?1:-1)*(.5-.5*c)+.3*s);ax+=rx*lt;az+=rz*lt;}
+      const dcx=cx-px,dcz=cz-pz,dc=Math.hypot(dcx,dcz);if(dc>40&&CNT[i*2]+CNT[i*2+1]<2){ax+=dcx/dc*2+fx*3.5;az+=dcz/dc*2+fz*3.5;}   // a stray makes for its skein
+      ay+=clamp(.35*(hp+(grp-(K-1)/2)*13-py)-.7*fy*v,-3,3);
+      NZ[i3]=NZ[i3]*Math.exp(-h/2)+.5*Math.sqrt(h)*gauss();ax+=rx*NZ[i3];az+=rz*NZ[i3];
+      if(n>3&&now-LEADT[i]>LEADD[i]){TIRE[i]=now+6+rnd()*3;LEADD[i]=25+rnd()*30;S.swaps++;}
+    }
+    flyStep(i,h,ax,ay,az);
+  }
+  let t=P;P=Pn;Pn=t;t=H;H=Hn;Hn=t;
+  S.inForm=inForm/Math.max(1,n-1);
+  if(doC){finishClusters(n);clusterNow=false;}
+}
+
+/* ---- white storks: thermal soaring ----
+   Columns of rising air come and go. Storks circle in one to gain height, all turning the same way, then glide to the next.
+   Bold birds leave first and pick the thermal; followers leave once much of the kettle has gone, and head where the others went.
+   Distances are compressed about tenfold so the whole cycle fits over the field, which is why the glides are steep. */
+const TH=[];
+function thermalEnv(t,now){const a=now-t.t0;return a<0?0:smooth(a/8)*smooth((t.life-a)/12);}
+function newThermal(k,now,x,z){
+  if(x===undefined){let tries=0,ok;do{const a=rnd()*6.2832,d=30+rnd()*140;x=Math.sin(a)*d;z=-70+Math.cos(a)*d;ok=true;
+    for(let q=0;q<3;q++)if(q!==k&&TH[q]&&Math.hypot(TH[q].x-x,TH[q].z-z)<125)ok=false;}while(!ok&&++tries<40);}
+  TH[k]={x,z,r:26+rnd()*8,w:2.7+rnd()*.8,top:80+rnd()*28,t0:now,life:75+rnd()*45,dir:rnd()<.5?1:-1,cnt:0,inb:0,out:0};
+}
+function initThermals(){TH.length=0;const now=S.time;newThermal(0,now-12,-15,-80);TH[0].life=72;newThermal(1,now-10);newThermal(2,now+25);}
+function updraft(x,y,z,now){let u=0;for(let k=0;k<3;k++){const t=TH[k],dx=x-t.x,dz=z-t.z;u+=thermalEnv(t,now)*t.w*Math.exp(-(dx*dx+dz*dz)/(t.r*t.r))*smooth((t.top+8-y)/20);}return u;}
+function stepSoar(h){
+  const n=S.n,now=S.time;if(!n)return;
+  for(let k=0;k<3;k++){if(now-TH[k].t0>TH[k].life)newThermal(k,now);const t=TH[k];t.x+=.45*h;t.cnt=t.inb=t.out=0;}
+  for(let i=0;i<n;i++){if(MODE[i]){TH[TGT[i]].inb++;TH[PREV[i]].out++;}else TH[TGT[i]].cnt++;}
+  let climb=0,nc=0;
+  for(let i=0;i<n;i++){
+    const i3=i*3,px=P[i3],py=P[i3+1],pz=P[i3+2],v=V[i];let fhx=H[i3],fhz=H[i3+2];const fl=Math.hypot(fhx,fhz)||1;fhx/=fl;fhz/=fl;
+    const k=TGT[i],th=TH[k],env=thermalEnv(th,now),up=updraft(px,py,pz,now),dx=px-th.x,dz=pz-th.z,rho=Math.hypot(dx,dz)||1;
+    let desx,desz,vT,vyT,bff=0,flap=0;
+    if(!MODE[i]&&rho>th.r*1.7)MODE[i]=1;
+    if(MODE[i]){
+      desx=-dx/rho;desz=-dz/rho;vT=15;vyT=up-4.2;
+      if(py<26){vyT=Math.max(vyT,.7);flap=1;vT=12;}
+      if(rho<th.r*.75)MODE[i]=0;
+    }else{
+      const sn=th.dir,e=clamp((rho-RADP[i])/RADP[i]*1.3,-.9,.9);
+      desx=-dz/rho*sn-dx/rho*e;desz=dx/rho*sn-dz/rho*e;const dl=Math.hypot(desx,desz)||1;desx/=dl;desz/=dl;
+      vT=10.5;bff=sn*Math.atan(v*v/(G*Math.max(rho,9)));vyT=up-.85/Math.pow(Math.cos(BETA[i]),1.5);
+      if(py<20&&up<1.2){vyT=.9;flap=1;}
+      climb+=VYa[i];nc++;
+      const follower=BOLD[i]<.55,dying=env<.3;
+      if(py>th.top-(follower?2:7)||dying||(follower&&th.out>.4*(th.out+th.cnt)&&rnd()<.5*h)){
+        let best=-1,bs=-1e9;
+        for(let q=0;q<3;q++){if(q===k)continue;const t=TH[q],a=now-t.t0;if(a<0||t.life-a<25)continue;
+          const sc=follower?(t.cnt+t.inb)*2+thermalEnv(t,now):thermalEnv(t,now)*2+(t.life-a)/60-Math.hypot(t.x-px,t.z-pz)/250;if(sc>bs){bs=sc;best=q;}}
+        if(best>=0){PREV[i]=k;TGT[i]=best;MODE[i]=1;}
+      }
+    }
+    for(let j=0;j<n;j++){if(j===i)continue;const j3=j*3,ex=P[j3]-px,ey=P[j3+1]-py,ez=P[j3+2]-pz,d2=ex*ex+ey*ey+ez*ez;
+      if(d2<64){const d=Math.sqrt(d2)+1e-6,w=1-d/8;desx-=ex/d*w*.7;desz-=ez/d*w*.7;vyT-=ey/d*w*1.2;}}
+    const err=Math.atan2(fhx*desz-fhz*desx,fhx*desx+fhz*desz);
+    let b=BETA[i];b+=(clamp(bff+1.5*err,-.72,.72)-b)*(1-Math.exp(-h/.6));BETA[i]=b;
+    const w=G*Math.tan(b)/Math.max(v,6)*h,cw=Math.cos(w),sw=Math.sin(w),nfx=fhx*cw-fhz*sw,nfz=fhz*cw+fhx*sw;
+    const v2=v+(vT-v)*(1-Math.exp(-h/2.5));VYa[i]+=(vyT-VYa[i])*(1-Math.exp(-h/1.2));const vy=VYa[i],s3=Math.hypot(v2,vy);
+    V[i]=v2;Hn[i3]=nfx*v2/s3;Hn[i3+1]=vy/s3;Hn[i3+2]=nfz*v2/s3;
+    Pn[i3]=px+nfx*v2*h;Pn[i3+1]=Math.max(3,py+vy*h);Pn[i3+2]=pz+nfz*v2*h;
+    const hx=Hn[i3],hy=Hn[i3+1],hz=Hn[i3+2];let u0x=-hx*hy,u0y=1-hy*hy,u0z=-hz*hy;const ul=Math.hypot(u0x,u0y,u0z)||1;u0x/=ul;u0y/=ul;u0z/=ul;
+    const sx=hy*u0z-hz*u0y,sy=hz*u0x-hx*u0z,sz=hx*u0y-hy*u0x,cb=Math.cos(b),sb=Math.sin(b);
+    UPv[i3]=u0x*cb+sx*sb;UPv[i3+1]=u0y*cb+sy*sb;UPv[i3+2]=u0z*cb+sz*sb;
+    FLAP[i]+=(flap-FLAP[i])*(1-Math.exp(-h/.4));PH[i]+=6.2832*WB[i]*h;TK[i]+=((MODE[i]?.3:0)-TK[i])*(1-Math.exp(-h/.8));DEM[i]=.6;
+  }
+  let t=P;P=Pn;Pn=t;t=H;H=Hn;Hn=t;
+  S.climb=nc?climb/nc:0;
+  if(clusterNow){const first=[-1,-1,-1];for(let i=0;i<n;i++){const k=TGT[i];if(first[k]<0)first[k]=i;UF[i]=first[k];}finishClusters(n);clusterNow=false;}
+}
 
 /* -------------------------------------------------------------- falcons */
 const FALS=[],MAXF=4;
@@ -918,7 +1154,7 @@ function pickTarget(from){
   return nearestBird(from);
 }
 function launchFalcon(){
-  if(FALS.length>=MAXF||!S.n)return;
+  if(FALS.length>=MAXF||!S.n||!sp.falcon)return;
   const tg=pickTarget(S.cen),t3=tg*3,a=rnd()*6.2832,p=[P[t3]+Math.sin(a)*75,P[t3+1]+38,P[t3+2]+Math.cos(a)*75];
   FALS.push({p,f:nrm([P[t3]-p[0],P[t3+1]-p[1],P[t3+2]-p[2]]),v:18,b:0,u:[0,1,0],phase:'stoop',t:0,tg,passes:0,ph:rnd()*6,flap:1,tk:0,done:false});
   syncFalconUI();
@@ -1130,7 +1366,7 @@ const U={};for(const n of['uData','uView','uProj','uViewport','uFocal','uLim','u
 const BU={};for(const n of['uR','uU','uF','uSun','uCam','uTint','uMapA','uMapB'])BU[n]=gl.getUniformLocation(BP,n);
 
 const TH0=Math.ceil(nStatic/512),DYN0=TH0*512;
-const DCAP=Math.ceil((MAXB*FAR.length+(NEARCAP+6)*NEAR.length)/512)*512,THD=DCAP/512;
+const DCAP=Math.ceil((MAXB*FARMAX+(NEARCAP+6)*NEARMAX+160)/512)*512,THD=DCAP/512;
 const DY=new Float32Array(DCAP*16),DK=new Uint16Array(DCAP);
 const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
 gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,2048,TH0+THD,0,gl.RGBA,gl.FLOAT,null);
@@ -1251,10 +1487,10 @@ function lookAt(){
 const LOGK=3900/Math.log(150);
 const qp=[0,0,0,0,0],mp=[0,1,2,3,4].map(()=>new Float32Array(9)),op=[0,0,0,0,0];
 const WA4=[0,0,0,0];
-function wingAngles(ph,fl,tk,A){
+function wingAngles(ph,fl,tk,A,po){
   const s=Math.sin(ph),c=Math.cos(ph),up=c>0?c:0;
-  WA4[0]=lerp(.07+.22*tk,.10+A*s,fl);WA4[1]=lerp(.06+.42*tk,.06+.22*up,fl);
-  WA4[2]=lerp(-.03+.1*tk,.30*A*Math.sin(ph-.7),fl);WA4[3]=lerp(.22+.95*tk,.16+.85*up*up,fl);
+  WA4[0]=lerp(po[0]+.22*tk,.10+A*s,fl);WA4[1]=lerp(po[1]+.42*tk,.06+.22*up,fl);
+  WA4[2]=lerp(-.03+.1*tk,.30*A*Math.sin(ph-.7),fl);WA4[3]=lerp(po[2]+.95*tk,.16+.85*po[3]*up*up,fl);
 }
 const mv=(m,x,y,z)=>[m[0]*x+m[3]*y+m[6]*z,m[1]*x+m[4]*y+m[7]*z,m[2]*x+m[5]*y+m[8]*z];
 function frames(p,f,u,sc,near){
@@ -1282,24 +1518,33 @@ function emit(tpl,pal,specK,sc){
 }
 const PX=new Float32Array(MAXB);
 function genBirds(){
-  nd=0;const n=S.n;
+  nd=0;const n=S.n,tpl=sp.tpl,pals=sp.pals,amp=sp.amp,pose=sp.pose;
   const m0=view[0],m4=view[4],m8=view[8],m12=view[12],m1=view[1],m5=view[5],m9=view[9],m13=view[13],m2=view[2],m6=view[6],m10=view[10],m14=view[14];
   let near=0;
   for(let i=0;i<n;i++){const i3=i*3,x=P[i3],y=P[i3+1],z=P[i3+2],dz=-(m2*x+m6*y+m10*z+m14);
     if(dz<.25){PX[i]=-1;continue;}
-    const vx=m0*x+m4*y+m8*z+m12,vy=m1*x+m5*y+m9*z+m13,mg=.3;
+    const vx=m0*x+m4*y+m8*z+m12,vy=m1*x+m5*y+m9*z+m13,mg=.3*SIZE;
     if(Math.abs(vx)>dz*tanX*1.05+mg||Math.abs(vy)>dz*tanY*1.05+mg){PX[i]=-1;continue;}
-    PX[i]=.42*focal/dz;if(PX[i]>14)near++;}
+    PX[i]=.42*SC[i]*focal/dz;if(PX[i]>14)near++;}
   let thr=14;while(near>NEARCAP){thr*=1.25;near=0;for(let i=0;i<n;i++)if(PX[i]>thr)near++;}
   for(let i=0;i<n;i++){
     if(PX[i]<0)continue;const i3=i*3,isNear=PX[i]>thr||(cam.mode==='ride'&&i===cam.rideBird);
     const f=[H[i3],H[i3+1],H[i3+2]];let u=[UPv[i3],UPv[i3+1],UPv[i3+2]];
     const fu=u[0]*f[0]+u[1]*f[1]+u[2]*f[2];u=nrm([u[0]-f[0]*fu,u[1]-f[1]*fu,u[2]-f[2]*fu]);
-    wingAngles(PH[i],FLAP[i],TK[i],.82*(.75+.25*DEM[i]));
+    wingAngles(PH[i],FLAP[i],TK[i],amp*(.75+.25*DEM[i]),pose);
     frames([P[i3],P[i3+1],P[i3+2]],f,u,SC[i],isNear);
-    emit(isNear?NEAR:FAR,STAR,1,SC[i]);
+    emit(isNear?tpl.near:tpl.far,pals[PALI[i]],1,SC[i]);
   }
-  for(const F of FALS){wingAngles(F.ph,F.flap,F.tk,.75);frames(F.p.slice(),F.f,F.u,2.4,true);emit(NEAR,FALC,.15,2.4);}
+  for(const F of FALS){wingAngles(F.ph,F.flap,F.tk,.75,FPOSE);frames(F.p.slice(),F.f,F.u,2.4,true);emit(FALCT,FALC,.15,2.4);}
+  if(sp.model==='soar'){      // thistledown carried up in the thermals, so the rising air can be seen
+    const now=S.time;
+    for(let k=0;k<3;k++){const t=TH[k],env=thermalEnv(t,now);if(env<.05)continue;
+      for(let m=0;m<36;m++){const a=m*2.4+now*(.22+.1*hash(m))*t.dir,rr=t.r*(.2+.7*hash(m*1.7+k*9)),y=(hash(m*3.1+k)*t.top+now*t.w*.6)%t.top;
+        const x=t.x+Math.cos(a)*rr,z=t.z+Math.sin(a)*rr,d=-(m2*x+m6*y+m10*z+m14);if(d<.5)continue;const b=nd*16;
+        DY[b]=x;DY[b+1]=y;DY[b+2]=z;DY[b+3]=1;DY[b+4]=DY[b+5]=DY[b+6]=.09;DY[b+7]=.4*env*smooth((t.top-y)/15);
+        DY[b+8]=0;DY[b+9]=0;DY[b+10]=0;DY[b+11]=1;DY[b+12]=1;DY[b+13]=.9;DY[b+14]=.72;DY[b+15]=0;
+        DK[nd++]=d<40?d*1500:61600+Math.min(Math.log(d*.025)*LOGK,3900);}}
+  }
 }
 
 /* ---------------------------------------------------------------- sort
@@ -1351,8 +1596,7 @@ function advance(dt){
   const steps=Math.max(1,Math.ceil(dt/.02)),h=dt/steps;
   for(let k=0;k<steps;k++){
     if(S.time-lastCluster>=.15){clusterNow=true;lastCluster=S.time;}
-    if(S.auto&&S.time>=S.nextTurn)autoTurn();
-    stepFlock(h);
+    if(sp.model==='flock'){if(S.auto&&S.time>=S.nextTurn)autoTurn();stepFlock(h);}else if(sp.model==='vee')stepVee(h);else stepSoar(h);
     if(FALS.length){for(const F of FALS)stepFalcon(F,h);
       if(FALS.some(F=>F.done)){for(let q=FALS.length-1;q>=0;q--)if(FALS[q].done)FALS.splice(q,1);syncFalconUI();}}
     S.time+=h;
@@ -1368,9 +1612,11 @@ function frame(now){
   if(dt>.03)slow++;else slow=Math.max(0,slow-1);
   if(slow>50&&scale>.55){scale*=.85;slow=0;}
   if(fpsT>=.5){
-    st1.textContent=S.n.toLocaleString()+' starlings · '+drawn.toLocaleString()+' splats · '+Math.round(fpsN/fpsT)+' fps';
-    const fl=S.flocks,nf=FALS.length;
-    st2.textContent=(fl.length>1?fl.length+' flocks '+fl.slice(0,4).join('/'):'1 flock')+' · alignment '+S.pol.toFixed(2)+(nf?' · '+nf+(nf>1?' falcons':' falcon'):'');
+    st1.textContent=S.n.toLocaleString()+' '+sp.label.toLowerCase()+' · '+drawn.toLocaleString()+' splats · '+Math.round(fpsN/fpsT)+' fps';
+    const fl=S.flocks,nf=FALS.length,grp=fl.length>1?fl.length+' '+sp.word[1]+' '+fl.slice(0,4).join('/'):'1 '+sp.word[0];
+    st2.textContent=sp.model==='vee'?grp+' · '+Math.round(S.inForm*100)+'% on station · '+S.swaps+' lead changes'
+      :sp.model==='soar'?grp+' · circling birds climbing '+S.climb.toFixed(1)+' m/s'
+      :grp+' · alignment '+S.pol.toFixed(2)+(nf?' · '+nf+(nf>1?' falcons':' falcon'):'');
     fpsT=fpsN=0;}
 }
 function render(){
@@ -1399,9 +1645,9 @@ function render(){
 /* --------------------------------------------------------------- input */
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',orbit:'Drag to orbit · pinch to zoom',
-    ride:'Drag to swing around your starling · pinch to move closer',fly:'Drag to look · pinch to fly forward or back'}
+    ride:'Drag to swing around your bird · pinch to move closer',fly:'Drag to look · pinch to fly forward or back'}
   :{meadow:'Drag to look · scroll to zoom · press W A S D to take off and fly',orbit:'Drag to orbit · scroll to zoom',
-    ride:'Drag to swing around your starling · scroll to move closer',fly:'W A S D to fly · Space up · C down · Shift faster · drag to look · scroll sets speed'};
+    ride:'Drag to swing around your bird · scroll to move closer',fly:'W A S D to fly · Space up · C down · Shift faster · drag to look · scroll sets speed'};
 function showHint(){hint.textContent=HINTS[cam.mode];hint.classList.remove('off');clearTimeout(hintTimer);hintTimer=setTimeout(()=>hint.classList.add('off'),cam.mode==='fly'?12000:7000);}
 function touched(){if(cam.mode!=='fly')hint.classList.add('off');}
 canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});pts.set(e.pointerId,[e.clientX,e.clientY]);pinch=0;touched();});
@@ -1419,7 +1665,7 @@ canvas.addEventListener('pointermove',e=>{
 function zoomBy(k,isPinch){
   if(cam.mode==='meadow'){cam.autoZoom=false;cam.zoom=clamp(cam.zoom*k,.06,1.5);}
   else if(cam.mode==='orbit'){cam.oautoDist=false;cam.odist=clamp(cam.odist*k,8,260);}
-  else if(cam.mode==='ride')cam.rideDist=clamp(cam.rideDist*k,.8,14);
+  else if(cam.mode==='ride')cam.rideDist=clamp(cam.rideDist*k,.8,45);
   else if(isPinch){const d=-Math.log(k)*30,f=cam.fwd;cam.fpos[0]+=f[0]*d;cam.fpos[1]=Math.max(.5,cam.fpos[1]+f[1]*d);cam.fpos[2]+=f[2]*d;}
   else cam.fspeed=clamp(cam.fspeed/k,3,60);
 }
@@ -1438,7 +1684,7 @@ function setMode(m){
 for(const k in VB)VB[k].onclick=e=>{setMode(k);e.currentTarget.blur();};
 const bFalcon=document.getElementById('bFalcon'),bSlow=document.getElementById('bSlow'),bSplit=document.getElementById('bSplit');
 function syncFalconUI(){const n=FALS.length;bFalcon.textContent=n?'Falcon ×'+n:'Falcon';bFalcon.dataset.on=n?'1':'0';
-  if(n>=MAXF)bFalcon.setAttribute('aria-disabled','true');else bFalcon.removeAttribute('aria-disabled');}
+  if(n>=MAXF||!sp.falcon)bFalcon.setAttribute('aria-disabled','true');else bFalcon.removeAttribute('aria-disabled');}
 function toggleSlow(){S.slow=!S.slow;bSlow.setAttribute('aria-pressed',S.slow);}
 bFalcon.onclick=e=>{launchFalcon();e.currentTarget.blur();};
 bSplit.onclick=e=>{forceSplit();e.currentTarget.blur();};
@@ -1446,9 +1692,22 @@ bSlow.onclick=e=>{toggleSlow();e.currentTarget.blur();};
 const cnt=document.getElementById('count'),cntOut=document.getElementById('countOut');
 cnt.oninput=()=>{resizeFlock(+cnt.value);cntOut.textContent=cnt.value;};
 cnt.onchange=()=>cnt.blur();
+const selSp=document.getElementById('species');
+function setSpecies(key){
+  sp=SPECIES[key];K=sp.K||7;V0C=sp.v0;VMIN=V0C*.5;VMAX=V0C*(sp.model==='vee'?1.4:2);RH=sp.rh||.2;SEPW=sp.sepw||.45;WS=sp.ws||7;WA=sp.wa||2.7;WC=sp.wc||2.2;NOISE=sp.noise??1.9;WR=sp.wr||4;
+  WBF=sp.wbf;TREACT=sp.treact||.07;SPACE=sp.space||1;HOPM=2.3*SPACE;RSX=sp.roost[0];RSZ=sp.roost[1];R0=sp.roost[2];SIZE=sp.size;PAIRS=!!sp.pairs;HIER=!!sp.hier;FLAPMODE=sp.flap;
+  FALS.length=0;NC=0;S.flocks=[];S.swaps=0;S.inForm=0;S.climb=0;lastCluster=-9;clusterNow=false;S.nextTurn=S.time+6;
+  const n=coarse?sp.n[1]:sp.n[0];cnt.min=sp.min;cnt.max=sp.max;cnt.step=sp.step;cnt.value=n;cntOut.textContent=n;
+  LAB.fill(-1);spawn(n);
+  cam.Cs=null;cam.tk=null;cam.rideBird=0;cam.rpos=null;cam.rideDist=3*Math.pow(SIZE,.8);cam.oautoDist=true;cam.track=true;cam.autoZoom=true;
+  document.getElementById('tagline').textContent=sp.tag;selSp.value=key;
+  if(sp.model==='flock')bSplit.removeAttribute('aria-disabled');else bSplit.setAttribute('aria-disabled','true');
+  syncFalconUI();advance(1.5);
+}
+selSp.onchange=()=>{setSpecies(selSp.value);selSp.blur();};
 const MOVE=new Set(['KeyW','KeyA','KeyS','KeyD','KeyC','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 addEventListener('keydown',e=>{
-  if(e.target.tagName==='INPUT'||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.ctrlKey||e.metaKey||e.altKey)return;
   const c=e.code;
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
@@ -1459,11 +1718,10 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
 addEventListener('blur',()=>keysDown.clear());
 
-const n0=coarse?600:1000;cnt.value=n0;cntOut.textContent=n0;spawn(n0);
-advance(1.5);resize();
+resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__sim={S,cam,FALS,ESC,TT,LAB,CLn,CLr,getP:()=>P,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
+window.__sim={S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,getP:()=>P,getH:()=>H,getV:()=>V,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();

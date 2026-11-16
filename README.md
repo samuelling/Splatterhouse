@@ -1,6 +1,6 @@
 # Splatterhouse
 
-A real-time 3D Gaussian splat demo in one HTML file: starling flocks at dusk over a wildflower meadow, wheeling above a barn, a silo, fenced fields and a mix of trees. The flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
+A real-time 3D Gaussian splat demo in one HTML file: birds at dusk over a wildflower meadow, above a barn, a silo, fenced fields and a mix of trees. Six species are on the menu, each flying by its own rules: starlings in a murmuration, dunlin, jackdaws, pigeons, geese in V formation and white storks circling in thermals. Flocks split apart and rejoin, and up to four peregrine falcons can attack at once.
 
 Every splat is generated in the browser and drawn the way trained splat scenes are. Each one is an anisotropic 3D Gaussian (position, rotation, scale, colour, opacity), projected to a 2D covariance in the vertex shader, depth-sorted on the CPU each frame and alpha-blended back to front. There is no mesh and no depth buffer.
 
@@ -14,14 +14,17 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 |---|---|
 | **Meadow** (`1`) | Stand in the grass. The view follows the largest flock and keeps the horizon in shot while the birds are low. Drag to look, scroll or pinch to zoom, tap Meadow again to re-track. |
 | **Orbit** (`2`) | Circle all the flocks from below, against the sky. |
-| **Ride** (`3`) | Fly behind one starling inside the flock. |
+| **Ride** (`3`) | Fly behind one bird inside the flock. |
 | **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any movement key in another view takes off from where you are. On touch: drag to look, pinch to move. |
-| **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. |
-| **Split** (`X`) | Make the largest flock tear in two now. |
+| **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese or storks. |
+| **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese or storks. |
 | **Slow-mo** (`T`) | 0.2× time, so the 13 Hz wingbeat becomes visible. |
-| **Starlings** | 150 to 2,400 birds. |
+| **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese or white storks. Changing species restarts the birds. |
+| **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 
 ## The flight model
+
+This section and the next describe the starlings. The other species are variations on it or separate models, described under [Species](#species).
 
 The flock follows StarDisplay (Hildenbrandt, Carere & Hemelrijk 2010, *Behavioral Ecology* 21:1349), which reproduced the shapes and dynamics of real roosting murmurations:
 
@@ -54,10 +57,41 @@ A split typically lasts 10–20 seconds, though a small group can stay out for a
 
 Other simplifications that are not from the papers: small, slow noise forces keep alignment near the 0.96 measured in real flocks instead of locking at 1.0, and a gentle pull draws birds on a long straggling arm back toward the bulk of their own flock.
 
+## Species
+
+Each species has its own body (built from one parametric splat bird: wingspan, neck, bill, tail, wingtip shape, colours), its own speed and wingbeat, and its own rules. Three of them reuse the starling model with changes suggested by field studies; they are not models fitted to data. Geese and storks are separate models.
+
+| Species | Span | Cruise | Wingbeat | What is different |
+|---|---|---|---|---|
+| Starling | 0.40 m | 10 m/s | 13 Hz | The model above. |
+| Dunlin | 0.36 m | 14 m/s | 12 Hz | Tighter, faster, lower. Turns start every few seconds and pass through the flock with less than half the starlings' copying delay. Brown above, white below, so the flock changes shade as it banks. |
+| Jackdaw | 0.70 m | 12 m/s | 5.5 Hz | About 80% of birds have a mate. Mates hold 1.3 m apart and fly each other's course. Each bird attends to 3 neighbours, not 7, and the flock is looser. |
+| Pigeon | 0.68 m | 15 m/s | 7 Hz | A small kit circling the barn. Every bird has a rank. A bird weights each neighbour's heading by that neighbour's rank, and high-ranked birds wander more and fly slightly faster, so they end up at the front and the rest follow their turns. Three colour morphs. |
+| Goose | 1.6 m | 16 m/s | 3.8 Hz | V formation, below. |
+| White stork | 2.0 m | 10.5 m/s | soaring | Thermal soaring, below. |
+
+**Dunlin.** The short copying delay stands in for Potts's chorus-line account (1984, *Nature* 309:344), in which a bird times its turn from the wave approaching it and so reacts faster than its own reaction time would allow.
+
+**Jackdaws.** Ling et al. (2019, *Nature Ecology & Evolution* 3:943) tracked wild jackdaws in 3D and found that mated pairs fly together inside the flock and that paired birds interact with fewer neighbours.
+
+**Pigeons.** Nagy et al. (2010, *Nature* 464:890) fitted GPS loggers to homing pigeons and found a hierarchy in who copies whose turns. Here the hierarchy is assigned at random when the kit takes off.
+
+**Geese.** Each goose picks the nearest goose ahead as its guide and flies for a place 1.4 wingspans behind it and 1.06 wingspans to one side, which is where a wingtip leaves rising air (Lissaman & Shollenberger 1970, *Science* 168:1003). The rest is bookkeeping that makes two tidy arms:
+
+- A place belongs to the goose nearest it. A later arrival queues behind that goose, so each arm is a single file.
+- A goose keeps to the arm its guide is on. The last goose of the longer arm crosses to the shorter one.
+- The front bird steers. After 25 to 55 seconds in front it eases off for a few seconds, the line slides past it and it falls in further back (Voelkl et al. 2015, *PNAS* 112:2115, found ibises share the lead this way).
+- Each goose locks its wingbeat to its guide's, delayed by the distance between them, so the flapping runs down the arm as a wave (Portugal et al. 2014, *Nature* 505:399, in ibises).
+- More than 29 geese fly as several skeins, each on its own circuit and height.
+
+One part is control engineering and not biology. A goose that matches speed only with the bird ahead amplifies every wobble, and a long arm cracks like a whip in turns. Each goose therefore matches speed partly with its guide and partly with the front bird, using the front bird's course as it was when it passed that point, so the V wheels round together.
+
+**White storks.** Three thermals drift across the field, each lasting about 75 to 120 seconds. A stork circles in one, turning the same way as the rest of the kettle, and climbs at the updraft minus its own sink rate, which grows with bank angle. Near the top it leaves and glides to another thermal, losing height on the way. Bold birds leave first and choose the thermal by its strength and distance; followers leave once much of the kettle has gone and head for the thermal with the most storks (Flack et al. 2018, *Science* 360:911, found leaders and followers of this kind in migrating storks). Specks of thistledown rise in each thermal so the air can be seen. Distances are compressed about tenfold so the cycle fits over the field: real thermals carry storks up a kilometre and the glides run for kilometres, so the glides here are much steeper than a real stork's.
+
 ## How the splats work
 
 - **Data.** Each splat is four RGBA32F texels in one data texture. Static splats (grass, barn, trees, hills, clouds) are uploaded once. Bird splats are rebuilt and re-uploaded every frame into a dynamic region of the same texture.
-- **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. Near birds use 46 splats, with separate top and underside wing splats that fade by facing, so wings look glossy black from above and grey-brown from below. Distant birds collapse to 3 splats.
+- **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. All six species come from one parametric body. Near birds use 39 to 63 splats depending on species, with separate top and underside wing splats that fade by facing, so a starling's wings look glossy black from above and grey-brown from below, and a dunlin flashes white when it banks. Distant birds collapse to 3 to 7 splats.
 - **Barn and silo.** About 36,000 splats. The shell is surface splats laid out on panels, each with its thin axis along the surface normal so the sunset lights it properly. Fine detail is drawn on top with long, thin splats used as lines: board-and-batten strips, white corner boards, rakes and bargeboards, window casings and glazing bars, standing seams and patched sheets on the gambrel roof, gutters and downspouts.
   - *Front:* X-braced sliding doors standing ajar on a steel track, with light inside and a lantern above; a hay hood with a hoist beam, pulley and rope; hay spilling from the loft door; a fieldstone foundation; Virginia creeper turning red up one corner.
   - *Sides:* windows, some lit from inside; a painted barn quilt on the sunlit wall; a ladder left leaning; a lean-to with a tin roof, posts and stacked straw bales.
