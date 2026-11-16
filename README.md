@@ -23,7 +23,7 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Score** (`M`) | Turn the music on or off. It starts off, because browsers only allow sound after a click. |
 | **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, white storks or *Pteranodon*. Changing species restarts the birds. |
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
-| **Splat panel** (`G`, or triple-click the title) | Hidden. Change how the Gaussian splats themselves are drawn; see below. |
+| **Advanced** (`G`) | The button under the title opens a panel that changes how the Gaussian splats themselves are drawn; see below. |
 
 ## The flight model
 
@@ -158,5 +158,5 @@ The score has been checked for levels and for the key change, but only by measur
 - **On the beach.** Two rows of groyne posts, driftwood, a wrack line of weed, pebbles and shells, and two groups of boulders and cobbles at the water's edge (all splats). Each boulder is a dark core under a skin of facets, so it takes the sun on one side.
 - **Footpath and boardwalk.** A footpath leaves the farm track beyond the gate, crosses the field past the willow and the poplars, and becomes a boardwalk of weathered planks with a post-and-rope rail, running through the gap in the dunes down to the beach.
 - **Sky.** The background pass draws the gradient, the sun, a high sheet of cirrus lit from below and drifting slowly, the first stars overhead and away from the sun, and a full moon just clear of the horizon directly opposite the sunset, where a full moon is at that hour. The lower clouds are splats: banks of puffs, warm underneath where the sun reaches them and cool on top. A little noise is added so the long gradients do not band.
-- **Splat panel.** Press `G`, or triple-click the title, for a panel that changes how every splat is drawn: size, opacity, edge (the exponent k above, as a multiplier: low is a soft blob, high a hard-edged disc), the pixel filter (the minimum size a splat is blurred to on screen, which is what stops far splats shimmering), and density (draw only a share of the splats). It can also colour each splat separately or by distance, draw outlines only, and turn off the depth sort, which shows why back-to-front order matters for see-through splats.
+- **Advanced panel.** The Advanced button under the title, or `G`, opens a panel that changes how every splat is drawn: size, opacity, edge (the exponent k above, as a multiplier: low is a soft blob, high a hard-edged disc), the pixel filter (the minimum size a splat is blurred to on screen, which is what stops far splats shimmering), and density (draw only a share of the splats). It can also colour each splat separately or by distance, draw outlines only, and turn off the depth sort, which shows why back-to-front order matters for see-through splats.
 - **Sort.** Each meadow ring is stored in a 12×12 grid of cells, so cells outside the ring or the view are skipped without reading their splats. What survives is ordered with a 16-bit counting sort, linear in depth out to 40 m and logarithmic beyond.
