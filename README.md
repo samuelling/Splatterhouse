@@ -16,7 +16,9 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Shore** (`5`) | Stand at the top of the beach, looking out to sea. Press again to follow the birds from there. Choosing dunlin or *Pteranodon* in Meadow view moves you here, since they fly over the shore. |
 | **Orbit** (`2`) | Circle all the flocks from below, against the sky. |
 | **Ride** (`3`) | Fly behind one bird inside the flock. Click or tap another bird to follow that one. A read-out shows what the bird is doing and what its model is telling it: for flocking birds the pull of separation, alignment and cohesion from its neighbours, its place in the flock and any turn it is riding; for geese its role, arm and distance off station; for soarers the rising air, climb rate and thermal. Click the read-out to fold it, or press `H` to hide it. |
-| **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any movement key in another view takes off from where you are. On touch: drag to look, pinch to move. |
+| **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any of those keys in another view takes off from where you are. On touch: drag to look, pinch to move. |
+| **Arrow keys** | Turn the view, as dragging does, in every view: look around when standing or flying, swing round the flock in Orbit, swing round the bird in Ride (up and down move closer and farther). They start gently, so a tap is a fine adjustment; `Shift` doubles the rate. They never take off. |
+| **Splatterhouse mode** (`B`) | The button under the title. Puts a shotgun in your hands in the fenced barn field. See below. |
 | **Falcon** (`F`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, storks or *Pteranodon*. |
 | **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, storks or *Pteranodon*. |
 | **Slow-mo** (`T`) | 0.2× time, so the wingbeats can be followed. |
@@ -24,6 +26,32 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Species menu** | Starlings, dunlin, jackdaws, pigeons, geese, white storks or *Pteranodon*. Changing species restarts the birds. |
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 | **Advanced** (`G`) | The button under the title opens a panel that changes how the Gaussian splats themselves are drawn; see below. |
+
+## Splatterhouse mode
+
+Press `B`, or the button under the title. You are on foot in the barn field with a pump-action shotgun, and that field is the only place you can shoot from: the roadside fence, the two side fences and the edge of the dunes where they stop hold you in, and the barn and the trees are solid. Choosing any other view puts the gun away.
+
+| | |
+|---|---|
+| **Fire** | Click or tap where you want the shot to go, or press `Space` or `Enter` to fire at the cross-hairs. |
+| **Aim** | The cross-hairs follow the mouse. The arrow keys turn your head and bring the cross-hairs back to the middle; dragging turns your head too. The ring shows how wide the pattern is. Scroll or pinch to zoom. |
+| **Walk** | `W` `A` `S` `D`, `Shift` to run. There is no walking on a touch screen. |
+| **Reload** | `R`, or pull the trigger on an empty gun. Six cartridges; firing during a reload stops it after the cartridge in hand. |
+
+- **The shot.** 34 pellets, scattered about 1.2° either side of the aim (the ring is drawn at about twice that). Each pellet stops in the first bird it meets, so in a dense murmuration one shot can take a dozen or more and in a skein of geese one or two. Every pellet counts out to 75 m, fewer and fewer beyond, none past 170 m, which is far more generous than a real shotgun. Dunlin and *Pteranodon* keep to the shore, so walk to the seaward end of the field for those. A falcon inside the pattern dies too.
+- **The birds.** A hit bird is taken out of the flock model that instant and becomes a falling body: the same splats, bloodied, tumbling, trailing drops, landing in the grass or splashing into the sea. It lies where it fell for a while. Around each hit there is a burst of blood, a red mist and a puff of feathers, all splats; some drops leave stains where they land. A kill within about 25 m spatters the lens.
+- **The flock.** The rest flee the shot. For starlings, dunlin, jackdaws and pigeons it works like a falcon appearing in their midst: those near it bolt and the alarm passes from neighbour to neighbour as a wave. Geese near the shot break formation and re-form; soarers flinch away. The count, the slider and the flock statistics all follow the losses. When three birds are left, a fresh flock arrives.
+- **The gun.** Not splats. It is a triangle mesh loaded at start-up from a real glTF model embedded in the page, lit by the same low sun and sky as everything else, and drawn after the splats with its own depth buffer, because a gun in your hands is always the nearest thing in view. It follows the cross-hairs, lags a little behind a turn of the head, kicks on firing, and is pumped after every shot with the fore-end sliding back and a spent case thrown clear. To reload it is canted over and cartridges are pushed one at a time into the port under the receiver; if it was empty it is racked at the end. The cartridges and the muzzle flash are small meshes made in code. There are no hands.
+- **The sound.** The shots, the pump and the dry click are recordings. Each shot adds the top of the crack, which the vintage recording has lost, a low thump, three echoes off the barn and the trees, and a roll of reverberation. The pump animation is timed to whichever of four pump recordings is playing. A cartridge going home is the first click of a pump recording with a soft thump under it, since I found no recording of that under a clear licence. Hits are synthesised and arrive late by the speed of sound.
+
+| Asset | Source | Licence |
+|---|---|---|
+| Shotgun model, `assets/shotgun.glb` | `Shotgun_2` from the Survival Pack by [Quaternius](https://quaternius.com/packs/survival.html), via [trebeljahr/quaternius-showcase](https://github.com/trebeljahr/quaternius-showcase) | CC0 |
+| Shots, `assets/sounds/shot_*.mp3` | "R11-58 Loud Shotgun Blasts" by craigsmith, [freesound 486060](https://freesound.org/s/486060/), as trimmed and levelled in [xiaomyung/chess-shootout](https://github.com/xiaomyung/chess-shootout) | Listed as CC0 by that project. I could not load the freesound page to confirm it at source. |
+| Pump, `assets/sounds/pump_*.mp3` | "Pump Action Shotgun Cycle" by Zott820, [freesound 370344](https://freesound.org/s/370344/), via the same project | CC0, confirmed on the freesound page. That project may have layered Signature Sounds foley (below) into its cuts. |
+| Dry click, `assets/sounds/dry.mp3` | Bullet / Gun SFX by [Signature Sounds](https://signaturesounds.org/store/p/bulletgun-sfx-cc0), via the same project | Listed as CC0 by the publisher's page title and by that project; not checked further |
+
+The files in `assets/` are the ones embedded in `index.html` (as base64, so the page still runs from a single file). The sounds were converted from Ogg to MP3 so that Safari can decode them.
 
 ## The flight model
 
@@ -134,6 +162,7 @@ The score has been checked for levels and for the key change, but only by measur
 
 ## How the splats work
 
+- **Not everything is a splat.** The shotgun of Splatterhouse mode is a triangle mesh with a depth buffer, drawn last. Nothing else uses depth: the splats are sorted and blended, and the ground, sea and sky are ray-traced behind them.
 - **Data.** Each splat is four RGBA32F texels in one data texture. Static splats (grass, barn, trees, hills, clouds) are uploaded once. Bird splats are rebuilt and re-uploaded every frame into a dynamic region of the same texture.
 - **Splat shape.** A splat fades from its centre as exp(−r^2k). With k = 1 that is a true Gaussian, which is right for clouds, haze and far hills. Birds, bark, leaves and grass blades use a larger k (1.3 to 2.4), which keeps the middle of the splat solid and tightens its edge, so things close to the eye look crisp and not out of focus.
 - **Birds.** Every bird is posed on the CPU: a body frame from its velocity and bank angle, two-segment wings, and a tail. All the fliers come from one parametric body, drawn at three levels of detail:
