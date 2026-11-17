@@ -56,14 +56,34 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
 #chips{position:fixed;left:14px;top:96px;display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 28px)}
-#bClean,#bFull,#bFinger,#bHead,#bHold{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
-#bFinger[hidden],#bHead[hidden],#bHold[hidden]{display:none}
-#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bHold[aria-pressed="true"],#bFull[aria-pressed="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
+#bClean,#bFull,#bFinger,#bHead,#bHold,#bHelp{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#bFinger[hidden],#bHead[hidden],#bHold[hidden],#bHelp[hidden]{display:none}
+#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bHold[aria-pressed="true"],#bFull[aria-pressed="true"],#bHelp[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bAdv[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #adv{position:fixed;left:14px;top:128px;width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 140px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
   background:rgba(30,23,36,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.3 var(--mono);color:var(--ink);display:grid;gap:7px}
 #adv[hidden]{display:none}
+#tut{position:fixed;right:14px;top:150px;width:272px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 164px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
+  background:rgba(30,23,36,.66);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:12px/1.4 var(--mono);color:var(--ink)}
+#tut[hidden]{display:none}
+#tut h4{margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;font:600 15px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+#tut button{height:26px;padding:0 8px;font-size:12px;letter-spacing:.06em;border-radius:8px}
+#tutX{width:26px;padding:0}
+#tut .tabs{display:flex;gap:5px;margin-bottom:8px}
+#tut .tabs button{flex:1;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#tut .tabs button[aria-pressed="true"]{color:var(--ink);background:rgba(255,106,74,.22);border-color:rgba(255,106,74,.6)}
+#tut .pic{height:62px;color:var(--ink-dim);text-align:center}
+#tut .pic svg{height:100%}
+#tut ol{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;counter-reset:st}
+#tut li{position:relative;padding-left:26px;color:var(--ink-dim);counter-increment:st}
+#tut li::before{content:counter(st);position:absolute;left:0;top:0;width:17px;height:17px;border-radius:50%;border:1px solid var(--ink-dim);font:600 10px/17px var(--mono);text-align:center}
+#tut li.c{color:var(--ink)}
+#tut li.c::before{border-color:var(--hot);color:var(--hot)}
+#tut li.d::before{content:"\2713";border-color:#9be28a;background:#9be28a;color:#1e1724}
+#tut li b,#tut p b{color:var(--ink);font-weight:600}
+#tut p{margin:9px 0 0;padding-top:8px;border-top:1px solid var(--edge);color:var(--ink-dim);font-size:11px}
+@media (max-width:470px){#tut{left:14px;right:14px;width:auto;top:auto;bottom:14px;max-height:46%}}
 #bHunt{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--hot);border-color:rgba(255,106,74,.5);background:rgba(30,23,36,.35)}
 #bHunt[aria-pressed="true"]{background:var(--hot);color:#2a0d06;border-color:transparent}
 #bag{position:fixed;right:14px;top:14px;width:214px;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,106,74,.4);background:rgba(30,23,36,.5);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.5 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums;pointer-events:none}
@@ -109,7 +129,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 @media (max-width:470px){#cam{bottom:auto;top:128px;width:104px}}
 body.hunt canvas{cursor:none}
 /* nothing but the birds: every menu and line of text hidden; a faint button comes back when the pointer moves */
-body.clean #tag,body.clean #chips,body.clean #dock,body.clean #hint,body.clean #hud,body.clean #adv,body.clean #bag,body.clean #cam{display:none!important}
+body.clean #tag,body.clean #chips,body.clean #dock,body.clean #hint,body.clean #hud,body.clean #adv,body.clean #bag,body.clean #cam,body.clean #tut{display:none!important}
 #bShow{display:none;position:fixed;left:14px;top:14px;height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink);background:rgba(30,23,36,.5);opacity:0;transition:opacity .5s;pointer-events:none}
 body.clean #bShow{display:block}
 body.clean.peek #bShow{opacity:.8;pointer-events:auto}
@@ -144,8 +164,13 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button></div>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun">Splatterhaus mode</button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bHelp" type="button" aria-expanded="false" aria-controls="tut" aria-label="How to use the finger gun, the shotgun hold and head look" hidden>How to</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button></div>
 <button id="bShow" type="button">Show menus</button>
+<aside id="tut" hidden aria-label="How to use the camera controls">
+  <h4>How to<button type="button" id="tutX" aria-label="Close">×</button></h4>
+  <div class="tabs"><button type="button" data-t="finger" aria-pressed="true">Finger gun</button><button type="button" data-t="hold" aria-pressed="false">Shotgun hold</button><button type="button" data-t="head" aria-pressed="false">Head look</button></div>
+  <div class="pic" aria-hidden="true"></div><ol></ol><p></p>
+</aside>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
   <h4>Advanced <small>Gaussian splats</small><button type="button" id="advX" aria-label="Close">×</button></h4>
   <label>Size <input type="range" data-k="size" min="0.1" max="2.5" step="0.05" value="1"><output></output></label>
@@ -2151,7 +2176,7 @@ function advance(dt){
 function frame(now){
   requestAnimationFrame(frame);
   const t=now/1000,rdt=Math.max(0,t-last),dt=Math.min(.05,rdt);last=t;
-  Finger.tick();
+  Finger.tick();Tut.tick();
   if(!S.frozen)advance(dt*(S.slow?.2:1));
   updateCamera(Math.min(.12,rdt));
   render();
@@ -2692,9 +2717,9 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     if(!cam.hpos||!canStand(cam.hpos[0],cam.hpos[1])){cam.hpos=[GATE[0]+2,GATE[1]-6];cam.hyaw=Math.atan2(RSX-cam.hpos[0],RSZ-cam.hpos[1]);cam.hpitch=.25;cam.hzoom=1.05;cam.hvel=[0,0];cam.hbob=0;}
     aim.x=aim.y=0;if(!gvao)try{build();}catch(e){console.error(e);}
     {const d=bw([0,0,11]);dog.on=true;dog.p=[d[0],d[2]];dog.mode='heel';dog.tg=null;dog.spd=0;dog.ph=0;}      // the dog comes out from the barn
-    document.getElementById('bFinger').hidden=false;document.getElementById('bHold').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
+    document.getElementById('bHelp').hidden=false;document.getElementById('bFinger').hidden=false;document.getElementById('bHold').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
   }
-  function leave(){Finger.stop();document.getElementById('bFinger').hidden=true;document.getElementById('bHold').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
+  function leave(){Finger.stop();Tut.hide();document.getElementById('bHelp').hidden=true;document.getElementById('bFinger').hidden=true;document.getElementById('bHold').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
   function pointAt(cx,cy){const r=canvas.getBoundingClientRect();aim.x=clamp((cx-r.left)/r.width*2-1,-1,1);aim.y=clamp(1-(cy-r.top)/r.height*2,-1,1);}
   function step(h){
     stepFx(h);stepDead(h);dogStep(h);
@@ -2846,7 +2871,7 @@ const Finger=(()=>{
      has got to, so the bird you turned towards is still in front of you. In the tracker's frame x is to the right of the picture, y is up
      and z is towards the camera; the picture is not mirrored, so a face pointing to the picture's left is a head turned to its own right. */
   const Hd={on:false,live:false,x:0,y:0,ax:0,ay:0,yaw:0,pitch:0,y0:0,p0:0,buf:null,seen:-9,n:0},hx={t:null},hy={t:null},HDZ=3,HYF=20,HPF=14;     // degrees: dead patch, and the turn that gives full speed across and up
-  function headCentre(){Hd.buf=[];Hd.x=Hd.y=0;hx.t=hy.t=null;}
+  function headCentre(){Hd.buf=[];Hd.x=Hd.y=0;hx.t=hy.t=null;Hd.nc=(Hd.nc||0)+1;}
   /* Where the head is, for the gun hand to be measured from. The point used is the middle of the head, 4 cm behind the tracker's own origin
      and so near the axis the head turns on, which keeps it still while the face turns. The tracker works in centimetres through a camera
      63 degrees tall; FA holds that point in the mirrored picture and its distance. The hand is then read as an offset from the head, scaled
@@ -2947,6 +2972,7 @@ const Finger=(()=>{
   }
   function feedHands(hs){
     const t=clock(),H=hs.map(h=>{const r=read(h[0],h[1]);r.lab=h[2]&&h[3]>.75?h[2]:'';r.rx=r.x;r.ry=r.y;anchor(r);return r;}),enter=.45*C.S0,exit=.2*C.S0;let g=-1,k=-1;
+    F.nh=H.length;F.shape=H.some(r=>r.score>enter);
     if(cal){let b=null;for(const r of H)if(!b||r.score>b.score)b=r;gun(b);look(null,t);return;}
     if(F.hold){look(null,t);holdFrame(H,t);return;}
     const gOK=F.gp&&t-F.gT<.6,lOK=F.lp&&t-J.seen<.6,miss=(r,isGun)=>F.gl&&r.lab&&(r.lab===F.gl)!==isGun?.25:0;
@@ -3047,6 +3073,59 @@ const Finger=(()=>{
   bCen.onclick=e=>{if(Hd.on)headCentre();holdCentre();e.currentTarget.blur();};
   bCal.onclick=e=>{if(cal||hcal)calCancel();else calStart();e.currentTarget.blur();};
   return{F,J,H:Hd,FA,St,want,set,aimWith,holdCentre,headCentre,feedHead:(m,n)=>head(m,n||{x:.5,y:.4},clock()),read,feed,feedHands,start,stop,tick,calStart,calCancel,get cal(){return cal||hcal;},get C(){return C;},get HC(){return HC;},reset(){C=Object.assign({},DEF);HC=Object.assign({},HDEF);try{localStorage.removeItem(KEY);localStorage.removeItem(KEY2);}catch(e){}}};
+})();
+/* ---- how to: a short lesson for each way of using the camera. Each step gets a tick when the tracker sees you do it, so the lesson also
+   shows where things stop working. It opens by itself the first time a camera control is switched on, and from the How to button or ?. ---- */
+const Tut=(()=>{
+  const el=document.getElementById('tut'),btn=document.getElementById('bHelp'),list=el.querySelector('ol'),pic=el.querySelector('.pic'),tip=el.querySelector('p'),tabs=[...el.querySelectorAll('.tabs button')],KEY='splatterhaus.howto';
+  const F=Finger.F,H=Finger.H,J=Finger.J,S='<svg viewBox="0 0 120 62" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">';
+  let tab='finger',done={},base=null,fires0=0,nc0=-1,was={},lastT=0,sig='',errSig='';
+  const moved=()=>{if(!F.gun){return false;}if(!base)base=[Hunt.aim.x,Hunt.aim.y];return Math.hypot(Hunt.aim.x-base[0],Hunt.aim.y-base[1])>.35;};
+  const L={
+    finger:{pic:S+'<rect x="30" y="28" width="34" height="27" rx="10"/><rect x="60" y="27" width="44" height="11" rx="5.5"/><rect x="36" y="5" width="11" height="29" rx="5.5"/><path d="M56 10q10 3 11 13m-5-3 5 4 3-6" stroke-dasharray="1 5"/></svg>',
+      steps:[['Press <b>Finger gun</b> and let the browser use the camera.',()=>F.on&&!F.hold],
+        ['Sit back until the camera picture shows your hand, with light on it.',()=>F.on&&!F.hold&&F.nh>0],
+        ['Make the shape: <b>index finger out</b> (or index and middle together), the other fingers folded, <b>thumb up</b>.',()=>F.on&&!F.hold&&(F.gun||F.shape)],
+        ['The first time, follow the dots to calibrate: aim at the middle, drop your thumb, aim at two corners. <b>Calibrate</b> under the picture runs it again.',()=>F.on&&!F.hold&&Finger.C.done&&!Finger.cal],
+        ['Move your hand. The cross-hairs follow your fingertip.',()=>F.on&&!F.hold&&moved()],
+        ['<b>Drop your thumb</b> onto your hand to fire. Lift it to make ready again.',()=>F.on&&!F.hold&&F.fires>fires0],
+        ['Your other hand is a stick, if you like: held open and moved off its ring it turns your view, as a fist it walks you.',()=>F.on&&!F.hold&&J.on&&Math.abs(J.x)+Math.abs(J.y)>.25]],
+      tip:'The line under the picture says what the tracker sees. If it loses your hand on fast moves, add light. With <b>Head look</b> on, calibrate once more so your aim follows your body.'},
+    hold:{pic:S+'<circle cx="30" cy="24" r="10"/><circle cx="84" cy="42" r="10"/><path d="M38 27 76 39M92 45l22 7"/><path d="M36 15l13-5"/><path d="M98 22q8 8 6 18m-6-4 6 5 4-7" stroke-dasharray="1 5"/></svg>',
+      steps:[['Press <b>Shotgun hold</b> and let the browser use the camera.',()=>F.on&&F.hold],
+        ['Hold an imaginary shotgun so the picture shows <b>both hands, apart</b>: trigger hand near your shoulder with its index finger out, the other hand out in front. Do not point it straight at the camera.',()=>F.on&&F.hold&&F.held],
+        ['The first time, follow the three dots: the middle, the top-left, the bottom-right. Hold still on each until it fills.',()=>F.on&&F.hold&&Finger.HC.done&&!Finger.cal],
+        ['Swing the front hand. The cross-hairs follow the gun.',()=>F.on&&F.hold&&moved()],
+        ['<b>Curl your trigger finger</b> to fire. Straighten it to make ready again.',()=>F.on&&F.hold&&F.fires>fires0],
+        ['Turn on <b>Head look</b> to look around with your head. Without it, push the cross-hairs against an edge of the screen to turn.',()=>F.on&&F.hold&&H.on]],
+      tip:'<b>C</b> takes a new middle if the cross-hairs sit off-centre in your comfortable pose. Lowering your hands for a moment loses nothing.'},
+    head:{pic:S+'<circle cx="60" cy="31" r="17"/><path d="M60 29v8l-4 2"/><path d="M52 25h3M65 25h3"/><path d="M34 22q-9 9 0 18m-1-9-1 9 9-1"/><path d="M86 22q9 9 0 18m1-9 1 9-9-1"/></svg>',
+      steps:[['Press <b>Head look</b> and let the browser use the camera.',()=>H.on],
+        ['Face the screen and look at its middle for a moment. A yellow diamond sits on your nose in the picture.',()=>H.on&&H.live],
+        ['Turn your head a little. The view leans with you.',()=>H.live&&Math.abs(H.yaw)>2],
+        ['Turn it further and the view keeps turning, faster the further you turn.',()=>H.live&&H.x!==0],
+        ['Face the middle again and the view stops where it has got to.',()=>done.head3&&H.live&&H.x===0&&H.y===0&&Math.abs(H.yaw)<3],
+        ['Press <b>C</b> whenever the view creeps: wherever you are facing becomes the new middle.',()=>{if(nc0<0){if(H.live)nc0=H.nc;return false;}return H.nc>nc0;}]],
+      tip:'It works with the mouse, the finger gun or the shotgun hold. Keep your face in the picture; a hand across it stops the view until your face is found again.'}};
+  function draw(){const l=L[tab];let h='',cur=-1;for(let i=0;i<l.steps.length;i++){const d=done[tab+i];if(!d&&cur<0)cur=i;h+='<li class="'+(d?'d':i===cur?'c':'')+'">'+l.steps[i][0]+'</li>';}
+    if(h!==sig){sig=h;list.innerHTML=h;}}
+  function show(t){tab=t;base=null;fires0=F.fires;nc0=-1;sig='';for(const b of tabs)b.setAttribute('aria-pressed',String(b.dataset.t===t));pic.innerHTML=L[t].pic;tips();draw();}
+  function tips(){const t=tab;errSig=F.err;
+    tip.innerHTML=(F.err?'<b>'+(/denied|NotAllowed|Permission/i.test(F.err)?'The camera is blocked on this page. Open the page on its own, not inside another site.':'The camera or its tracker could not start here.')+'</b> ':'')+L[t].tip;}
+  function open(t){el.hidden=false;btn.setAttribute('aria-expanded','true');show(t||tab);}
+  function hide(){el.hidden=true;btn.setAttribute('aria-expanded','false');}
+  function close(){hide();try{localStorage.setItem(KEY,'1');}catch(e){}}                // closed by hand: it will not open by itself again
+  function toggle(){if(el.hidden)open(F.on?(F.hold?'hold':'finger'):H.on?'head':tab);else close();}
+  function tick(){
+    const W=Finger.want,now={finger:W.gun&&!F.hold,hold:W.gun&&F.hold,head:W.head};let turned='';for(const k in now){if(now[k]&&!was[k])turned=k;was[k]=now[k];}
+    if(turned){let seen=false;try{seen=!!localStorage.getItem(KEY);}catch(e){}if(el.hidden){if(!seen)open(turned);}else if(turned!==tab)show(turned);}       // the lesson follows whatever was just switched on
+    if(el.hidden)return;const t=performance.now();if(t-lastT<150)return;lastT=t;if(F.err!==errSig)tips();
+    const l=L[tab];for(let i=0;i<l.steps.length;i++)if(!done[tab+i]&&l.steps[i][1])try{if(l.steps[i][1]())done[tab+i]=true;}catch(e){}
+    draw();
+  }
+  btn.onclick=e=>{toggle();e.currentTarget.blur();};document.getElementById('tutX').onclick=close;
+  for(const b of tabs)b.onclick=e=>{show(b.dataset.t);e.currentTarget.blur();};
+  return{open,close,hide,toggle,tick,get tab(){return tab;},done};
 })();
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
 const HINTS=coarse?{meadow:'Drag to look · pinch to zoom · tap Meadow to re-track the flock',shore:'Drag to look · pinch to zoom · tap Shore again to follow the birds',orbit:'Drag to orbit · pinch to zoom',
@@ -3187,7 +3266,7 @@ addEventListener('keydown',e=>{
   if(MOVE.has(c)){e.preventDefault();keysDown.add(c);if(cam.mode!=='fly')setMode('fly');return;}
   if(c==='ShiftLeft'||c==='ShiftRight'){keysDown.add('Shift');return;}
   if(e.repeat)return;
-  if(c==='KeyF')toggleFull();else if(c==='KeyP')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}else if(c==='KeyG')toggleAdv();else if(c==='KeyB')toggleHunt();else if(c==='KeyL'){ADV.xmas=!ADV.xmas;advSync();}else if(c==='KeyU')toggleClean();else if(c==='Escape'&&Finger.cal)Finger.calCancel();else if(c==='Escape'&&document.body.classList.contains('clean'))setClean(false);
+  if(c==='KeyF')toggleFull();else if(c==='KeyP')launchFalcon();else if(c==='KeyX')forceSplit();else if(c==='KeyT')toggleSlow();else if(c==='KeyM')toggleScore();else if(c==='KeyH'){hudOn=!hudOn;updateHud();}else if(c==='KeyG')toggleAdv();else if(c==='KeyB')toggleHunt();else if(c==='Slash'&&cam.mode==='hunt')Tut.toggle();else if(c==='KeyL'){ADV.xmas=!ADV.xmas;advSync();}else if(c==='KeyU')toggleClean();else if(c==='Escape'&&Finger.cal)Finger.calCancel();else if(c==='Escape'&&document.body.classList.contains('clean'))setClean(false);
   else if(c>='Digit1'&&c<='Digit5')setMode(MODES[+c.slice(5)-1]);
 });
 addEventListener('keyup',e=>{const c=e.code;if(c==='Space')e.preventDefault();keysDown.delete(c);if(c==='ShiftLeft'||c==='ShiftRight')keysDown.delete('Shift');});
@@ -3196,7 +3275,7 @@ addEventListener('blur',()=>keysDown.clear());
 resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__score=Score;window.__sim={dyn:()=>({DY,nd,view,focal}),S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
+window.__score=Score;window.__tut=Tut;window.__sim={dyn:()=>({DY,nd,view,focal}),S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
