@@ -19,7 +19,7 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Fly** (`4`) | Free flight. `W` `A` `S` `D` move along the view, `Space` climbs, `C` descends, `Shift` goes faster, drag to look, scroll sets speed. Pressing any of those keys in another view takes off from where you are. On touch: drag to look, pinch to move. |
 | **Arrow keys** | Turn the view, as dragging does, in every view: look around when standing or flying, swing round the flock in Orbit, swing round the bird in Ride (up and down move closer and farther). They start gently, so a tap is a fine adjustment; `Shift` doubles the rate. They never take off. |
 | **Hide menus** (`U`) | Hides every menu and line of text and, where the browser allows it, goes full screen, leaving only the birds. `U` or `Esc` brings them back, and so does the Show menus button that appears for a moment whenever the pointer moves. |
-| **Splatterhaus mode** (`B`) | The button under the title. Puts a shotgun in your hands in the fenced barn field. See below. |
+| **Splatterhaus mode** (`B`) | The red button under the title, the one with a heartbeat that drips. Puts a shotgun in your hands in the fenced barn field. See below. |
 | **Full screen** (`F`) | The Full screen button, or `F`, fills the screen and keeps the menus; `F` or `Esc` leaves it. Hide menus goes full screen too, without them. A page shown inside another site may not be allowed full screen, and says so. |
 | **Falcon** (`P`) | Launch a peregrine. Press again for more, up to four at once. Not offered for geese, ducks, storks or *Pteranodon*. |
 | **Split** (`X`) | Make the largest flock tear in two now. Not offered for geese, ducks, storks or *Pteranodon*. |
