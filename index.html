@@ -2805,7 +2805,7 @@ const Score=(()=>{
     }else if(name==='pump'){const e=smp.pump[b|0],tt=t+(a||0);if(!play(e,tt,.8,1)){nz(tt+.1,'bandpass',1500,900,.03,2,.5,.06);nz(tt+.4,'bandpass',1900,1300,.03,2,.55,.07);}}
     else if(name==='shell'){const e=smp.pump[3]||smp.pump[0];if(!play(e,t,.55,1.22+.1*Math.random(),null,0,.1))nz(t,'bandpass',2200,1500,.02,2,.4,.05);nz(t+.01,'lowpass',420,160,.06,.8,.5,.09);}     // a cartridge going home: the first click of a pump recording, and a soft thump
     else if(name==='dry'){if(!play(smp.dry[0],t,.9,1))nz(t,'bandpass',3000,2000,.01,3,.4,.03);}
-    else if(name==='bark'){const tt=t+(a||0),v=b||.5,n=c||3;if(!barkB)try{barkB=barkBuf();}catch(e){barkB={};}                 // ruff ruff ruff: the same bark three times over, as a console would play it
+    else if(name==='bark'){const tt=t+(a||0),v=b||.5,r=Math.random(),n=c||(r<.25?1:r<.65?2:3);if(!barkB)try{barkB=barkBuf();}catch(e){barkB={};}                 // one bark, two or three, as the mood takes him: the same sample each time, as a console would play it
       for(let k=0;k<n;k++)play(barkB.b?barkB:null,tt+k*.2,.6*v,1);}
     else if(name==='hit'){const tt=t+(a||0),v=b||.5;nz(tt,'lowpass',900,150,.09,1.1,1.5*v,.16,c);nz(tt,'bandpass',2600,1100,.03,1,.45*v,.07,c);}
   }
@@ -3035,7 +3035,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
         const a=laid*2.4,rr=laid?.16+.11*Math.sqrt(laid):0,dx=bed.x+Math.cos(a)*rr,dz=bed.z+Math.sin(a)*rr;                              // laid in a small heap on the bed
         c.st=3;c.t=0;c.p=[dx,groundH(dx,dz)+.05*c.sc+.03+.012*laid,dz];c.f=[Math.cos(a*1.7),0,Math.sin(a*1.7)];c.u=[0,1,0];
         let nlaid=0;for(const q of DEAD)if(q.st===3)nlaid++;if(nlaid>10)for(const q of DEAD)if(q.st===3&&q!==c){q.t=1e3;break;}
-        dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;dog.dir=[-fx,-fz];Score.sfx('bark',0,.8,3);sync();}}
+        dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;dog.dir=[-fx,-fz];Score.sfx('bark',0,.8,0);sync();}}
     dog.y=groundH(me[0],me[1]);
     if(dog.tg&&dog.tg.st===2){const c=dog.tg,mx=me[0]+dog.dir[0]*DPX*11.5,mz=me[1]+dog.dir[1]*DPX*11.5;c.p=[mx,dog.y+dog.hop+DPX*9.3,mz];c.f=[dog.dir[1],0,-dog.dir[0]];c.u=[0,1,0];}     // the bird rides crosswise in its mouth
   }
