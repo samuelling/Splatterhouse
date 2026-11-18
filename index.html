@@ -332,7 +332,11 @@ for(let c=0;c<144;c++){
     if(kind<.035){
       const h=.55+.32*rnd();
       add(x+lx*h*.5,h*.5,z+lz*h*.5,0,.007,h*.3,.007,.9,q,.55*j,.52*j,.27*j,.5);
-      add(x+lx*h,h*.98,z+lz*h,0,.015,.055,.015,.95,q,.80*j,.66*j,.30*j,.99);
+      const hv=hash(N*.618+1.7);                                                          // timothy's tight green rod, a soft purplish foxtail, the loose tan plume of a fescue, or a rusty spike of sorrel
+      if(hv<.3)add(x+lx*h,h*.98,z+lz*h,0,.011,.075,.011,.95,q,.62*j,.66*j,.34*j,.99);
+      else if(hv<.55)add(x+lx*h,h*.98,z+lz*h,0,.017,.05,.017,.93,q,.60*j,.50*j,.42*j,.99);
+      else if(hv<.8)add(x+lx*h,h*.96,z+lz*h,0,.04,.09,.02,.5,q,.84*j,.74*j,.42*j,.99);
+      else add(x+lx*h,h*.98,z+lz*h,0,.014,.1,.014,.95,q,.58*j,.22*j,.13*j,.99);
     }else if(kind<.25){
       const h=.24+.36*rnd(),r=.03+.02*rnd(),r1=rnd(),r2=rnd(),r3=rnd();
       add(x+lx*h*.45,h*.45,z+lz*h*.45,0,.008,h*.3,.008,.9,q,r1,r2,r3,4.4);
@@ -759,6 +763,27 @@ function panel(o,u,v,ul,vl,su,sv,colFn,aux){
   for(let i=0;i<7;i++){const a=(i+.5)/7*6.2832;bulb([WC[0]+Math.cos(a)*WR,WC[1]+Math.sin(a)*WR,WC[2]+.07],[1,.8,.45],.5);}
 })();
 
+/* ---- the barn's weather: rust running down the tin roof from its nail lines, a few sheets replaced in a different grey, pale lichen;
+   and on the walls the green-black stain that rain splashes up from the ground, and thin grey streaks where the red paint has gone.
+   Thin see-through plates laid just off the surfaces. It has its own dice, so nothing else in the scene moves. ---- */
+(function barnWeather(){
+  let sd=1887;const rx=()=>{sd=(sd*1664525+1013904223)>>>0;return sd/4294967296;},E=[0,0,1];
+  for(const sx of[-1,1])for(const[x0,y0,x1,y1]of[[5.25,4.07,3.1,6.93],[3.1,6.93,0,8.43]]){                    // the two pitches of each side of the roof
+    const sl=nrm([(x1-x0)*sx,y1-y0,0]),L=Math.hypot(x1-x0,y1-y0),n=cross(sl,E),q=quatFromBasis(bv(sl),bv(E),bv(n));
+    const at=(u,z,lift)=>bw([sx*lerp(x0,x1,u)+n[0]*lift,lerp(y0,y1,u)+n[1]*lift,z]);
+    for(let k=0;k<70;k++){const z=-7.2+14.4*rx(),u=.25+.7*rx(),len=L*(.12+.3*rx()),w=at(u-len/L*.5,z,.05),j=.7+.6*rx();        // rust, running down the slope
+      add(w[0],w[1],w[2],3,len*.5,.035+.05*rx(),.01,.42+.3*rx(),q,.42*j,.19*j,.09*j,0);}
+    for(let k=0;k<5;k++){const z=-6.5+13*rx(),u=.2+.6*rx(),w=at(u,z,.045),j=rx()<.5?1.25:.72;                                  // a replaced sheet, lighter or darker than its neighbours
+      add(w[0],w[1],w[2],3,L*.3,.38,.01,.4,q,.38*j,.37*j,.38*j,0);}
+    for(let k=0;k<45;k++){const z=-7.2+14.4*rx(),u=rx(),w=at(u,z,.055),r=.04+.07*rx();add(w[0],w[1],w[2],3,r,r,.01,.75,q,.52,.55,.40,0);}}   // lichen
+  for(const[nx,nz]of[[0,1],[0,-1],[1,0]]){const n=[nx,0,nz],t=[nz,0,-nx],q=quatFromBasis(bv(t),[0,1,0],bv(n)),half=nx?7:5,off=nx?5.03:7.03;   // three walls (the lean-to hides the fourth)
+    const at=(u,y)=>bw([n[0]*off+t[0]*u,y,n[2]*off+t[2]*u]);
+    for(let k=0;k<90;k++){const u=(rx()*2-1)*half,y=.05+.5*rx()*rx(),w=at(u,y),j=.6+.8*rx(),gr=rx()<.5;                         // splash stain along the foot of the wall
+      add(w[0],w[1],w[2],3,.16+.2*rx(),.09+.14*rx(),.01,.4+.25*rx(),q,(gr?.07:.10)*j,(gr?.11:.07)*j,(gr?.05:.05)*j,0);}
+    for(let k=0;k<70;k++){const u=(rx()*2-1)*half,y=.8+3.2*rx(),w=at(u,y),j=.8+.4*rx();                                         // paint gone to bare grey wood
+      add(w[0],w[1],w[2],3,.014+.014*rx(),.1+.3*rx(),.01,.5,q,.40*j,.36*j,.33*j,0);}}
+})();
+
 /* ---- fences ---- */
 function fence(pts,o){
   const hgt=o.white?1.3:1.2;
@@ -770,9 +795,15 @@ function fence(pts,o){
       const px=a[0]+dx*i,pz=a[1]+dz*i,g=o.white?.74+.1*rnd():.30+.13*rnd(),ln=o.white?0:(rnd()-.5)*.09;
       const open=(x,z)=>o.gap&&Math.hypot(x-o.gap[0],z-o.gap[1])<o.gap[2];
       const vis=coastC(px,pz)<-66?.97:0;       // fences stop where the dunes begin
-      if(!open(px,pz))add(px+ln,hgt/2,pz+ln*.6,3,.055,hgt*.52,.055,vis,QID,g,g*(o.white?1:.93),g*(o.white?.95:.84),4);
-      if(i<n&&!open(px+dx/2,pz+dz/2))for(const y of o.rails)
-        add(px+dx/2,y+(o.white?0:(rnd()-.5)*.06),pz+dz/2,3,sl*.47,o.white?.055:.034,.03,vis,q,g*1.04,g*(o.white?1.03:.97),g*(o.white?.98:.88),4);
+      if(!open(px,pz)){const hp=hash(px*3.1+pz*7.7),lx2=o.white?0:(hp-.5)*.09,lz2=o.white?0:(hash(hp*91.7)-.5)*.09;                 // a post in three lengths: darker and damp at the foot, leaning a little, its sawn top paler, lichen on the old ones
+        for(let m=0;m<3;m++){const t=(m+.5)/3,tone=g*(o.white?(m===0?.74:1):(.7+.26*t))*(.92+.16*hash(hp*13.3+m));
+          add(px+ln+lx2*t,hgt*t,pz+ln*.6+lz2*t,3,.058-.005*m,hgt*.19,.058-.005*m,vis,QID,tone,tone*(o.white?1:.93),tone*(o.white?.95:.84),4);}
+        add(px+ln+lx2,hgt+.012,pz+ln*.6+lz2,3,.05,.014,.05,vis,QID,Math.min(1,g*1.3),Math.min(1,g*1.24),Math.min(1,g*1.12),4);
+        if(!o.white&&hp>.5)add(px+ln+lx2*.6+.045,hgt*(.4+.45*hash(hp*5.1)),pz+ln*.6+.02,3,.03,.07,.03,vis*.9,QID,.40,.43,.20,4);}
+      if(i<n&&!open(px+dx/2,pz+dz/2))for(const y of o.rails){                                                                       // a rail in three lengths: it sags between its posts, no two the same grey, and here and there one end has dropped
+        const yy=y+(o.white?0:(rnd()-.5)*.06),hr=hash(px*5.3+pz*2.9+y*17.),drop=!o.white&&hr>.94,dd=drop?nrm([dx,-yy*.8,dz]):d,sd=nrm(cross(dd,[0,1,0])),qr=drop?quatFromBasis(dd,cross(sd,dd),sd):q;
+        for(let m=0;m<3;m++){const u=(m+.5)/3,tone=g*(.9+.26*hash(hr*31.+m)),yd=drop?yy*(1-u*.8):yy-(o.white?.008:.035)*4*u*(1-u);
+          add(px+dx*u,yd,pz+dz*u,3,sl*.175,o.white?.055:.028+.014*hr,.03,vis,qr,tone*1.04,tone*(o.white?1.03:.97),tone*(o.white?.98:.88),4);}}
     }
   }
 }
@@ -1726,17 +1757,25 @@ void main(){
     }else{
       if(col.r>ma.g*(1.-mb.r)*(1.-mb.b)*(1.-smoothstep(-80.,-52.,cc))){gl_Position=vec4(0.,0.,2.,1.);return;}
       if(ty<1.5){float k=floor(fract(ma.b*2.3+(col.g-.5)*.4)*6.);
-        if(k>.5&&k<1.5)s*=1.45;
-        // each kind's own flower: the poppy's four broad petals round a black heart, the daisy's ring of thin white rays round a yellow
-        // disc, the cornflower's ragged blue florets, the buttercup's five, the knapweed's purple brush; clover stays a plain pink globe
-        vSharp=2.4;vFp.z=col.b*6.283;
-        if(k<.5){vFl=vec4(.07,.27,.5,4.);vFp.xy=vec2(.22,.3);}
-        else if(k<1.5){vFl=vec4(.98,.75,.11,17.);vFp.xy=vec2(.6,.36);}
-        else if(k<2.5){vFl=vec4(.7,.4,.6,9.);vFp.xy=vec2(.8,.28);}
-        else if(k<3.5){vFl=vec4(.8,.9,.7,5.);vFp.xy=vec2(.3,.26);}
-        else if(k<4.5){vFl=vec4(.46,.44,.44,22.);vFp.xy=vec2(.85,.3);}
-        else vSharp=1.6;
-        col=spc(k)*(.78+.4*col.b);tint=mix(uTint,vec3(1.),.42);
+        // Each kind has its own flower: the poppy's broad petals round a black heart, the daisy's ring of thin white rays round a yellow
+        // disc, the cornflower's ragged florets, the buttercup's five, the knapweed's brush; clover is a globe. And no two of a kind are
+        // alike. Four numbers hashed from where the plant stands vary its size, its shade (each kind has a second and third colour it
+        // leans towards), how many petals it has and how deeply they are cut, the size of its centre, and how squarely it faces you;
+        // a few are still green buds, and a few are going over, with half their petals fallen and the rest thin and browning.
+        float h1=fract(sin(dot(t0.xz,vec2(12.9898,78.233)))*43758.5453),h2=fract(h1*57.31+.37),h3=fract(h1*113.7+.71),h4=fract(h1*231.9+.13);
+        vec3 fc=spc(k),alt=fc;float np=0.;vSharp=2.4;vFp.z=col.b*6.283;
+        if(k<.5){alt=h4<.5?vec3(.98,.34,.08):vec3(.62,.05,.09);np=4.+floor(h3*2.4);vFl.rgb=vec3(.07,.27,.5);vFp.xy=vec2(.16+.14*h2,.24+.1*h4);}
+        else if(k<1.5){alt=vec3(.99,.92,.72);np=13.+floor(h3*9.);vFl.rgb=vec3(.98,.75-.12*h4,.11);vFp.xy=vec2(.5+.25*h2,.3+.12*h4);}
+        else if(k<2.5){alt=h4<.6?vec3(.44,.32,.88):vec3(.16,.30,.80);np=7.+floor(h3*4.);vFl.rgb=vec3(.7,.4,.6);vFp.xy=vec2(.7+.2*h2,.24+.08*h4);}
+        else if(k<3.5){alt=vec3(1.,.66,.08);np=5.;vFl.rgb=vec3(.8,.9,.7);vFp.xy=vec2(.22+.16*h2,.22+.08*h4);}
+        else if(k<4.5){alt=h4<.5?vec3(.86,.42,.76):vec3(.55,.24,.70);np=18.+floor(h3*8.);vFl.rgb=vec3(.46,.44,.44);vFp.xy=vec2(.8+.1*h2,.26+.1*h4);}
+        else{alt=h4<.5?vec3(.98,.80,.88):vec3(.80,.30,.56);vSharp=1.6;}
+        fc=mix(fc,alt,h2*.75);s*=.72+.6*h1;if(k>.5&&k<1.5)s*=1.4;
+        s.y*=mix(.42,1.,smoothstep(0.,.7,h4));
+        if(h3<.07){s*=.5;np=0.;vSharp=2.;fc=mix(vec3(.2,.38,.1),fc,.35);}
+        else if(h3>.93&&k<4.5){vFp.x=1.;np=max(3.,floor(np*.5));fc*=vec3(.72,.62,.55);s*=.85;}
+        vFl.w=np;
+        col=fc*(.78+.4*col.b);tint=mix(uTint,vec3(1.),.42);
       }else col=vec3(.15,.30,.09)*(.7+.6*col.b);
     }
     y*=hs;s.y*=hs;
@@ -1859,7 +1898,7 @@ void main(){if(vSharp<0.){o=vec4(vColor.rgb*vColor.a,vColor.a);return;}
   float A=dot(vPos,vPos);if(A>4.)discard;vec3 rgb=vColor.rgb;
   if(vFl.w>.5){                          // a flower, seen face on: the one splat is cut into petals round a centre of another colour
     float pt=abs(cos(atan(vPos.y,vPos.x)*vFl.w*.5+vFp.z)),cr=vFp.y*vFp.y;            // pt: 1 along the middle of a petal, 0 in the gap between two
-    rgb*=A<cr?vFl.rgb:vec3(.8+.2*pt)*(.82+.18*smoothstep(cr,cr*3.,A));
+    if(A<cr)rgb*=vFl.rgb*(.75+.5*sqrt(A/cr));else rgb*=mix(min(vFl.rgb*1.5+.25,1.),vec3(1.),smoothstep(cr,cr*2.6,A))*(.78+.22*pt);        // the centre is domed; the petals take some of its colour at their base (the poppy's dark blotch) and are lighter along their middles
     if(A>cr)A*=1.+vFp.x*3.2*(1.-pt)*smoothstep(cr,cr*2.5,A);}
   float e=vSharp*uEdge.x,g=e==1.?exp(-A):exp(-pow(A,e));
   if(uEdge.y>.5){float r=sqrt(A)-1.;g=exp(-r*r*70.);}
