@@ -2784,12 +2784,15 @@ const Score=(()=>{
      channel at the start and the end, through the console's own output filters. The grit is the chip's: the sample channel can only
      step its level up or down by two, 16,885 times a second, so it is always a little behind the sound and always hunting. */
   function barkBuf(){
-    const {APU,NES_CPU,NES_FRAME,DMC_P,encode}=NES,RATE=12,fs=NES_CPU/DMC_P[RATE],dur=.172,n=Math.round(fs*dur),src=new Float32Array(n),y=new Float32Array(n+64),Y=[[0,0],[0,0],[0,0]],G=[1,.14,0],PT=[[0,425],[.25,402],[.55,478],[.8,455],[1,430]];
-    let sd=7,ph=0,cyc=0,jit=1,pk=0;const rnd=()=>{sd=(Math.imul(sd,1664525)+1013904223)>>>0;return sd/4294967296;};
+    const {APU,NES_CPU,NES_FRAME,DMC_P,encode}=NES,RATE=12,fs=NES_CPU/DMC_P[RATE],dur=.172,n=Math.round(fs*dur),src=new Float32Array(n),y=new Float32Array(n+64),Y=[[0,0],[0,0],[0,0]],G=[1,.45,.12],PT=[[0,425],[.25,402],[.55,478],[.8,455],[1,430]];
+    let sd=7,ph=0,cyc=0,jit=1,shim=1,pk=0;const rnd=()=>{sd=(Math.imul(sd,1664525)+1013904223)>>>0;return sd/4294967296;};
     for(let i=0;i<n;i++){const t=i/fs,u=t/dur,pi=u<.25?0:u<.55?1:u<.8?2:3,f0=lerp(PT[pi][1],PT[pi+1][1],smooth((u-PT[pi][0])/(PT[pi+1][0]-PT[pi][0])));          // the voice dips, lifts to its top past the middle, and falls away
-      ph+=f0*jit/fs;if(ph>=1){ph-=1;cyc++;jit=1+(rnd()-.5)*.05;}
-      let g=ph<.4?Math.pow(Math.sin(Math.PI*ph/.4),2):0;if(!(cyc&1))g*=.82;
-      const env=Math.min(1,t/.012)*(1-.5*Math.exp(-Math.pow((u-.2)/.05,2)))*(u<.45?1:u<.8?1-.35*(u-.45)/.35:u<.92?.65-.35*(u-.8)/.12:.3*(1-u)/.08),br=(rnd()*2-1)*(.04+.14*Math.max(0,(u-.6)/.4)),e=(g-.2)*env+br*Math.sqrt(env)*.6,F=[[2*f0,120],[2650,300],[3200,300]];let o=0;      // one strong resonance riding an octave above the voice, a faint one high up
+      ph+=f0*jit/fs;if(ph>=1){ph-=1;cyc++;jit=1+(rnd()-.5)*.12;shim=.8+.4*rnd();}                 // a bark is a rough voice: no two beats of it the same length or strength
+      let g=ph<.3?Math.pow(Math.sin(Math.PI*ph/.3),2):0;g*=shim*(cyc&1?1:.7);
+      // "ruff": the r is the voice fluttering as it starts (a few deep beats at about 62 a second), the uh is the open mouth, and the f is
+      // the voice dropping out early while the breath carries on through the same mouth to the end
+      const env=Math.min(1,t/.012)*(u<.45?1:u<.8?1-.35*(u-.45)/.35:u<.92?.65-.35*(u-.8)/.12:.3*(1-u)/.08),rr=1-.62*Math.max(0,1-u/.36)*(.5+.5*Math.sin(6.2832*62*t+1.2)),
+        voice=1-.55*smooth((u-.58)/.3),br=(rnd()*2-1)*(.08+.45*smooth((u-.5)/.3)),e=(g-.2)*env*rr*voice+br*env*.5,F=[[2*f0,130],[1320-100*u,200],[2650,300]];let o=0;
       for(let k=0;k<3;k++){const r=Math.exp(-Math.PI*F[k][1]/fs),q=e*(1-r)+2*r*Math.cos(2*Math.PI*F[k][0]/fs)*Y[k][0]-r*r*Y[k][1];Y[k][1]=Y[k][0];Y[k][0]=q;o+=q*G[k];}
       src[i]=o;pk=Math.max(pk,Math.abs(o));}
     const A=18,B=A+4;for(let i=0;i<n;i++){const t=i/fs;y[i]=B*Math.min(1,t/.008,(dur-t)/.012)+A*src[i]/pk;}              // the channel rests at level 0: the yap rides a hump that lifts it clear and sets it down again
