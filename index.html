@@ -2784,9 +2784,9 @@ const Score=(()=>{
      channel at the start and the end, through the console's own output filters. The grit is the chip's: the sample channel can only
      step its level up or down by two, 16,885 times a second, so it is always a little behind the sound and always hunting. */
   function barkBuf(){
-    const {APU,NES_CPU,NES_FRAME,DMC_P,encode}=NES,RATE=12,fs=NES_CPU/DMC_P[RATE],dur=.172,n=Math.round(fs*dur),src=new Float32Array(n),y=new Float32Array(n+64),Y=[[0,0],[0,0],[0,0]],G=[1,.45,.12],PT=[[0,337],[.25,319],[.55,380],[.8,361],[1,341]];       // a third of an octave below the recording it was measured from
+    const {APU,NES_CPU,NES_FRAME,DMC_P,encode}=NES,RATE=12,fs=NES_CPU/DMC_P[RATE],dur=.172,n=Math.round(fs*dur),src=new Float32Array(n),y=new Float32Array(n+64),Y=[[0,0],[0,0],[0,0]],G=[1,.45,.12],PT=[[0,405],[.25,376],[.55,340],[.8,308],[1,278]];       // a bark falls: it starts at its highest and drops about half an octave to its end
     let sd=7,ph=0,cyc=0,jit=1,shim=1,pk=0;const rnd=()=>{sd=(Math.imul(sd,1664525)+1013904223)>>>0;return sd/4294967296;};
-    for(let i=0;i<n;i++){const t=i/fs,u=t/dur,pi=u<.25?0:u<.55?1:u<.8?2:3,f0=lerp(PT[pi][1],PT[pi+1][1],smooth((u-PT[pi][0])/(PT[pi+1][0]-PT[pi][0])));          // the voice dips, lifts to its top past the middle, and falls away
+    for(let i=0;i<n;i++){const t=i/fs,u=t/dur,pi=u<.25?0:u<.55?1:u<.8?2:3,f0=lerp(PT[pi][1],PT[pi+1][1],smooth((u-PT[pi][0])/(PT[pi+1][0]-PT[pi][0])));
       ph+=f0*jit/fs;if(ph>=1){ph-=1;cyc++;jit=1+(rnd()-.5)*.12;shim=.8+.4*rnd();}                 // a bark is a rough voice: no two beats of it the same length or strength
       let g=ph<.3?Math.pow(Math.sin(Math.PI*ph/.3),2):0;g*=shim*(cyc&1?1:.7);
       // "ruff": the r is the voice fluttering as it starts (a few deep beats at about 62 a second), the uh is the open mouth, and the f is
