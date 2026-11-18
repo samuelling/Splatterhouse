@@ -302,7 +302,7 @@ const coarse=matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHe
 const L=36,RF=17,D0SQ=36,FMIN=0.12,LEAFK=coarse?.65:1;
 const DENS=coarse?96:132;
 const nTuft=Math.round(DENS*L*L/144)*144,N1=coarse?36000:60048,N2=coarse?21600:36000;
-const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?170000:340000))/512)*512;
+const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?200000:430000))/512)*512;
 const D=new Float32Array(CAP*16);let N=0;
 function add(px,py,pz,kind,sx,sy,sz,op,q,r,g,b,aux){
   if(N>=CAP)return N;
@@ -794,7 +794,7 @@ gate(GATE[0],GATE[1],0,3.9);
 fence([[5.3,8.7],[34,9],[34,-16],[5.3,-15.8]].map(p=>{const w=bw([p[0],0,p[1]]);return[w[0],w[2]];}),{step:2.4,rails:[.42,.78,1.14],white:true});
 
 /* ---- trees: oak, maple, birch, spruce, Lombardy poplar, weeping willow, apple, and one dead snag ---- */
-const BARK=[.17,.13,.10],BIRCH=[.80,.78,.72];
+const BARK=[.17,.13,.10],BIRCH=[.80,.78,.72],DRIFT=[.40,.39,.38],FUR=[];for(let i=0;i<24;i++)FUR.push(i%3===0?.5+.2*rnd():.85+.45*rnd());
 const PAL={oak:[[.09,.20,.06],[.19,.34,.10],[.28,.41,.12],[.34,.45,.14]],          // summer leaf: the meadow is in flower, so nothing has turned
   maple:[[.08,.21,.07],[.17,.36,.10],[.27,.45,.13],[.36,.50,.16]],
   birch:[[.14,.28,.09],[.26,.42,.13],[.38,.52,.17],[.46,.58,.20]],
@@ -806,11 +806,14 @@ function limb(a,b,r0,r1,bark){
   const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],len=Math.hypot(d[0],d[1],d[2]);d[0]/=len;d[1]/=len;d[2]/=len;
   const h=Math.abs(d[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,d)),e2=cross(d,e1),bk=bark||BARK,birch=bark===BIRCH;
   if(r0>.1){
-    const rings=Math.max(1,Math.round(len/.24));
-    for(let j=0;j<rings;j++){const t=(j+.5)/rings,r=lerp(r0,r1,t),m=Math.max(5,Math.round(6.2832*r/.14));
+    // bark in plates round the limb. Furrowed bark keeps its dark and light strips all the way along (FUR, by angle); birch is the other
+    // way about, white with dark bands and chevrons across it; and the foot of a trunk is green with moss on the side away from the sun
+    const rings=Math.max(1,Math.round(len/(birch?.2:.24)));
+    for(let j=0;j<rings;j++){const t=(j+.5)/rings,r=lerp(r0,r1,t),m=Math.max(6,Math.round(6.2832*r/.12)),py=a[1]+d[1]*len*t,band=birch&&rnd()<.16;
       for(let i=0;i<m;i++){const ph=(i+rnd())/m*6.2832,c=Math.cos(ph),s=Math.sin(ph);
-        const nv=[e1[0]*c+e2[0]*s,e1[1]*c+e2[1]*s,e1[2]*c+e2[2]*s],jt=.75+.5*rnd(),cc=birch&&rnd()<.2?[.10,.09,.08]:bk;
-        add(a[0]+d[0]*len*t+nv[0]*r,a[1]+d[1]*len*t+nv[1]*r,a[2]+d[2]*len*t+nv[2]*r,3,Math.max(.05,r*.42),.17,.012,.97,
+        const nv=[e1[0]*c+e2[0]*s,e1[1]*c+e2[1]*s,e1[2]*c+e2[2]*s];let jt=birch?.8+.35*rnd():FUR[(ph*3.82|0)%24]*(.8+.4*rnd()),cc=birch&&(band&&rnd()<.6||rnd()<.07)?[.09,.08,.07]:bk;
+        if(!birch&&bk!==DRIFT&&py<1.5){const ms=(1-py/1.5)*clamp(.5-(nv[0]*SUN[0]+nv[2]*SUN[2])*.9,0,1)*rnd();if(ms>.28)cc=mix3(bk,[.10,.17,.05],.75);}
+        add(a[0]+d[0]*len*t+nv[0]*r,py+nv[1]*r,a[2]+d[2]*len*t+nv[2]*r,3,Math.max(.045,r*(birch?.5:.36)),birch?.1:.19,.012,.97,
           quatFromBasis(cross(d,nv),d,nv),cc[0]*jt,cc[1]*jt,cc[2]*jt,0);}}
   }else{
     const n=Math.max(1,Math.round(len/.34)),q=quatFromBasis(d,e1,e2),cc=birch&&r0<.05?[.2,.15,.12]:bk;
@@ -821,36 +824,64 @@ function limb(a,b,r0,r1,bark){
 /* A clump of leaves. Each leaf is shaded by where it sits: leaves deep inside are in the others' shade, those on the side away from the
    sun and those underneath are darker, and those on the sunward skin catch the light. That is what gives a crown its modelling. */
 const LEAFN=coarse?1.25:2.7,LEAFS=coarse?.9:.62;
-function leafBlob(c,r,nL,pal,ls,fruit){
+function leafBlob(c,r,nL,pal,ls,fruit,cs){
   nL=Math.round(nL*LEAFN);const hue=[.92+.16*rnd(),.94+.12*rnd(),.9+.2*rnd()];
   for(let k=0;k<nL;k++){
     let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
     const nv=nrm([x+(rnd()-.5)*.8,y*.6+.5+(rnd()-.5)*.8,z+(rnd()-.5)*.8]);
     const h=Math.abs(nv[1])<.9?[0,1,0]:[1,0,0],tx=nrm(cross(h,nv)),ty=cross(nv,tx);
     const rr=Math.sqrt(x*x+y*y+z*z),sd=x*SUN[0]+y*SUN[1]+z*SUN[2];
-    const lit=(.44+.56*Math.pow(rr,1.6))*(.62+.52*smooth(clamp(sd*.8+.5,0,1)))*(.82+.18*clamp(y+.5,0,1));
+    let lit=(.44+.56*Math.pow(rr,1.6))*(.62+.52*smooth(clamp(sd*.8+.5,0,1)))*(.82+.18*clamp(y+.5,0,1));
+    if(cs){const qx=(c[0]+x*r-cs[0])/cs[3],qy=(c[1]+y*r*.75-cs[1])/cs[4],qz=(c[2]+z*r-cs[2])/cs[3],qr=Math.min(1.2,Math.hypot(qx,qy,qz));       // and by where the clump sits in the whole crown: the heart of it and its shaded flank are dark
+      lit*=(.5+.5*Math.pow(qr,1.5))*(.7+.42*smooth(clamp((qx*SUN[0]+qy*SUN[1]+qz*SUN[2])*.7+.5,0,1)));}
     const s=(.15+.11*rnd())*(ls||1)*LEAFS,t=rnd()*(.55+.45*rr),col=t<.62?mix3(pal[0],pal[1],rnd()):t<.9?mix3(pal[1],pal[2],rnd()):pal[3],j=(.8+.4*rnd())*lit;
     add(c[0]+x*r,c[1]+y*r*.75,c[2]+z*r,3,s,s*(.6+.3*rnd()),.012,.93,quatFromBasis(tx,ty,nv),col[0]*j*hue[0],col[1]*j*hue[1],col[2]*j*hue[2],.5+.5*rnd());
     if(fruit&&rnd()<fruit[3])add(c[0]+x*r*1.02,c[1]+y*r*.75-.08,c[2]+z*r*1.02,3,.05,.05,.05,.97,QID,fruit[0],fruit[1],fruit[2],4);}
 }
-function branch(p,dir,len,rad,depth,tp){
-  let a=p,d=dir;
-  for(let sg=0;sg<2;sg++){
-    const b=[a[0]+d[0]*len/2,a[1]+d[1]*len/2,a[2]+d[2]*len/2];
-    limb(a,b,rad*(sg?.85:1),rad*(sg?.72:.85),tp.bark);a=b;
-    d=nrm([d[0]+(rnd()-.5)*.25,d[1]+(rnd()-.5)*.2+.04,d[2]+(rnd()-.5)*.25]);}
-  if(depth>=tp.depth||rad<.03){leafBlob(a,tp.blob*(.8+.4*rnd()),tp.leaves,tp.pal,tp.ls,tp.fruit);return;}
-  if(depth>=tp.depth-2)leafBlob(a,tp.blob*(depth>=tp.depth-1?.85:.7),tp.leaves>>1,tp.pal,tp.ls,tp.fruit);
-  const nb=depth===0?tp.forks:(rnd()<.55?2:3);
-  const h=Math.abs(d[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,d)),e2=cross(d,e1),a0=rnd()*6.2832;
-  for(let k=0;k<nb;k++){
-    const ang=a0+(k+rnd()*.6)/nb*6.2832,sp=tp.spread*(depth===0?.8:.66)*(.7+.6*rnd()),c=Math.cos(ang)*sp,s=Math.sin(ang)*sp;
-    branch(a,nrm([d[0]+e1[0]*c+e2[0]*s,d[1]+e1[1]*c+e2[1]*s+tp.up,d[2]+e1[2]*c+e2[2]*s]),len*(.62+.2*rnd()),rad*(.58+.12*rnd()),depth+1,tp);}
+/* A broadleaf tree is grown the way a real one is built. Every axis wanders and tapers; side branches leave it all along its length and
+   not only at its end, each a thinner copy of the same thing, set off at the kind's own angle and turning up towards the light (or, for
+   a birch, hanging); at a fork the limbs share the wood out, so the squares of their radii add up to the parent's; and the leaves sit
+   in small clumps along the outer shoots and on every twig end, which makes the crown a lumpy shell with gaps that show the limbs
+   inside it, and not a ball on a stick. A kind is a handful of numbers: how much of the height is clear trunk, how far the limbs
+   reach, the angle they leave at, how crooked they grow, how strongly they turn up, and whether one leader runs to the top. */
+function rotAbout(d,ang,az){const h=Math.abs(d[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,d)),e2=cross(d,e1),s=Math.sin(ang),c=Math.cos(ang),ca=Math.cos(az),sa=Math.sin(az);
+  return nrm([d[0]*c+(e1[0]*ca+e2[0]*sa)*s,d[1]*c+(e1[1]*ca+e2[1]*sa)*s,d[2]*c+(e1[2]*ca+e2[2]*sa)*s]);}
+function grow(p,dir,len,rad,depth,tp,az){
+  const ns=3,seg=len/ns,last=depth>=tp.depth;let a=p,d=dir,r=rad;
+  for(let s=0;s<ns;s++){
+    const t=(s+1)/ns,r1=Math.max(.011,rad*(1-(1-tp.taper)*t)),b=[a[0]+d[0]*seg,a[1]+d[1]*seg,a[2]+d[2]*seg];
+    limb(a,b,r,r1,tp.bark);a=b;r=r1;
+    if(tp.leaves&&(last||depth===tp.depth-1||depth===tp.depth-2&&s===ns-1))leafBlob([a[0]+(rnd()-.5)*tp.blob*.6,a[1]+(rnd()-.2)*tp.blob*.5,a[2]+(rnd()-.5)*tp.blob*.6],tp.blob*(.75+.5*rnd()),tp.leaves,tp.pal,tp.ls,tp.fruit,tp.cs);
+    if(!last&&tp.leaves&&depth>0&&depth<tp.depth-0&&(s>0||depth>1)){az+=2.4+(rnd()-.5)*.9;                                // a leafy twig off the limb itself
+      grow(a,rotAbout(d,.9+.5*rnd(),az),len*(.26+.14*rnd()),Math.max(.012,r*.26),tp.depth,tp,0);}
+    if(!last&&s<ns-1&&rnd()<tp.lat){az+=2.4+(rnd()-.5)*.9;                                   // a side branch, each further round the axis than the last
+      grow(a,rotAbout(d,tp.ang*(.75+.5*rnd()),az),len*(.5+.25*rnd())*(1.1-.25*t),r*.52,depth+1,tp,rnd()*6.28);}
+    const g=tp.gnarl*(depth?1:.3);d=nrm([d[0]+(rnd()-.5)*g,d[1]+(rnd()-.5)*g*.7+tp.up*(depth?1:0)*(last?tp.tip:1),d[2]+(rnd()-.5)*g]);}
+  if(last){if(!tp.leaves)limb(a,[a[0]+d[0]*.3,a[1]+d[1]*.3,a[2]+d[2]*.3],r,.01,tp.bark);return;}
+  const a0=rnd()*6.28,k=.7+.06*rnd();                                                     // and the axis ends in a fork
+  grow(a,rotAbout(d,.2+.2*rnd(),a0),len*(.62+.14*rnd()),r*k,depth+1,tp,rnd()*6.28);
+  grow(a,rotAbout(d,tp.ang*(.45+.3*rnd()),a0+3.14),len*(.55+.14*rnd()),r*Math.sqrt(Math.max(.08,1-k*k)),depth+1,tp,rnd()*6.28);
 }
 function broadleaf(x,z,Ht,o){
-  branch([x,-.1,z],nrm([(rnd()-.5)*.08,1,(rnd()-.5)*.08]),Ht*(o.trunk||.36),Ht*(o.rad||.031),0,
-    {depth:o.depth||4,forks:o.forks||(3+(rnd()<.6?1:0)),spread:o.spread||1,blob:Ht*(o.blob||.115),leaves:Math.round((o.leaves??40)*LEAFK),
-     pal:o.pal,bark:o.bark,ls:o.ls||1,up:o.up??.12,fruit:o.fruit});
+  const R=Ht*(o.rad||.031),tH=Ht*(o.trunk||.24),reach=Ht*(o.reach||.4),lean=[(rnd()-.5)*.1,1,(rnd()-.5)*.1],
+    tp={depth:o.depth||3,taper:.62,ang:o.ang||1.05,gnarl:o.gnarl??.3,up:o.up??.1,tip:o.tip??1,lat:o.lat??.8,blob:Ht*(o.blob||.05),leaves:Math.round((o.leaves??13)*LEAFK),
+      pal:o.pal,bark:o.bark,ls:o.ls||1,fruit:o.fruit,cs:[x,Ht*(o.cy||.6),z,Ht*(o.cw||.5),Ht*(o.ch||.42)]};
+  // the foot: the trunk swells into the ground and sends out a few roots
+  const nr=5+(rnd()*3|0),r0=rnd()*6.28;for(let k=0;k<nr;k++){const an=r0+(k+rnd()*.5)/nr*6.28,c=Math.cos(an),sn=Math.sin(an),l=R*(1.7+.9*rnd());
+    limb([x+c*R*.5,R*1.1+.1,z+sn*R*.5],[x+c*l,-.15,z+sn*l],R*.62,R*.3,o.bark);}
+  // the bole, in three lengths, a little thicker at the foot
+  let a=[x,-.15,z],d=nrm(lean);const top=[];
+  for(let sg=0;sg<3;sg++){const b=[a[0]+d[0]*tH/3,a[1]+d[1]*tH/3,a[2]+d[2]*tH/3];limb(a,b,R*(sg?1-.1*sg:1.28),R*(1-.1*(sg+1)),o.bark);a=b;d=nrm([d[0]+(rnd()-.5)*.07,d[1],d[2]+(rnd()-.5)*.07]);}
+  const rt=R*.8;
+  if(o.leader){                                                                           // one leader to the top, with branches all the way up it (birch)
+    const n=o.leader,L=(Ht-tH)*.97/n;let az=rnd()*6.28,r=rt;
+    for(let i=0;i<n;i++){const t=i/n,b=[a[0]+d[0]*L,a[1]+d[1]*L,a[2]+d[2]*L],r1=Math.max(.02,rt*(1-.93*(i+1)/n));limb(a,b,r,r1,o.bark);a=b;r=r1;
+      d=nrm([d[0]+(rnd()-.5)*.12,d[1]+.2,d[2]+(rnd()-.5)*.12]);
+      for(let k=0;k<2;k++){az+=2.4+(rnd()-.5);grow(a,rotAbout(d,tp.ang*(.8+.4*rnd()),az),reach*(1-.6*t)*(.7+.5*rnd()),Math.max(.02,r*.42),1,tp,rnd()*6.28);}}
+    leafBlob(a,tp.blob,tp.leaves,tp.pal,tp.ls,null,tp.cs);return;}
+  const nf=o.forks||(5+(rnd()*2|0)),a0=rnd()*6.28,rl=rt*Math.sqrt(1.25/nf);                  // or the bole breaks into great limbs, one of them the most upright
+  for(let k=0;k<nf;k++){const up=k===0?.4:1;
+    grow(a,rotAbout(d,tp.ang*up*(.8+.4*rnd()),a0+(k+rnd()*.5)/nf*6.28),reach*(k===0?1.1:.8+.4*rnd()),rl*(k===0?1.15:.85+.3*rnd()),1,tp,rnd()*6.28);}
 }
 function spruce(x,z,Ht){
   limb([x,0,z],[x,Ht*.96,z],Ht*.021,.03,[.15,.11,.09]);
@@ -858,9 +889,11 @@ function spruce(x,z,Ht){
   for(let y=Ht*.1;y<Ht;y+=.36+.2*rnd()){
     const t=y/Ht,r=R0*Math.pow(1-t,.85)+.12,nb=Math.max(4,Math.round(5+r*2.4)),a0=rnd()*6.2832,ns=Math.round(r/.36*LEAFK)+1;
     for(let k=0;k<nb;k++){
-      const a=a0+(k+rnd()*.5)/nb*6.2832,ca=Math.cos(a),sa=Math.sin(a),o=nrm([ca,-.42,sa]),tg=[-sa,0,ca],q=quatFromBasis(o,tg,cross(o,tg));
-      for(let s=0;s<ns;s++){const f=(s+.55+rnd()*.35)/ns,j=.7+.6*rnd(),c=mix3([.045,.12,.085],[.10,.22,.12],f*f);
-        add(x+ca*r*f,y-.36*r*f*f+(rnd()-.5)*.1,z+sa*r*f,3,.3*(.7+.5*rnd())*Math.min(1,r*.8+.3),.19,.012,.94,q,c[0]*j,c[1]*j,c[2]*j,.12);}
+      if(rnd()<.07)continue;                                                              // a bough missing here and there, and no two the same length: a spruce is not turned on a lathe
+      const a=a0+(k+rnd()*.5)/nb*6.2832,ca=Math.cos(a),sa=Math.sin(a),o=nrm([ca,-.42,sa]),tg=[-sa,0,ca],q=quatFromBasis(o,tg,cross(o,tg)),qh=quatFromBasis(tg,[0,1,0],[ca,0,sa]),rl=r*(.74+.38*rnd()),dr=.3+.16*rnd();
+      for(let s=0;s<ns;s++){const f=(s+.55+rnd()*.35)/ns,j=.7+.6*rnd(),c=mix3([.045,.12,.085],[.10,.22,.12],f*f),yy=y-dr*rl*f*f+.14*rl*smooth((f-.72)/.28)+(rnd()-.5)*.1;   // the bough sags, and its tip turns up
+        add(x+ca*rl*f,yy,z+sa*rl*f,3,.3*(.7+.5*rnd())*Math.min(1,rl*.8+.3),.19,.012,.94,q,c[0]*j,c[1]*j,c[2]*j,.12);
+        if(f>.25&&rl>.5&&rnd()<.62)add(x+ca*rl*f-sa*(rnd()-.5)*.2,yy-.15-.1*rnd(),z+sa*rl*f+ca*(rnd()-.5)*.2,3,.09+.05*rnd(),.2+.12*rnd(),.012,.93,qh,c[0]*j*.8,c[1]*j*.82,c[2]*j*.85,.12);}   // the branchlets hang from it like a curtain
     }
   }
   add(x,Ht*.99,z,3,.05,.35,.05,.95,QID,.06,.14,.09,4);
@@ -930,11 +963,11 @@ function bush(x,z,r,berries){
   for(let k=0;k<2;k++)leafBlob([x+(rnd()-.5)*r,r*.62+rnd()*.3,z+(rnd()-.5)*r],r,Math.round(34*LEAFK),PAL.bush,1.15,berries?[.62,.08,.07,.22]:null);
 }
 for(const[ty,x,z,h]of TREES){
-  if(ty==='oak')broadleaf(x,z,h,{pal:PAL.oak});
-  else if(ty==='maple')broadleaf(x,z,h,{pal:PAL.maple,spread:.9});
-  else if(ty==='birch')broadleaf(x,z,h,{pal:PAL.birch,spread:.55,trunk:.42,rad:.017,blob:.085,leaves:22,bark:BIRCH,ls:.72,up:.3,forks:3});
-  else if(ty==='apple')broadleaf(x,z,h,{pal:PAL.apple,spread:1.15,trunk:.3,rad:.035,blob:.2,leaves:30,depth:3,fruit:[.72,.10,.07,.1]});
-  else if(ty==='snag')broadleaf(x,z,h,{pal:PAL.oak,leaves:0,spread:.95,bark:[.30,.28,.26]});
+  if(ty==='oak')broadleaf(x,z,h,{pal:PAL.oak,trunk:.2,reach:.45,ang:1.2,gnarl:.36,up:.14,rad:.034,blob:.078,leaves:12,cw:.6,ch:.44,cy:.6});              // short thick bole, great crooked limbs reaching out as far as the tree is tall
+  else if(ty==='maple')broadleaf(x,z,h,{pal:PAL.maple,trunk:.24,reach:.4,ang:.72,gnarl:.2,up:.2,blob:.075,leaves:12,cw:.42,ch:.44,cy:.62});          // limbs climbing steeply into a dense egg of a crown
+  else if(ty==='birch')broadleaf(x,z,h,{pal:PAL.birch,trunk:.36,reach:.2,ang:.75,gnarl:.26,up:-.16,tip:1.7,rad:.015,blob:.04,leaves:8,bark:BIRCH,ls:.7,leader:7,depth:2,lat:.7,cw:.24,ch:.4,cy:.66});   // a white pole to the top, thin branches that end in hanging twigs
+  else if(ty==='apple')broadleaf(x,z,h,{pal:PAL.apple,trunk:.3,reach:.5,ang:1.2,gnarl:.45,up:.08,rad:.04,blob:.13,leaves:18,depth:2,forks:5,cw:.62,ch:.4,cy:.62,fruit:[.72,.10,.07,.1]});   // low, wide and crooked
+  else if(ty==='snag')broadleaf(x,z,h,{pal:PAL.oak,leaves:0,trunk:.3,reach:.34,ang:1.0,gnarl:.4,depth:2,lat:.5,bark:[.30,.28,.26]});
   else if(ty==='spruce')spruce(x,z,h);
   else if(ty==='poplar')poplar(x,z,h);
   else willow(x,z,h);
@@ -955,6 +988,29 @@ for(let k=0;k<(coarse?1100:2600);k++){const x=-330+rs()*760,c=-7.2+(rs()-.5)*(rs
   if(w<.6)add(x,g+.02,z,3,r*1.5,.014,r*.8,.8,qYa(rs()*3.14),.13,.13,.08,4);       // dried weed
   else if(w<.85)add(x,g+.025,z,3,r,.02,r,.95,QID,.33,.31,.30,4);                      // pebbles
   else add(x,g+.02,z,3,r*.8,.014,r*.6,.95,qYa(rs()*3.14),.72,.68,.62,4);}             // shells
+// The strand line proper. Weed is thrown up in heaps along the top of the last tide, with a thinner, bleached line from an older, higher
+// one above it; both run in and out with the cusps of the beach. Shells lie singly (pale cockle fans, blue-black mussels, limpets,
+// the odd orange winkle); shingle gathers in banks near the water, darker where it is wet; and a few big bleached logs have come
+// ashore. Most of it is put where people stand: within a hundred metres of the end of the boardwalk.
+const WEED=[[.14,.11,.05],[.21,.16,.06],[.10,.085,.045],[.27,.24,.1]];
+for(let k=0;k<(coarse?140:340);k++){const x=rs()<.62?46+(rs()-.5)*190:-330+rs()*760,old=rs()<.3,c=(old?-11.2:-7.1)+.7*Math.sin(x*.31)+(rs()-.5)*.8,z0=ZC+wig(x)-c,R=.25+.55*rs()*rs(),n=Math.round((old?10:22)*(.6+rs())*R/.4);
+  add(x,groundH(x,z0)+.012,z0,3,R*1.5,.012,R*.5,.62,QID,old?.24:.16,old?.2:.13,old?.12:.075,0);                                        // the heap itself, a dark mat on the sand
+  for(let m=0;m<n*2;m++){const a=rs()*6.283,rr=R*Math.sqrt(rs()),px=x+Math.cos(a)*rr*1.7,pz=z0+Math.sin(a)*rr*.55,g=groundH(px,pz),col=WEED[(rs()*4)|0],j=(old?1.5:1.15)*(.7+.6*rs());
+    add(px,g+.015+.04*rs()*(1-rr/R),pz,3,.035+.075*rs(),.012+.012*rs(),.018+.02*rs(),.93,qYa(rs()*3.14),col[0]*j,col[1]*j,col[2]*j,4);
+    if(rs()<.07)add(px,g+.03,pz,3,.022,.018,.022,.95,QID,.2*j,.17*j,.06*j,4);}}
+for(let k=0;k<(coarse?260:700);k++){const x=46+(rs()-.5)*(rs()<.7?120:600),c=-9.5+rs()*9,z=ZC+wig(x)-c,g=groundH(x,z),r=.022+.035*rs(),t=rs(),a=rs()*3.14,j=.85+.3*rs();
+  if(t<.45){add(x,g+.012,z,3,r,.008,r*.82,.96,qYa(a),.86*j,.80*j,.70*j,0);add(x+Math.cos(a)*r*.5,g+.016,z-Math.sin(a)*r*.5,3,r*.3,.008,r*.3,.9,QID,.62*j,.52*j,.42*j,4);}
+  else if(t<.56)add(x,g+.012,z,3,r*1.2,.009,r*.5,.96,qYa(a),.15*j,.16*j,.22*j,0);
+  else if(t<.84)add(x,g+r*.25,z,3,r*.7,r*.4,r*.7,.97,QID,.6*j,.54*j,.46*j,4);
+  else add(x,g+r*.3,z,3,r*.5,r*.42,r*.5,.97,QID,.78*j,.42*j,.14*j,4);}
+for(let k=0;k<(coarse?16:40);k++){const x=46+(rs()-.5)*260,c=-4.5+rs()*4,R=1+2.5*rs(),n=Math.round(R*R*(coarse?10:22));
+  for(let m=0;m<n;m++){const a=rs()*6.283,rr=R*Math.sqrt(rs()),px=x+Math.cos(a)*rr*2.2,cc=c+Math.sin(a)*rr*.5,pz=ZC+wig(px)-cc,g=groundH(px,pz),r=.018+.05*rs()*rs(),tn=rs(),col=tn<.5?[.30,.29,.28]:tn<.75?[.42,.36,.28]:tn<.9?[.2,.2,.22]:[.5,.3,.22],j=(.7+.6*rs())*(cc>-2.5?.62:1);
+    add(px,g+r*.4,pz,3,r,r*.55,r*(.65+.35*rs()),.97,qYa(rs()*3.14),col[0]*j,col[1]*j,col[2]*j,4);}}
+for(const[lx,lc,ll,lr,la]of[[31,-8.6,3.6,.19,.5],[57,-10.4,4.4,.23,2.5],[-18,-7.6,2.8,.16,1.2],[108,-9.2,3.2,.2,-.4],[66,-6.2,2.2,.13,1.9]]){
+  const z=ZC+wig(lx)-lc,dx=Math.cos(la),dz=Math.sin(la),a=[lx-dx*ll/2,groundH(lx-dx*ll/2,z-dz*ll/2)+lr*.7,z-dz*ll/2],b=[lx+dx*ll/2,groundH(lx+dx*ll/2,z+dz*ll/2)+lr*.62,z+dz*ll/2];
+  limb(a,b,lr,lr*.72,DRIFT);
+  for(let k=0;k<4;k++){const an=rs()*6.283,o=[a[0]-dx*.05,a[1],a[2]-dz*.05];limb(o,[o[0]-dx*(.25+.3*rs())+Math.cos(an)*.4*-dz,o[1]+Math.sin(an)*.4+.1,o[2]-dz*(.25+.3*rs())+Math.cos(an)*.4*dx],lr*.42,.03,DRIFT);}     // the root plate
+  for(let k=0;k<2;k++){const u=.3+.5*rs(),o=[lerp(a[0],b[0],u),lerp(a[1],b[1],u)+lr*.5,lerp(a[2],b[2],u)],sd=rs()<.5?-1:1;limb(o,[o[0]+dx*.3-dz*sd*.45,o[1]+.35+.3*rs(),o[2]+dz*.3+dx*sd*.45],lr*.3,.025,DRIFT);}}       // a broken branch or two
 // boulders and cobbles where the beach meets the water: each boulder a dark core under a skin of facets, so it takes the low sun on one side
 function boulder(x,z,r){
   const g=Math.max(groundH(x,z),SEA-.35),sq=.5+.3*rs(),cy=g+r*sq*.4,n=Math.round(34+r*60),tone=.75+.5*rs(),tilt=(rs()-.5)*.5;
@@ -1596,6 +1652,9 @@ const float ZC=-212.,SEA=-1.2;
 float wig(float x){return 10.*sin(x*.011+.7)+5.*sin(x*.027+2.);}
 float coastC(vec2 w){return ZC+wig(w.x)-w.y;}
 float baseH(float c){return -1.2*smoothstep(-14.,-3.,c)-1.8*smoothstep(4.,40.,c);}
+float shoreF(float x,float tt){          // where the water's edge is: the slow breathing of the swash, pushed up the sand in lobes a few metres across with a ragged lip, as each sheet of water runs out of push in its own place
+  float adv=.5+.5*sin(tt*.55+x*.03);
+  return 1.2+2.2*sin(tt*.55+x*.03)+1.1*sin(tt*.33+x*.071+1.)+(.6*sin(x*.52+1.3*sin(tt*.31+x*.05))+.3*sin(x*1.17-tt*.23+2.)+(texture(uMapA,vec2(x*.045,tt*.013)).a-.5)*1.5)*(.35+.65*adv);}
 float duneH(float x,float c){
   float E=smoothstep(-52.,-34.,c)*(1.-smoothstep(-17.,-7.,c)),E2=smoothstep(-80.,-48.,c)*(1.-smoothstep(-17.,-8.,c));
   float gap=1.-.88*smoothstep(.90,.985,.5+.5*sin(x*.02+.37));
@@ -1619,13 +1678,13 @@ uniform float uXmas;   // the December lights on the barn: 0 hidden, 1 lit
 uniform vec4 uPress;    // a bed of flattened grass where the dog lays the birds: world x, z, radius, how far pressed
 ${MEADOW_GLSL}
 layout(location=0) in vec2 aQuad;layout(location=1) in uint aIndex;
-out vec4 vColor;out vec2 vPos;out float vSharp;
+out vec4 vColor;out vec2 vPos;out float vSharp;out vec4 vFl;out vec3 vFp;     // vFl, vFp: for a flower head, its centre's colour (as a share of the petal colour), number of petals, how deeply they are cut, the size of the centre and a turn
 mat3 qmat(vec4 q){float x=q.x,y=q.y,z=q.z,w=q.w;
   return mat3(1.-2.*(y*y+z*z),2.*(x*y+w*z),2.*(x*z-w*y),2.*(x*y-w*z),1.-2.*(x*x+z*z),2.*(y*z+w*x),2.*(x*z+w*y),2.*(y*z-w*x),1.-2.*(x*x+y*y));}
 void main(){
   int i=int(aIndex);ivec2 tc=ivec2((i&511)<<2,i>>9);
   vec4 t0=texelFetch(uData,tc,0),t1=texelFetch(uData,tc+ivec2(1,0),0),t2=texelFetch(uData,tc+ivec2(2,0),0),t3=texelFetch(uData,tc+ivec2(3,0),0);
-  int kind=int(t0.w+.5);vec3 s=t1.xyz;float alpha=t1.w;vec3 col=t3.rgb;float aux=t3.a;
+  int kind=int(t0.w+.5);vec3 s=t1.xyz;float alpha=t1.w;vec3 col=t3.rgb;float aux=t3.a;vFl=vec4(0.);vFp=vec3(0.);
   mat3 R=qmat(t2);vec3 wp;bool mip=false;vSharp=1.;
   if((kind==0&&aux>6.)||(kind==4&&aux>8.)){        // a disc of dune sand
     float sc=kind==0?1.:(aux<9.5?4.:16.),Lp=uField.x*sc,Rout=uField.y*sc;
@@ -1668,6 +1727,15 @@ void main(){
       if(col.r>ma.g*(1.-mb.r)*(1.-mb.b)*(1.-smoothstep(-80.,-52.,cc))){gl_Position=vec4(0.,0.,2.,1.);return;}
       if(ty<1.5){float k=floor(fract(ma.b*2.3+(col.g-.5)*.4)*6.);
         if(k>.5&&k<1.5)s*=1.45;
+        // each kind's own flower: the poppy's four broad petals round a black heart, the daisy's ring of thin white rays round a yellow
+        // disc, the cornflower's ragged blue florets, the buttercup's five, the knapweed's purple brush; clover stays a plain pink globe
+        vSharp=2.4;vFp.z=col.b*6.283;
+        if(k<.5){vFl=vec4(.07,.27,.5,4.);vFp.xy=vec2(.22,.3);}
+        else if(k<1.5){vFl=vec4(.98,.75,.11,17.);vFp.xy=vec2(.6,.36);}
+        else if(k<2.5){vFl=vec4(.7,.4,.6,9.);vFp.xy=vec2(.8,.28);}
+        else if(k<3.5){vFl=vec4(.8,.9,.7,5.);vFp.xy=vec2(.3,.26);}
+        else if(k<4.5){vFl=vec4(.46,.44,.44,22.);vFp.xy=vec2(.85,.3);}
+        else vSharp=1.6;
         col=spc(k)*(.78+.4*col.b);tint=mix(uTint,vec3(1.),.42);
       }else col=vec3(.15,.30,.09)*(.7+.6*col.b);
     }
@@ -1784,14 +1852,18 @@ void main(){
   vColor=vec4(col,min(alpha*uAdv.y,1.));vPos=aQuad;
 }`;
 const FSRC=`#version 300 es
-precision mediump float;in vec4 vColor;in vec2 vPos;in float vSharp;out vec4 o;uniform vec2 uEdge;      // falloff exponent; 1 draws outlines only
+precision mediump float;in vec4 vColor;in vec2 vPos;in float vSharp;in vec4 vFl;in vec3 vFp;out vec4 o;uniform vec2 uEdge;      // falloff exponent; 1 draws outlines only
 // Each splat fades as exp(-r^(2k)). k = 1 is a true Gaussian; birds, bark, leaves and blades use a larger k, which keeps the
 // middle of the splat solid and tightens its edge, so close things look crisp instead of out of focus.
 void main(){if(vSharp<0.){o=vec4(vColor.rgb*vColor.a,vColor.a);return;}
-  float A=dot(vPos,vPos);if(A>4.)discard;
+  float A=dot(vPos,vPos);if(A>4.)discard;vec3 rgb=vColor.rgb;
+  if(vFl.w>.5){                          // a flower, seen face on: the one splat is cut into petals round a centre of another colour
+    float pt=abs(cos(atan(vPos.y,vPos.x)*vFl.w*.5+vFp.z)),cr=vFp.y*vFp.y;            // pt: 1 along the middle of a petal, 0 in the gap between two
+    rgb*=A<cr?vFl.rgb:vec3(.8+.2*pt)*(.82+.18*smoothstep(cr,cr*3.,A));
+    if(A>cr)A*=1.+vFp.x*3.2*(1.-pt)*smoothstep(cr,cr*2.5,A);}
   float e=vSharp*uEdge.x,g=e==1.?exp(-A):exp(-pow(A,e));
   if(uEdge.y>.5){float r=sqrt(A)-1.;g=exp(-r*r*70.);}
-  float al=g*vColor.a;o=vec4(vColor.rgb*al,al);}`;
+  float al=g*vColor.a;o=vec4(rgb*al,al);}`;
 const BVS=`#version 300 es
 out vec2 vN;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2))*2.-1.;vN=p;gl_Position=vec4(p,0.,1.);}`;
 const BFS=`#version 300 es
@@ -1851,7 +1923,7 @@ void main(){
       col+=vec3(1.,.6,.3)*pow(sd,8.)*.06;
     }else{
       float ts=min((uCam.y-SEA)/dn,8000.);vec2 ws=uCam.xz+rd.xz*ts;float cs=coastC(ws),t=uTime;
-      float shore=1.2+2.2*sin(t*.55+ws.x*.03)+1.1*sin(t*.33+ws.x*.071+1.);       // where the edge of the water is at this moment
+      float shore=shoreF(ws.x,t);       // where the edge of the water is at this moment
       // the beach under this ray, found by bisection between the level of the field and the level of the sea
       float ta=dist,tb=ts;
       if(cs<=shore){for(int k=0;k<9;k++){float tm=.5*(ta+tb);vec2 wm=uCam.xz+rd.xz*tm;if(uCam.y-dn*tm>baseH(coastC(wm)))ta=tm;else tb=tm;}}
@@ -1863,13 +1935,13 @@ void main(){
       vec3 nb=normalize(vec3(.025*sin(wb.x*2.3+4.*bigs)*rk,1.,sl+rip));
       vec3 sand=sandLit(nb,wb)*(.92+.16*grain);
       sand*=1.-.13*smoothstep(.9,0.,abs(cb+7.+2.*(bigs-.5)));                           // the damp line at the top of the last tide
-      float shb=1.2+2.2*sin(t*.55+wb.x*.03)+1.1*sin(t*.33+wb.x*.071+1.);                 // the water's edge abreast of this bit of sand
+      float shb=shoreF(wb.x,t);                 // the water's edge abreast of this bit of sand
       float wet=max(smoothstep(-5.,-1.2,cb),smoothstep(shb-5.,shb-.4,cb));               // sand the last wave has just left is wet through
       vec3 rw=reflect(rd,nb);rw.y=abs(rw.y);
       float sg=clamp(dot(normalize(rw),uSun),0.,1.);
       sand=mix(sand*mix(1.,.5,wet),sky(rw),wet*(.1+.55*pow(clamp(1.-dot(-rd,nb),0.,1.),4.)));
       sand+=vec3(1.,.62,.32)*(pow(sg,300.)*4.+pow(sg,40.)*.22)*wet*(.35+.65*grain);         // and holds the sun like a mirror
-      for(int k=1;k<3;k++){float tl=t-1.5*float(k),sh=1.2+2.2*sin(tl*.55+wb.x*.03)+1.1*sin(tl*.33+wb.x*.071+1.);      // lines of foam stranded as each wave draws back
+      for(int k=1;k<3;k++){float tl=t-1.5*float(k),sh=shoreF(wb.x,tl);      // lines of foam stranded as each wave draws back
         float lace=smoothstep(.3,0.,abs(cb-sh+.12))*step(shb+.05,sh)*smoothstep(.3,.7,texture(uMapA,wb*.45+vec2(0.,float(k)*.37)).a);
         sand=mix(sand,vec3(.78,.72,.74)+vec3(.2,.08,.0)*pow(az,2.),lace*(.75-.25*float(k)));}
       if(cs>shore){                       // the sea
@@ -1891,7 +1963,9 @@ void main(){
         col+=vec3(1.,.66,.36)*(pow(sr,mix(120.,500.,fade))*7.+pow(sr,40.)*.5)*(.55+.9*nz.x+.5);
         float na=texture(uMapA,q1*.17+vec2(0.,t*.02)).a;
         float foam=smoothstep(.76,.99,sin(p1+nz.x*2.))*smoothstep(44.,9.,cs)*smoothstep(.25,.6,na)*f1;          // breakers
-        foam+=smoothstep(1.8,0.,cs-shore)*(.45+.55*na)+.35*smoothstep(.55,.8,texture(uMapA,q2*.31+vec2(0.,t*.05)).a)*smoothstep(13.,0.,cs);   // the lacy edge and the wash behind it
+        float ed=cs-shore,net=(1.-smoothstep(0.,.085,abs(texture(uMapA,q1*.27+vec2(t*.03,0.)).a-.5)))+(1.-smoothstep(0.,.07,abs(texture(uMapA,q2*.47-vec2(0.,t*.04)).a-.5)));   // ed: metres out from the edge. net: a net of foam, drawn along the contour lines of two drifting noises
+        foam+=smoothstep(.3,0.,ed)+smoothstep(5.,.2,ed)*clamp(net,0.,1.)*.8*f3+smoothstep(1.4,0.,ed)*(.2+.3*na)                    // the bright lip of the swash, the lace of foam drawn out behind it, the froth just inside
+          +.35*smoothstep(.55,.8,texture(uMapA,q2*.31+vec2(0.,t*.05)).a)*smoothstep(13.,0.,cs);
         col=mix(col,vec3(.74,.68,.72)+vec3(.24,.10,.02)*pow(az,2.),clamp(foam,0.,1.));
         col=mix(sand,col,.3+.7*smoothstep(0.,3.,cs-shore));        // shallow water over the sand
         col=mix(col,hz*.9,1.-exp(-dist*.0016));
@@ -3578,7 +3652,7 @@ addEventListener('blur',()=>keysDown.clear());
 resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
-window.__score=Score;window.__tut=Tut;window.__sim={dyn:()=>({DY,nd,view,focal}),S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
+window.__score=Score;window.__tut=Tut;window.__sim={dyn:()=>({DY,nd,view,focal}),groundH,nStatic,CAP,S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
