@@ -203,6 +203,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
   <label class="ck"><input type="checkbox" data-k="ring"> Outlines only</label>
   <label class="ck"><input type="checkbox" data-k="sort" checked> Depth sort</label>
   <label class="ck"><input type="checkbox" data-k="xmas"> Barn string lights (December)</label>
+  <label class="ck"><input type="checkbox" data-k="mod"> Modulate: let the settings run wild</label>
   <button type="button" id="advR">Reset</button>
 </form>
 <div id="flash"></div><div id="lens"></div>
@@ -2129,7 +2130,7 @@ function genBirds(){
 }
 
 const XMAS0=new Date().getMonth()===11||/xmas/i.test(location.search+location.hash);let xmasK=XMAS0?1:0;       // the barn's string lights come on by themselves in December
-const ADV={size:1,op:1,sharp:1,low:.3,dens:1,mode:0,ring:false,sort:true,xmas:XMAS0};      // the advanced panel's settings; these are the normal values
+const ADV={size:1,op:1,sharp:1,low:.3,dens:1,mode:0,ring:false,sort:true,xmas:XMAS0,mod:false};      // the advanced panel's settings; these are the normal values
 /* ---------------------------------------------------------------- sort
    Each meadow ring is stored cell by cell, so whole cells outside the ring or the view are skipped unread. */
 const RINGS=[{L:L,R:RF,Rin:0,st:cell0,ym:.3,mg:.9},{L:L*4,R:RF*4,Rin:RF*4*.18,st:cell1,ym:.3,mg:1},{L:L*16,R:RF*16,Rin:RF*16*.18,st:cell2,ym:.5,mg:2.5},
@@ -2231,6 +2232,7 @@ function render(){
   gl.uniform1i(U.uData,0);gl.uniform1i(U.uMapA,1);gl.uniform1i(U.uMapB,2);
   gl.uniformMatrix4fv(U.uView,false,view);gl.uniformMatrix4fv(U.uProj,false,proj);
   gl.uniform2f(U.uViewport,VW,VH);gl.uniform1f(U.uFocal,focal);gl.uniform2f(U.uLim,tanX*1.3,tanY*1.3);
+  if(ADV.mod)advMod(performance.now()/1000);
   gl.uniform4f(U.uAdv,ADV.size,ADV.op,ADV.low,ADV.mode);gl.uniform2f(U.uEdge,ADV.sharp,ADV.ring?1:0);
   {const b=Hunt.bed;gl.uniform4f(U.uPress,b.x,b.z,1.15,b.k);}
   xmasK+=((ADV.xmas?1:0)-xmasK)*.08;gl.uniform1f(U.uXmas,xmasK);
@@ -2295,22 +2297,276 @@ function updateHud(){
    share of the splats; the colour modes and Outlines show the individual splats; switching off the depth sort shows why they are sorted. */
 const adv=document.getElementById('adv'),ADV0=Object.assign({},ADV);
 function advSync(){for(const el of adv.querySelectorAll('[data-k]')){const k=el.dataset.k;if(el.type==='checkbox')el.checked=ADV[k];else{el.value=ADV[k];const o=el.parentNode.querySelector('output');if(o)o.textContent=k==='dens'?Math.round(ADV[k]*100)+'%':(+ADV[k]).toFixed(2);}}}
-adv.addEventListener('input',e=>{const el=e.target,k=el.dataset.k;if(!k)return;ADV[k]=el.type==='checkbox'?el.checked:+el.value;advSync();});
+adv.addEventListener('input',e=>{const el=e.target,k=el.dataset.k;if(!k)return;ADV[k]=el.type==='checkbox'?el.checked:+el.value;if(k==='mod')advModSet(ADV.mod);advSync();});
+/* Modulation: the splat settings wander by themselves, each on its own pair of slow waves that never line up, so size, opacity, edge,
+   pixel filter and density sweep through their whole ranges and linger at the extremes; every few seconds the colouring, the outlines
+   and (rarely) the depth sort are thrown again like dice. The sliders move with it. Nothing changes faster than a few seconds, so it
+   swells and does not flash. Switching it off puts your own settings back. */
+const MODK=['size','op','sharp','low','dens','mode','ring','sort'];let modSave=null,modT0=0,modNext=0,modSyncT=0;
+function advModSet(on){const now=performance.now()/1000;
+  if(on){modSave={};for(const k of MODK)modSave[k]=ADV[k];modT0=now-Math.random()*60;modNext=now+3;}
+  else if(modSave){Object.assign(ADV,modSave);modSave=null;}}
+function advMod(now){
+  const t=now-modT0,w=(T,ph)=>.5+.5*Math.sin(6.2832*(t/T+ph)),u=(T1,T2,ph)=>{const v=.62*w(T1,ph)+.38*w(T2,ph*1.7+.3);return v*v*(3-2*v);};
+  ADV.size=.22*Math.pow(2.4/.22,u(11.3,3.7,.1));ADV.op=.25+1.2*u(13.1,4.9,.55);ADV.sharp=.45*Math.pow(5.6/.45,u(8.9,3.1,.8));
+  ADV.low=3.2*Math.pow(u(17.2,5.3,.35),2);ADV.dens=clamp(1.25-1.2*Math.pow(u(15.4,6.1,.9),3),.06,1);
+  if(now>modNext){modNext=now+4+5*Math.random();const r=Math.random();ADV.mode=r<.4?0:r<.7?1:2;ADV.ring=Math.random()<.28;ADV.sort=Math.random()>.12;}
+  if(now-modSyncT>.1){modSyncT=now;if(!adv.hidden)advSync();}
+}
 adv.addEventListener('change',e=>{if(e.target.blur)e.target.blur();});
 const bAdv=document.getElementById('bAdv');
 function toggleAdv(){adv.hidden=!adv.hidden;bAdv.setAttribute('aria-expanded',String(!adv.hidden));advSync();}
 bAdv.onclick=toggleAdv;
 document.getElementById('advX').onclick=toggleAdv;
-document.getElementById('advR').onclick=()=>{Object.assign(ADV,ADV0);advSync();};
+document.getElementById('advR').onclick=()=>{modSave=null;Object.assign(ADV,ADV0);advSync();};
 
 /* --------------------------------------------------------------- score
    A slow pad score, made up as it goes and played by a small synth built here in Web Audio. Nothing is recorded.
    Harmony: chords drift through D major (ninths and major sevenths, a suspended fifth), each voice moving to the nearest note of the next chord.
    While a falcon hunts, the harmony turns to D minor, and turns back when it has gone. Over the sea it brightens and the bell tones come more often.
    Bigger, slower animals get a slower score. Sound: detuned saw pads through slowly opening filters, a sine bass, a soft lead, bell tones, one long reverb. */
+/* ---- the console's sound chip. This is the Ricoh 2A03 emulator from RetroSynths (common/machines/nes-apu.js, with the 1-bit coder from
+   nes-dpcm.js), brought over as it stands but for its export keywords. It is used for one thing here: the dog's bark. ---- */
+const NES=(()=>{
+// Ricoh 2A03 (NTSC) APU — cycle-exact, event-driven emulation written for RetroSynths from the
+// NESdev wiki hardware documentation (APU, APU Pulse/Sweep/Envelope/Length Counter, Triangle,
+// Noise, DMC, Frame Counter, APU Mixer pages).
+//
+// Time is counted in CPU cycles (1.789773 MHz). Instead of stepping every cycle, the core jumps
+// from one internal clock event to the next (timer expiries, frame-counter steps) and integrates the
+// piecewise-constant mixer output exactly, so `sample()` returns the true average of the DAC output
+// over D CPU cycles. Channels whose output cannot change (muted / halted) are parked and caught up
+// lazily, preserving their sequencer / LFSR phase.
+
+const NES_CPU = 39375000 / 22;                 // 1,789,772.727 Hz (21.477272 MHz / 12)
+const NES_FRAME = 29780.5;                     // CPU cycles per NTSC video frame (60.0988 Hz)
+
+const LEN = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14,
+  12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
+const DUTY = new Uint8Array([0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]);
+const TRI = new Uint8Array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+const NOISE_P = [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068];
+const DMC_P = [428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54];
+// frame counter: [cycle, quarter, half] per step; last entry is the period
+const FC4 = [[7457, 1, 0], [14913, 1, 1], [22371, 1, 0], [29829, 1, 1]], FC4P = 29830;
+const FC5 = [[7457, 1, 0], [14913, 1, 1], [22371, 1, 0], [29829, 0, 0], [37281, 1, 1]], FC5P = 37282;
+
+// NESdev nonlinear mixer, exact formulas, tabulated
+const PULSE_TAB = new Float32Array(31);
+for (let i = 1; i < 31; i++) PULSE_TAB[i] = 95.88 / (8128 / i + 100);
+const TND_TAB = new Float32Array(16 * 16 * 128);
+for (let t = 0; t < 16; t++) for (let n = 0; n < 16; n++) for (let d = 0; d < 128; d++) {
+  const s = t / 8227 + n / 12241 + d / 22638;
+  TND_TAB[(t * 16 + n) * 128 + d] = s > 0 ? 159.79 / (1 / s + 100) : 0;
+}
+const mixPulse = (a, b) => PULSE_TAB[a + b];
+const mixTnd = (t, n, d) => TND_TAB[(t * 16 + n) * 128 + d];
+
+const INF = Infinity;
+
+class Env {
+  constructor() { this.start = false; this.div = 0; this.decay = 0; }
+  clock(loop, v) {
+    if (this.start) { this.start = false; this.decay = 15; this.div = v; }
+    else if (this.div === 0) { this.div = v; if (this.decay > 0) this.decay--; else if (loop) this.decay = 15; }
+    else this.div--;
+  }
+}
+
+class APU {
+  constructor() {
+    this.mem = new Uint8Array(0x8000);               // CPU $8000-$FFFF as seen by the DMC reader
+    this.T = new Float64Array(6);                    // next event time: p1 p2 tri noise dmc frame
+    this.idle = new Uint8Array(4); this.idleAt = new Float64Array(4); this.rem = new Float64Array(4);
+    this.p = [this.mkPulse(0), this.mkPulse(1)];
+    this.envN = new Env();
+    this.reset();
+  }
+  mkPulse(id) {
+    return { id, duty: 0, halt: false, cv: false, vp: 0, sEn: false, sP: 0, sNeg: false, sSh: 0, sRel: false, sDiv: 0,
+      t: 0, seq: 0, len: 0, env: new Env(), on: false, out: 0 };
+  }
+  reset() {
+    this.now = 0;
+    for (const p of this.p) Object.assign(p, { duty: 0, halt: false, cv: false, vp: 0, sEn: false, sP: 0, sNeg: false, sSh: 0, sRel: false, sDiv: 0, t: 0, seq: 0, len: 0, on: false, out: 0 }), p.env.start = false, p.env.div = 0, p.env.decay = 0;
+    this.tr = { ctrl: false, rel: 0, t: 0, seq: 0, len: 0, lin: 0, lrf: false, on: false, out: TRI[0] };
+    this.nz = { halt: false, cv: false, vp: 0, mode: 0, pi: 0, len: 0, on: false, lfsr: 1, out: 0 };
+    this.envN.start = false; this.envN.div = 0; this.envN.decay = 0;
+    this.dm = { irq: false, loop: false, rate: 0, level: 0, sa: 0xC000, sl: 1, addr: 0xC000, rem: 0, buf: 0, empty: true, sh: 0, bits: 8, silent: true, on: false };
+    this.fcMode = 0; this.fcStep = 0; this.fcBase = 0;
+    const T = this.T;
+    T[0] = 2; T[1] = 2; T[2] = 1; T[3] = NOISE_P[0]; T[4] = DMC_P[0]; T[5] = FC4[0][0];
+    for (let i = 0; i < 4; i++) { this.idle[i] = 0; this.park(i); }
+    this.recalc();
+  }
+
+  // ------------------------------------------------------------ lazy parking of static channels
+  period(i) { return i < 2 ? 2 * (this.p[i].t + 1) : i === 2 ? this.tr.t + 1 : NOISE_P[this.nz.pi]; }
+  isStatic(i) {
+    if (i < 2) { const p = this.p[i]; return p.len === 0 || this.muted(p) || (p.cv ? p.vp : p.env.decay) === 0; }
+    if (i === 2) { const t = this.tr; return t.len === 0 || t.lin === 0 || t.t < 2; }
+    const n = this.nz; return n.len === 0 || (n.cv ? n.vp : this.envN.decay) === 0;
+  }
+  park(i) { if (!this.idle[i]) { this.idle[i] = 1; this.idleAt[i] = this.now; this.rem[i] = this.T[i] - this.now; this.T[i] = INF; } }
+  wake(i) {
+    if (!this.idle[i]) return;
+    this.idle[i] = 0;
+    const el = this.now - this.idleAt[i], r = this.rem[i];
+    if (el < r) { this.T[i] = this.now + r - el; return; }
+    const P = this.period(i), x = el - r, k = 1 + Math.floor(x / P);
+    this.T[i] = this.now + P - (x % P);
+    if (i < 2) this.p[i].seq = (this.p[i].seq - k) & 7;          // pulse sequencer keeps running
+    else if (i === 3) { let s = this.nz.lfsr; const sh = this.nz.mode ? 6 : 1; for (let j = 0; j < k; j++) s = (s >> 1) | (((s ^ (s >> sh)) & 1) << 14); this.nz.lfsr = s; }
+    // triangle: sequencer was frozen; only the timer phase advanced
+  }
+  upd(i) { if (this.isStatic(i)) this.park(i); else this.wake(i); }
+
+  // ------------------------------------------------------------ channel helpers
+  target(p) { const c = p.t >> p.sSh; return p.sNeg ? Math.max(0, p.t - c - (p.id === 0 ? 1 : 0)) : p.t + c; }
+  muted(p) { return p.t < 8 || this.target(p) > 0x7FF; }
+  outPulse(i) {
+    const p = this.p[i];
+    p.out = this.idle[i] ? 0 : DUTY[p.duty * 8 + p.seq] ? (p.cv ? p.vp : p.env.decay) : 0;
+  }
+  outNoise() { const n = this.nz; n.out = this.idle[3] ? 0 : (n.lfsr & 1) ? 0 : (n.cv ? n.vp : this.envN.decay); }
+  recalc() {
+    this.outPulse(0); this.outPulse(1); this.outNoise();
+    this.tr.out = TRI[this.tr.seq];
+    this.mix = PULSE_TAB[this.p[0].out + this.p[1].out] + TND_TAB[(this.tr.out * 16 + this.nz.out) * 128 + this.dm.level];
+  }
+
+  quarter() {
+    // envelopes / linear counter don't touch timer phase, so parked channels stay parked (upd() follows)
+    for (let i = 0; i < 2; i++) { const p = this.p[i]; p.env.clock(p.halt, p.vp); }
+    this.envN.clock(this.nz.halt, this.nz.vp);
+    const t = this.tr;
+    if (t.lrf) t.lin = t.rel; else if (t.lin > 0) t.lin--;
+    if (!t.ctrl) t.lrf = false;
+  }
+  half() {
+    for (let i = 0; i < 2; i++) {
+      const p = this.p[i];
+      if (!p.halt && p.len > 0) p.len--;
+      if (p.sDiv === 0 && p.sEn && p.sSh > 0 && !this.muted(p)) { this.wake(i); p.t = this.target(p); }
+      if (p.sDiv === 0 || p.sRel) { p.sDiv = p.sP; p.sRel = false; } else p.sDiv--;
+    }
+    if (!this.tr.ctrl && this.tr.len > 0) this.tr.len--;
+    if (!this.nz.halt && this.nz.len > 0) this.nz.len--;
+  }
+  frameEvent() {
+    const tab = this.fcMode ? FC5 : FC4, e = tab[this.fcStep];
+    if (e[1]) this.quarter();
+    if (e[2]) this.half();
+    for (let i = 0; i < 4; i++) this.upd(i);
+    if (++this.fcStep >= tab.length) { this.fcStep = 0; this.fcBase += this.fcMode ? FC5P : FC4P; }
+    this.T[5] = this.fcBase + tab[this.fcStep][0];
+  }
+  dmcFetch() {
+    const d = this.dm;
+    if (d.empty && d.rem > 0) {
+      d.buf = this.mem[d.addr & 0x7FFF]; d.empty = false;
+      d.addr = d.addr === 0xFFFF ? 0x8000 : d.addr + 1;
+      if (--d.rem === 0 && d.loop) { d.addr = d.sa; d.rem = d.sl; }
+    }
+  }
+  dmcClock() {
+    const d = this.dm;
+    if (!d.silent) { if (d.sh & 1) { if (d.level <= 125) d.level += 2; } else if (d.level >= 2) d.level -= 2; }
+    d.sh >>= 1;
+    if (--d.bits === 0) {
+      d.bits = 8;
+      if (d.empty) d.silent = true; else { d.silent = false; d.sh = d.buf; d.empty = true; this.dmcFetch(); }
+    }
+  }
+
+  // ------------------------------------------------------------ CPU-visible registers ($4000-$4017)
+  write(a, v) {
+    v &= 0xFF;
+    if (a < 0x4008) {
+      const i = (a >> 2) & 1, p = this.p[i]; this.wake(i);
+      switch (a & 3) {
+        case 0: p.duty = v >> 6; p.halt = !!(v & 0x20); p.cv = !!(v & 0x10); p.vp = v & 15; break;
+        case 1: p.sEn = !!(v & 0x80); p.sP = (v >> 4) & 7; p.sNeg = !!(v & 8); p.sSh = v & 7; p.sRel = true; break;
+        case 2: p.t = (p.t & 0x700) | v; break;
+        case 3: p.t = (p.t & 0xFF) | ((v & 7) << 8); if (p.on) p.len = LEN[v >> 3]; p.seq = 0; p.env.start = true; break;
+      }
+      this.upd(i);
+    } else if (a < 0x400C) {
+      const t = this.tr; this.wake(2);
+      switch (a) {
+        case 0x4008: t.ctrl = !!(v & 0x80); t.rel = v & 0x7F; break;
+        case 0x400A: t.t = (t.t & 0x700) | v; break;
+        case 0x400B: t.t = (t.t & 0xFF) | ((v & 7) << 8); if (t.on) t.len = LEN[v >> 3]; t.lrf = true; break;
+      }
+      this.upd(2);
+    } else if (a < 0x4010) {
+      const n = this.nz; this.wake(3);
+      switch (a) {
+        case 0x400C: n.halt = !!(v & 0x20); n.cv = !!(v & 0x10); n.vp = v & 15; break;
+        case 0x400E: n.mode = v >> 7; n.pi = v & 15; break;
+        case 0x400F: if (n.on) n.len = LEN[v >> 3]; this.envN.start = true; break;
+      }
+      this.upd(3);
+    } else if (a < 0x4014) {
+      const d = this.dm;
+      switch (a) {
+        case 0x4010: d.irq = !!(v & 0x80); d.loop = !!(v & 0x40); d.rate = v & 15; break;
+        case 0x4011: d.level = v & 0x7F; break;
+        case 0x4012: d.sa = 0xC000 + v * 64; break;
+        case 0x4013: d.sl = v * 16 + 1; break;
+      }
+    } else if (a === 0x4015) {
+      for (let i = 0; i < 2; i++) { this.wake(i); this.p[i].on = !!(v & (1 << i)); if (!this.p[i].on) this.p[i].len = 0; this.upd(i); }
+      this.wake(2); this.tr.on = !!(v & 4); if (!this.tr.on) this.tr.len = 0; this.upd(2);
+      this.wake(3); this.nz.on = !!(v & 8); if (!this.nz.on) this.nz.len = 0; this.upd(3);
+      const d = this.dm;
+      if (v & 16) { if (d.rem === 0) { d.addr = d.sa; d.rem = d.sl; this.dmcFetch(); } } else d.rem = 0;
+    } else if (a === 0x4017) {
+      this.fcMode = v >> 7; this.fcStep = 0; this.fcBase = this.now;
+      if (this.fcMode) { this.quarter(); this.half(); for (let i = 0; i < 4; i++) this.upd(i); }
+      this.T[5] = this.fcBase + (this.fcMode ? FC5 : FC4)[0][0];
+    }
+    this.recalc();
+  }
+
+  // ------------------------------------------------------------ run D CPU cycles, return mean DAC output
+  sample(D) {
+    const T = this.T, end = this.now + D, p0 = this.p[0], p1 = this.p[1], tr = this.tr, nz = this.nz, dm = this.dm;
+    let acc = 0;
+    for (;;) {
+      let nt = end;
+      if (T[0] < nt) nt = T[0]; if (T[1] < nt) nt = T[1]; if (T[2] < nt) nt = T[2];
+      if (T[3] < nt) nt = T[3]; if (T[4] < nt) nt = T[4]; if (T[5] < nt) nt = T[5];
+      acc += this.mix * (nt - this.now);
+      this.now = nt;
+      let ch = false;
+      if (T[0] === nt) { p0.seq = (p0.seq - 1) & 7; T[0] += 2 * (p0.t + 1); ch = true; }
+      if (T[1] === nt) { p1.seq = (p1.seq - 1) & 7; T[1] += 2 * (p1.t + 1); ch = true; }
+      if (T[2] === nt) { if (tr.lin > 0 && tr.len > 0 && tr.t >= 2) tr.seq = (tr.seq + 1) & 31; T[2] += tr.t + 1; ch = true; }
+      if (T[3] === nt) { const s = nz.lfsr; nz.lfsr = (s >> 1) | (((s ^ (s >> (nz.mode ? 6 : 1))) & 1) << 14); T[3] += NOISE_P[nz.pi]; ch = true; }
+      if (T[4] === nt) { this.dmcClock(); T[4] += DMC_P[dm.rate]; ch = true; }
+      if (T[5] === nt) { this.frameEvent(); ch = true; }
+      if (ch) this.recalc();
+      if (nt === end) break;
+    }
+    return acc / D;
+  }
+}
+// from RetroSynths common/machines/nes-dpcm.js
+function encode(y) {
+  const n = y.length, bytes = new Uint8Array(Math.ceil(n / 8) + 1);
+  let lev = 0;
+  for (let i = 0; i < n; i++) {
+    if (y[i] > lev) { bytes[i >> 3] |= 1 << (i & 7); if (lev <= 125) lev += 2; } else if (lev >= 2) lev -= 2;
+  }
+  return bytes;
+}
+return{APU,NES_CPU,NES_FRAME,DMC_P,NOISE_P,encode};
+})();
+
 const Score=(()=>{
   const hz=m=>440*Math.pow(2,(m-69)/12),KEY=50,MAJ=[0,2,4,5,7,9,11],MIN=[0,2,3,5,7,8,10],MAJD=[0,3,5,4,2,1],MIND=[0,5,6,3,2,4],HOME=[57,62,66,71];
-  let sfxG=null,sfxCv=null,nzB=null,sfxOn=false,smp=null,impB=null;
+  let sfxG=null,sfxCv=null,nzB=null,sfxOn=false,smp=null,impB=null,barkB=null;
   let ac=null,out,tapN,padBus,airBus,on=false,iv=0,tChord=0,deg=0,minor=false,away=0,pv=HOME.slice(),pcs=[2,6,9,4],tLead=0,lead=74,tShim=0,bright=.5,cur=[],bassO=[],bassG=null;
   function impulse(){                       // the room: five seconds of noise, fading and growing duller as it fades
     const sr=ac.sampleRate,n=(sr*5.5)|0,b=ac.createBuffer(2,n,sr);
@@ -2408,6 +2664,32 @@ const Score=(()=>{
     const g=ac.createGain();g.gain.setValueAtTime(g0,t);g.gain.exponentialRampToValueAtTime(.0006,t+decay);s.connect(f);f.connect(g);send(g,pan||0,dest||sfxG);s.start(t,Math.random());s.stop(t+decay+.05);}
   function play(e,t,gain,rate,dest,off,dur){if(!e)return false;const s=ac.createBufferSource();s.buffer=e.b;s.playbackRate.value=rate||1;const g=ac.createGain();g.gain.value=gain;s.connect(g);g.connect(dest||sfxG);
     if(dur)s.start(t,e.off+(off||0),dur);else s.start(t,e.off+(off||0));return true;}
+  /* The dog's bark, made the way an 8-bit console made a bark: a short recording played through the chip's 1-bit sample channel. The
+     recording here is not a recording. It is a yap built from nothing: a train of pulses for the voice (rising, holding, sagging, with
+     every other pulse weaker for the growl in it), breath that grows as the mouth closes on the "f" of arf, and three moving resonances
+     for the mouth. The RetroSynths coder turns it into the 1-bit stream and the RetroSynths chip plays it, adding a rasp from its noise
+     channel at the start and the end, through the console's own output filters. The grit is the chip's: the sample channel can only
+     step its level up or down by two, 16,885 times a second, so it is always a little behind the sound and always hunting. */
+  function barkBuf(){
+    const {APU,NES_CPU,NES_FRAME,DMC_P,encode}=NES,RATE=12,fs=NES_CPU/DMC_P[RATE],dur=.2,n=Math.round(fs*dur),src=new Float32Array(n),y=new Float32Array(n+64),Y=[[0,0],[0,0],[0,0]],G=[.8,.8,2.4];
+    let sd=7,ph=0,cyc=0,jit=1,pk=0;const rnd=()=>{sd=(Math.imul(sd,1664525)+1013904223)>>>0;return sd/4294967296;};
+    for(let i=0;i<n;i++){const t=i/fs,u=t/dur,f0=(560+130*Math.min(1,t/.045))*(u<.62?1:1-.28*Math.pow((u-.62)/.38,1.3));
+      ph+=f0*jit/fs;if(ph>=1){ph-=1;cyc++;jit=1+(rnd()-.5)*.05;}
+      let g=ph<.28?Math.pow(Math.sin(Math.PI*ph/.28),2):0;if(!(cyc&1))g*=.72;
+      const env=Math.min(1,t/.012)*(u<.68?1:Math.pow(Math.max(0,1-(u-.68)/.32),1.6)),br=(rnd()*2-1)*(.1+.5*Math.max(0,(u-.6)/.4)),e=(g-.2)*env+br*Math.sqrt(env)*.6,F=[[880-230*u,110],[1500-200*u,170],[2350+250*u,240]];let o=0;
+      for(let k=0;k<3;k++){const r=Math.exp(-Math.PI*F[k][1]/fs),q=e*(1-r)+2*r*Math.cos(2*Math.PI*F[k][0]/fs)*Y[k][0]-r*r*Y[k][1];Y[k][1]=Y[k][0];Y[k][0]=q;o+=q*G[k];}
+      src[i]=o;pk=Math.max(pk,Math.abs(o));}
+    const A=18,B=A+4;for(let i=0;i<n;i++){const t=i/fs;y[i]=B*Math.min(1,t/.008,(dur-t)/.012)+A*src[i]/pk;}              // the channel rests at level 0: the yap rides a hump that lifts it clear and sets it down again
+    const bytes=encode(y),L=Math.ceil((bytes.length-1)/16),apu=new APU(),w=(a,v)=>apu.write(a,v);
+    w(0x4015,0x0F);w(0x4017,0x40);w(0x400C,0x30);w(0x4011,0);apu.mem.set(bytes,0x4000);w(0x4010,RATE);w(0x4012,0);w(0x4013,L);w(0x4015,0x1F);
+    const NZ=[[0,4,6],[1,3,6],[2,2,7],[3,0,7],[9,2,4],[10,3,4],[11,2,5],[12,1,5],[13,0,5]];                                // the noise channel's rasp: video frame, volume, pitch
+    const sr=ac.sampleRate,D=NES_CPU/sr,m=Math.ceil((dur+.07)*sr),buf=ac.createBuffer(1,m,sr),d=buf.getChannelData(0),dt=1/sr,hp=f=>{const rc=1/(2*Math.PI*f);return rc/(rc+dt);},a90=hp(90),a440=hp(440),b14=dt/(1/(2*Math.PI*14000)+dt),f=[0,0,0,0,0];
+    let fr=-1,fpos=NES_FRAME,nk=0,peak=1e-6;f[0]=apu.sample(1);                                                     // the filters start settled on the chip's resting level, so there is no click
+    for(let i=0;i<m;i++){fpos+=D;if(fpos>=NES_FRAME){fpos-=NES_FRAME;fr++;while(nk<NZ.length&&NZ[nk][0]<=fr){w(0x400C,0x30|NZ[nk][1]);w(0x400E,NZ[nk][2]);w(0x400F,0x08);nk++;}}
+      const x=apu.sample(D);f[1]=a90*(f[1]+x-f[0]);f[0]=x;f[3]=a440*(f[3]+f[1]-f[2]);f[2]=f[1];f[4]+=b14*(f[3]-f[4]);d[i]=f[4];peak=Math.max(peak,Math.abs(f[4]));}
+    const fade=(sr*.006)|0;for(let i=0;i<m;i++)d[i]*=.9/peak*Math.min(1,(m-1-i)/fade);
+    return{b:buf,off:0};
+  }
   function sfx(name,a,b,c){
     sfxInit();const t=ac.currentTime+.004;
     if(name==='shot'){
@@ -2420,12 +2702,12 @@ const Score=(()=>{
     }else if(name==='pump'){const e=smp.pump[b|0],tt=t+(a||0);if(!play(e,tt,.8,1)){nz(tt+.1,'bandpass',1500,900,.03,2,.5,.06);nz(tt+.4,'bandpass',1900,1300,.03,2,.55,.07);}}
     else if(name==='shell'){const e=smp.pump[3]||smp.pump[0];if(!play(e,t,.55,1.22+.1*Math.random(),null,0,.1))nz(t,'bandpass',2200,1500,.02,2,.4,.05);nz(t+.01,'lowpass',420,160,.06,.8,.5,.09);}     // a cartridge going home: the first click of a pump recording, and a soft thump
     else if(name==='dry'){if(!play(smp.dry[0],t,.9,1))nz(t,'bandpass',3000,2000,.01,3,.4,.03);}
-    else if(name==='bark'){const tt=t+(a||0),v=b||.5;[0,.14].forEach((dl,k)=>{const o=osc('square',380),g=ac.createGain();o.frequency.setValueAtTime(k?340:410,tt+dl);o.frequency.exponentialRampToValueAtTime(k?185:225,tt+dl+.075);        // two square-wave yaps, as an 8-bit machine would bark
-      g.gain.setValueAtTime(.0001,tt+dl);g.gain.linearRampToValueAtTime(.2*v,tt+dl+.006);g.gain.exponentialRampToValueAtTime(.001,tt+dl+.1);o.connect(g);send(g,c||0,sfxG);o.start(tt+dl);o.stop(tt+dl+.12);});}
+    else if(name==='bark'){const tt=t+(a||0),v=b||.5,n=c||2;if(!barkB)try{barkB=barkBuf();}catch(e){barkB={};}                 // the same yap two or three times over, as a console would play it
+      for(let k=0;k<n;k++)play(barkB.b?barkB:null,tt+k*.24,.6*v,n>1&&k===n-1?.95:1+.035*(k&1));}
     else if(name==='hit'){const tt=t+(a||0),v=b||.5;nz(tt,'lowpass',900,150,.09,1.1,1.5*v,.16,c);nz(tt,'bandpass',2600,1100,.03,1,.45*v,.07,c);}
   }
   function sfxMode(v){sfxOn=v;if(v)sfxInit();else if(ac&&!on)setTimeout(()=>{if(!on&&!sfxOn)ac.suspend();},3000);}
-  return{toggle,sfx,sfxMode,nudge(){if(ac&&(on||sfxOn)&&ac.state==='suspended'&&!document.hidden)ac.resume();},get on(){return on;},probe:()=>({ac,tap:tapN,minor,deg,pv:pv.slice(),smp:smp&&[smp.shot.filter(Boolean).length,smp.pump.filter(Boolean).length,smp.dry.filter(Boolean).length,smp.shot.map(e=>e&&+e.off.toFixed(3))]})};
+  return{toggle,sfx,sfxMode,nudge(){if(ac&&(on||sfxOn)&&ac.state==='suspended'&&!document.hidden)ac.resume();},get on(){return on;},probe:()=>({ac,tap:tapN,bark:()=>{sfxInit();if(!barkB)barkB=barkBuf();return barkB.b;},minor,deg,pv:pv.slice(),smp:smp&&[smp.shot.filter(Boolean).length,smp.pump.filter(Boolean).length,smp.dry.filter(Boolean).length,smp.shot.map(e=>e&&+e.off.toFixed(3))]})};
 })();
 
 /* --------------------------------------------------------------- input */
@@ -2650,7 +2932,7 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
         const a=laid*2.4,rr=laid?.16+.11*Math.sqrt(laid):0,dx=bed.x+Math.cos(a)*rr,dz=bed.z+Math.sin(a)*rr;                              // laid in a small heap on the bed
         c.st=3;c.t=0;c.p=[dx,groundH(dx,dz)+.05*c.sc+.03+.012*laid,dz];c.f=[Math.cos(a*1.7),0,Math.sin(a*1.7)];c.u=[0,1,0];
         let nlaid=0;for(const q of DEAD)if(q.st===3)nlaid++;if(nlaid>10)for(const q of DEAD)if(q.st===3&&q!==c){q.t=1e3;break;}
-        dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;dog.dir=[-fx,-fz];Score.sfx('bark',0,.8,0);sync();}}
+        dog.tg=null;dog.fetched++;dog.mode='idle';dog.t=0;dog.wag=0;dog.dir=[-fx,-fz];Score.sfx('bark',0,.8,3);sync();}}
     dog.y=groundH(me[0],me[1]);
     if(dog.tg&&dog.tg.st===2){const c=dog.tg,mx=me[0]+dog.dir[0]*DPX*11.5,mz=me[1]+dog.dir[1]*DPX*11.5;c.p=[mx,dog.y+dog.hop+DPX*9.3,mz];c.f=[dog.dir[1],0,-dog.dir[0]];c.u=[0,1,0];}     // the bird rides crosswise in its mouth
   }
