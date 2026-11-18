@@ -302,7 +302,7 @@ const coarse=matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHe
 const L=36,RF=17,D0SQ=36,FMIN=0.12,LEAFK=coarse?.65:1;
 const DENS=coarse?96:132;
 const nTuft=Math.round(DENS*L*L/144)*144,N1=coarse?36000:60048,N2=coarse?21600:36000;
-const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?200000:430000))/512)*512;
+const CAP=Math.ceil((2*nTuft+N1+N2+(coarse?240000:520000))/512)*512;
 const D=new Float32Array(CAP*16);let N=0;
 function add(px,py,pz,kind,sx,sy,sz,op,q,r,g,b,aux){
   if(N>=CAP)return N;
@@ -474,7 +474,8 @@ function panel(o,u,v,ul,vl,su,sv,colFn,aux){
   const q=quatFromBasis(bv(u),bv(v),bv(cross(u,v)));
   const nu=Math.max(1,Math.round(ul/(su*1.45))),nv=Math.max(1,Math.round(vl/(sv*1.45)));
   for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){
-    const a=(i+.5+(rnd()-.5)*.5)/nu*ul,b=(j+.5+(rnd()-.5)*.5)/nv*vl,c=colFn(a,b);if(!c)continue;
+    let a=(i+.5+(rnd()-.5)*.5)/nu*ul,b=(j+.5+(rnd()-.5)*.5)/nv*vl;const c=colFn(a,b);if(!c)continue;
+    const eu=Math.min(ul/2,su*1.1),ev=Math.min(vl/2,sv*1.1);a=clamp(a,eu,ul-eu);b=clamp(b,ev,vl-ev);        // set back from the panel's edges by its own size: a straight edge, not a row of bumps
     const p=bw([o[0]+u[0]*a+v[0]*b,o[1]+u[1]*a+v[1]*b,o[2]+u[2]*a+v[2]*b]),jt=.92+.16*rnd();
     add(p[0],p[1],p[2],3,su*(.95+.2*rnd()),sv*(.95+.2*rnd()),.012,.97,q,c[0]*jt,c[1]*jt,c[2]*jt,aux||0);}
 }
@@ -487,14 +488,16 @@ function panel(o,u,v,ul,vl,su,sv,colFn,aux){
   function lineW(A,B,w,col,n,o){o=o||{};const lift=o.lift??.02;
     const d=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],len=Math.hypot(d[0],d[1],d[2]),x=[d[0]/len,d[1]/len,d[2]/len],q=quatFromBasis(x,cross(n,x),n);
     const ns=Math.max(1,Math.ceil(len/(o.seg||.9)));
-    for(let i=0;i<ns;i++){const t=(i+.5)/ns,j=1+(rnd()-.5)*(o.jit??.14);
-      add(A[0]+d[0]*t+n[0]*lift,A[1]+d[1]*t+n[1]*lift,A[2]+d[2]*t+n[2]*lift,o.glow?1:3,len/ns*(ns>1?.47:.42),w,.008,o.op??.97,q,col[0]*j,col[1]*j,col[2]*j,o.aux||0);}}
+    for(let i=0;i<ns;i++){const j=1+(rnd()-.5)*(o.jit??.14),L=len/ns,k=o.glow||(o.op??.97)<.9?1:Math.max(1,Math.ceil(L/Math.max(.1,w*3.2)));      // a long splat is a spindle, wide in the middle and pointed at the ends; a row of short overlapping ones is a band of one width
+      for(let m=0;m<k;m++){const t=(i+(m+.5)/k)/ns,jj=k>1?j*(.96+.08*hash(i*7.7+m*3.1+len)):j;
+        add(A[0]+d[0]*t+n[0]*lift,A[1]+d[1]*t+n[1]*lift,A[2]+d[2]*t+n[2]*lift,o.glow?1:3,k>1?L/k*.8:L*(ns>1?.47:.42),w,.008,o.op??.97,q,col[0]*jj,col[1]*jj,col[2]*jj,o.aux||0);}}}
   const line=(a,b,w,col,n,o)=>lineW(bw(a),bw(b),w,col,bv(n),o);
   function rodW(A,B,r,col,o){o=o||{};
     const d=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],len=Math.hypot(d[0],d[1],d[2]),x=[d[0]/len,d[1]/len,d[2]/len];
     const h=Math.abs(x[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,x)),q=quatFromBasis(x,e1,cross(x,e1)),ns=Math.max(1,Math.ceil(len/(o.seg||.8)));
-    for(let i=0;i<ns;i++){const t=(i+.5)/ns,j=1+(rnd()-.5)*.16;
-      add(A[0]+d[0]*t,A[1]+d[1]*t,A[2]+d[2]*t,3,len/ns*(ns>1?.47:.42),r,r,.97,q,col[0]*j,col[1]*j,col[2]*j,4);}}
+    for(let i=0;i<ns;i++){const j=1+(rnd()-.5)*.16,L=len/ns,k=Math.max(1,Math.ceil(L/Math.max(.1,r*5)));
+      for(let m=0;m<k;m++){const t=(i+(m+.5)/k)/ns,jj=k>1?j*(.96+.08*hash(i*5.3+m*2.9+len)):j;
+        add(A[0]+d[0]*t,A[1]+d[1]*t,A[2]+d[2]*t,3,k>1?L/k*.8:L*(ns>1?.47:.42),r,r,.97,q,col[0]*jj,col[1]*jj,col[2]*jj,4);}}}
   const rod=(a,b,r,col,o)=>rodW(bw(a),bw(b),r,col,o);
   const blob=(p,s,col,o)=>{const w=bw(p),j=1+(rnd()-.5)*.14;add(w[0],w[1],w[2],o&&o.glow?1:3,s[0],s[1],s[2],(o&&o.op)||.97,qB,col[0]*j,col[1]*j,col[2]*j,o&&o.glow?0:4);};
   const quad=(c,n,xd,sx,sy,col,o)=>{o=o||{};const lf=o.lift??.02,nw=bv(n),xw=bv(xd),w=bw([c[0]+n[0]*lf,c[1]+n[1]*lf,c[2]+n[2]*lf]),j=1+(rnd()-.5)*(o.jit??.12);
@@ -846,6 +849,20 @@ function limb(a,b,r0,r1,bark){
         if(!birch&&bk!==DRIFT&&py<1.5){const ms=(1-py/1.5)*clamp(.5-(nv[0]*SUN[0]+nv[2]*SUN[2])*.9,0,1)*rnd();if(ms>.28)cc=mix3(bk,[.10,.17,.05],.75);}
         add(a[0]+d[0]*len*t+nv[0]*r,py+nv[1]*r,a[2]+d[2]*len*t+nv[2]*r,3,Math.max(.045,r*(birch?.5:.36)),birch?.1:.19,.012,.97,
           quatFromBasis(cross(d,nv),d,nv),cc[0]*jt,cc[1]*jt,cc[2]*jt,0);}}
+    /* Close to, bark is not paint on a pipe. Over the plates goes a second, finer layer laid with its own dice: on furrowed bark, raised
+       ridges running along the limb, lighter on their backs, with dark furrows between them and a fleck of lichen here and there; on
+       birch, small papery plates from cream to white with dark lenticels dashed across them. The ridges stand proud of the plates, so
+       the trunk's outline is rough and its many small faces take the light differently. */
+    if(r0>.13&&!coarse){let hs=a[0]*7.13+a[1]*3.71+a[2]*5.39+len*11.3;const hr=()=>{hs=hs*1.6180339+.71331;return hash(hs);},nr=Math.max(2,Math.round(len/.13));
+      for(let j=0;j<nr;j++){const t0=(j+.5)/nr,r=lerp(r0,r1,t0);if(r<.1)continue;const m=Math.round(6.2832*r/.06);
+        for(let i=0;i<m;i++){const ph=(i+hr())/m*6.2832,c=Math.cos(ph),s=Math.sin(ph),nv=[e1[0]*c+e2[0]*s,e1[1]*c+e2[1]*s,e1[2]*c+e2[2]*s],t=clamp(t0+(hr()-.5)/nr,0,1),
+            px=a[0]+d[0]*len*t,py=a[1]+d[1]*len*t,pz=a[2]+d[2]*len*t,q=quatFromBasis(cross(d,nv),d,nv),h1=hr();
+          if(birch){
+            if(h1<.14)add(px+nv[0]*(r+.006),py+nv[1]*(r+.006),pz+nv[2]*(r+.006),3,.03+.03*hr(),.007,.008,.95,q,.1,.09,.08,0);
+            else{const w=.86+.2*hr();add(px+nv[0]*(r+.004),py+nv[1]*(r+.004),pz+nv[2]*(r+.004),3,.045,.06,.008,.95,q,Math.min(1,bk[0]*w),Math.min(1,bk[1]*w),Math.min(1,bk[2]*w*(.94+.08*hr())),0);}
+          }else{const rid=FUR[(ph*3.82|0)%24]>.8,w=rid?1.05+.55*hr():.4+.25*hr(),o=rid?.014:-.002;
+            add(px+nv[0]*(r+o),py+nv[1]*(r+o),pz+nv[2]*(r+o),3,rid?.017+.014*hr():.02,.07+.07*hr(),rid?.014:.008,.96,q,bk[0]*w,bk[1]*w,bk[2]*w,rid?4:0);
+            if(h1>.975&&bk!==DRIFT)add(px+nv[0]*(r+.018),py+nv[1]*(r+.018),pz+nv[2]*(r+.018),3,.02+.02*hr(),.02+.02*hr(),.008,.9,q,.44,.5,.36,0);}}}}
   }else{
     const n=Math.max(1,Math.round(len/.34)),q=quatFromBasis(d,e1,e2),cc=birch&&r0<.05?[.2,.15,.12]:bk;
     for(let j=0;j<n;j++){const t=(j+.5)/n,r=Math.max(.014,lerp(r0,r1,t)),jt=.7+.5*rnd();
