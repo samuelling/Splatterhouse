@@ -394,7 +394,7 @@ const TREES=[['oak',-12,-67,16],['oak',37,-33,13.5],['oak',-58,-82,15.5],['oak',
   ['poplar',60,-102,18],['poplar',66,-103.5,19.5],['poplar',72,-105,17.5],['poplar',78,-106.5,19],['poplar',84,-108,18],
   ['willow',52,-47,9.5],['snag',-26,-104,9]];
 for(let i=0;i<3;i++)for(let j=0;j<2;j++){const p=bw([-4+i*6.5+(rnd()-.5),0,-15.5-j*6.5+(rnd()-.5)]);TREES.push(['apple',p[0],p[2],4.4+rnd()*.8]);}
-const CROWN={oak:.46,maple:.33,birch:.2,spruce:.2,poplar:.09,willow:.46,apple:.56,snag:.3};
+const CROWN={oak:.46,maple:.33,birch:.2,spruce:.2,poplar:.09,willow:.46,apple:.5,snag:.3};
 const OBST=[BARN.x,BARN.z,8.5,9.5,SILO[0],SILO[2],2.5,13.5];
 for(const t of TREES)OBST.push(t[1],t[2],t[3]*CROWN[t[0]]+1,t[3]+1);
 const TRACK=[bw([0,0,7.6]),bw([0,0,15])].map(p=>[p[0],p[2]]).concat([[-22,-34],[-13,-27],[-8,-22],[-2,-14],[5,-6],[7,6],[3,30],[-8,70],[-20,130],[-24,205]]);
@@ -925,7 +925,7 @@ function axis(p,d,len,r,lv,tp){
       const ang=lerp(S.ang,S.ang1??S.ang,t)*(.8+.4*rnd());let cd=rotAbout(dd,ang,az);
       if(lv===0&&tp.stems>1&&(q[0]-tp.x)*cd[0]+(q[2]-tp.z)*cd[2]<0&&rnd()<.75){az+=3.1416;cd=rotAbout(dd,ang,az);}     // where a tree has several stems, their limbs mostly grow outwards, away from each other
       if(cd[1]<C.low)cd=nrm([cd[0],C.low+.1*rnd(),cd[2]]);                                                             // and no branch sets off steeply towards the ground
-      if(lv===0)tp.ek=lerp(1,.62+.5*rnd(),tp.lump);                                                                                   // each limb reaches its own share of the way to the envelope, so the crown is built of separate masses with sky between
+      if(lv===0){if(rnd()<tp.gap)continue;tp.ek=lerp(1,.62+.5*rnd(),tp.lump);}                                     // now and then a limb is missing altogether, which leaves a window in the crown                                                                                   // each limb reaches its own share of the way to the envelope, so the crown is built of separate masses with sky between
       else if(lv+1===tp.top&&tp.leaves&&skin(tp,q)<.42&&rnd()<.65)continue;                                           // twigs in the shade at the heart of the crown have died and dropped
       const full=lv===0?tp.reach:len*S.lenK,cl=fit(tp,q,cd,full*(1-S.fall*t)*(.75+.5*rnd()),C.up*.35);
       if(cl<C.min*U)continue;
@@ -941,6 +941,7 @@ function axis(p,d,len,r,lv,tp){
   if(skin(tp,a)<.5&&rnd()<.8)return;                                                    // leaves need light: few grow inside the crown, which is why its limbs can be seen from below
   const B=tp.blob;                                                                       // leaves sit in small clumps at the ends of the branchlets and twigs
   if(lv>=tp.top-1)leafBlob([a[0]+(rnd()-.5)*B*.5,a[1]+(rnd()-.3)*B*.4,a[2]+(rnd()-.5)*B*.5],B*(.7+.8*rnd()*rnd()+.25*rnd()),tp.leaves,tp.pal,tp.ls,tp.fruit,tp.cs);
+  if(tp.hang&&top)for(let k=1;k<3;k++)leafBlob([a[0]+(rnd()-.5)*B*.3,a[1]-k*B*tp.hang,a[2]+(rnd()-.5)*B*.3],B*(.5+.2*rnd()),Math.round(tp.leaves*.6),tp.pal,tp.ls,tp.fruit,tp.cs);     // a birch's leaves hang in tassels below its twigs
   if(len>B*1.2&&(top||rnd()<.5))leafBlob([(p[0]+a[0])/2,(p[1]+a[1])/2,(p[2]+a[2])/2],B*(.6+.4*rnd()),Math.round(tp.leaves*.7),tp.pal,tp.ls,tp.fruit,tp.cs);
 }
 /* A kind's table: one row for each level, 0 the stems down to the twigs. ns lengths in the curve, dens children to the metre, start how
@@ -955,17 +956,17 @@ const KIND={
     env:[0,.05,.24,.40,.47,.50,.48,.43,.35,.24,.07],
     S:[lvl(9,.85,.1,1.3,.7,0,.35,.62,.5,0,.13,.09,0,0),lvl(8,1.2,.2,.9,.9,.55,.45,.7,.5,.2,.15,.18,-.08,1.1),lvl(6,1.8,.15,.8,.8,.55,.4,.7,.3,.08,.18,.3,-.3,.5),lvl(4,2.5,.1,.75,.75,.5,.3,.7,.15,0,.2,.5,-.45,.28),lvl(2,0,0,0,0,0,0,0,.1,0,.25,.6,-.6,.15)]},
   // maple: several stems climbing steeply into a dense egg of a crown; straighter wood than an oak
-  maple:{trunk:.22,rad:.028,stems:4,split:.42,reach:.36,floor:.2,top:4,blob:.034,leaves:6,cw:.36,ch:.42,cy:.6,
+  maple:{trunk:.22,rad:.028,stems:4,split:.42,reach:.36,floor:.2,top:4,blob:.034,leaves:7,lump:1.4,gap:.1,cw:.36,ch:.42,cy:.6,
     env:[0,0,.12,.27,.32,.34,.34,.31,.27,.19,.06],
-    S:[lvl(9,1.25,.1,.95,.5,0,.4,.6,.45,0,.07,.09,0,0),lvl(7,1.7,.2,.65,.65,.5,.45,.7,.35,.05,.08,.2,.05,.9),lvl(5,2.1,.15,.6,.6,.55,.4,.7,.25,0,.1,.3,-.2,.45),lvl(4,2.8,.1,.6,.6,.5,.3,.7,.15,0,.14,.5,-.4,.26),lvl(2,0,0,0,0,0,0,0,.1,0,.2,.6,-.5,.15)]},
+    S:[lvl(9,1.05,.1,.95,.5,0,.4,.6,.45,0,.07,.09,0,0),lvl(7,1.7,.2,.65,.65,.5,.45,.7,.35,.05,.08,.2,.05,.9),lvl(5,2.1,.15,.6,.6,.55,.4,.7,.25,0,.1,.3,-.2,.45),lvl(4,2.8,.1,.6,.6,.5,.3,.7,.15,0,.14,.5,-.4,.26),lvl(2,0,0,0,0,0,0,0,.1,0,.2,.6,-.5,.15)]},
   // birch: one white pole to the top, slender branches that climb, arch over and end in hanging twigs
-  birch:{trunk:.3,rad:.015,stems:1,reach:.22,floor:.24,top:3,blob:.034,leaves:7,lump:.7,ls:.7,cw:.2,ch:.4,cy:.64,
+  birch:{trunk:.3,rad:.015,stems:1,reach:.22,floor:.24,top:3,blob:.03,leaves:5,lump:1.2,gap:.1,hang:.8,ls:.7,cw:.2,ch:.4,cy:.64,
     env:[0,0,.03,.09,.15,.18,.19,.17,.13,.09,.03],
     S:[lvl(10,2.7,0,.95,.5,0,.45,.5,0,0,.035,.12,0,0),lvl(7,3.0,.2,.6,.6,.5,.3,.7,.1,.6,.08,.3,.1,.5),lvl(4,3.4,.1,.7,.7,.6,.2,.7,-.2,.7,.1,.5,-.9,.22),lvl(3,0,0,0,0,0,0,0,-.3,.8,.12,.6,-1,.14)]},
   // apple: low, wide and crooked, an open cup of scaffold limbs
-  apple:{trunk:.3,rad:.04,stems:4,split:.95,reach:.55,floor:.22,top:3,blob:.075,leaves:5,cw:.62,ch:.4,cy:.62,
-    env:[0,0,.12,.4,.56,.62,.6,.52,.4,.24,.08],
-    S:[lvl(7,.8,.15,1.0,.7,0,.3,.62,.6,.15,.16,.14,0,0),lvl(6,1.05,.15,.85,.85,.55,.4,.7,.35,.1,.24,.3,-.1,1.0),lvl(4,1.3,.1,.8,.8,.55,.3,.7,.2,0,.26,.5,-.4,.5),lvl(2,0,0,0,0,0,0,0,.1,0,.28,.6,-.6,.28)]},
+  apple:{trunk:.3,rad:.036,stems:4,split:1.05,reach:.5,floor:.27,top:4,blob:.046,leaves:4,lump:1.4,gap:.15,cw:.5,ch:.38,cy:.62,
+    env:[0,0,.12,.36,.48,.52,.5,.43,.32,.19,.06],
+    S:[lvl(7,.9,.2,1.0,.7,0,.3,.62,.4,.1,.2,.12,0,0),lvl(6,1.0,.15,.85,.85,.55,.4,.7,.25,.35,.26,.25,-.15,.9),lvl(5,1.4,.12,.8,.8,.55,.35,.7,.1,.3,.3,.35,-.4,.45),lvl(3,1.8,.1,.75,.75,.5,.3,.7,.1,.1,.3,.5,-.5,.26),lvl(2,0,0,0,0,0,0,0,.1,0,.3,.6,-.6,.14)]},
   // Lombardy poplar: a column. Branches leave the pole from near the ground, climb at a narrow angle and turn up to run beside it
   poplar:{trunk:.07,rad:.02,stems:1,reach:.3,floor:.05,top:3,blob:.04,leaves:6,ls:.9,lump:.4,cw:.1,ch:.48,cy:.52,
     env:[0,.045,.068,.08,.084,.084,.08,.072,.058,.04,.012],
@@ -977,7 +978,7 @@ const KIND={
 function broadleaf(x,z,Ht,o){
   const R=Ht*o.rad,tH=Ht*o.trunk,lean=[(rnd()-.5)*.1,1,(rnd()-.5)*.1],
     tp={x,z,H:Ht,env:o.env,l1:rnd()*6.2832,l2:rnd()*6.2832,floor:Ht*o.floor,reach:Ht*o.reach,top:o.top,stems:o.stems,S:o.S,blob:Ht*(o.blob||.05),
-      ek:1,lump:o.lump??1,leaves:Math.round(o.leaves*LEAFK),pal:o.pal,bark:o.bark,ls:o.ls||1,fruit:o.fruit,cs:[x,Ht*(o.cy||.6),z,Ht*(o.cw||.5),Ht*(o.ch||.42)]};
+      ek:1,lump:o.lump??1,gap:o.gap||0,hang:o.hang||0,leaves:Math.round(o.leaves*LEAFK),pal:o.pal,bark:o.bark,ls:o.ls||1,fruit:o.fruit,cs:[x,Ht*(o.cy||.6),z,Ht*(o.cw||.5),Ht*(o.ch||.42)]};
   // the foot: the trunk swells into the ground and sends out a few roots
   const nr=5+(rnd()*3|0),r0=rnd()*6.28;for(let k=0;k<nr;k++){const an=r0+(k+rnd()*.5)/nr*6.28,c=Math.cos(an),sn=Math.sin(an),l=R*(1.7+.9*rnd());
     limb([x+c*R*.5,R*1.1+.1,z+sn*R*.5],[x+c*l,-.15,z+sn*l],R*.62,R*.3,o.bark);}
