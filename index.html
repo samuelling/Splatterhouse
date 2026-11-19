@@ -67,11 +67,11 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #hsub button::before{content:"";position:absolute;left:var(--sl,8%);right:var(--sr,30%);top:-1px;height:9px;pointer-events:none;opacity:.94;      /* blood that has run onto the button and beads along its top edge */
   background:radial-gradient(4px 5px at 10% 1px,#9b100c 96%,transparent),radial-gradient(3px 7px at 38% 1px,#8f0f0b 96%,transparent),radial-gradient(6px 4px at 62% 1px,#a5120d 96%,transparent),radial-gradient(2.5px 8px at 87% 1px,#8f0f0b 96%,transparent),linear-gradient(90deg,transparent,#a5120d 12%,#8f0f0b 80%,transparent) top/100% 2px no-repeat}
 #hsub button::after{content:"";position:absolute;top:0;left:var(--dx,30%);width:3px;height:0;border-radius:0 0 2px 2px;background:#8f0f0b;pointer-events:none;animation:seep 6.5s ease-in infinite;animation-delay:var(--dl,0s)}
-#hsub button:nth-child(1){--dx:24%;--dl:-1.2s;--sl:3%;--sr:22%}#hsub button:nth-child(2){--dx:58%;--dl:-4.4s;--sl:18%;--sr:9%}#hsub button:nth-child(3){--dx:36%;--dl:-2.7s;--sl:26%;--sr:38%}#hsub button:nth-child(4){--dx:62%;--dl:-5.6s;--sl:30%;--sr:14%}
+#hsub button:nth-child(1){--dx:24%;--dl:-1.2s;--sl:3%;--sr:22%}#hsub button:nth-child(2){--dx:58%;--dl:-4.4s;--sl:18%;--sr:9%}#hsub button:nth-child(3){--dx:36%;--dl:-2.7s;--sl:26%;--sr:38%}#hsub button:nth-child(4){--dx:62%;--dl:-5.6s;--sl:30%;--sr:14%}#hsub button:nth-child(5){--dx:44%;--dl:-3.3s;--sl:12%;--sr:34%}
 @keyframes seep{0%,30%{height:0}70%{height:12px}82%{height:13px}100%{height:0}}
-#bClean,#bFull,#bFinger,#bHead,#bHold,#bHelp{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
-#bFinger[hidden],#bHead[hidden],#bHold[hidden],#bHelp[hidden]{display:none}
-#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bHold[aria-pressed="true"],#bFull[aria-pressed="true"],#bHelp[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
+#bClean,#bFull,#bFinger,#bHead,#bHold,#bPhone,#bHelp{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#bFinger[hidden],#bHead[hidden],#bHold[hidden],#bPhone[hidden],#bHelp[hidden]{display:none}
+#bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bPhone[aria-pressed="true"],#bHold[aria-pressed="true"],#bFull[aria-pressed="true"],#bHelp[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bAdv[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #adv{position:fixed;left:14px;top:max(128px,var(--cb,0px));width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - max(140px,calc(var(--cb,0px) + 12px)));overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
@@ -200,11 +200,11 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button><div id="hg"><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"/><path d="M8 .8v4M8 11.2v4M.8 8h4M11.2 8h4"/></svg>Splatterhaus mode<i></i><i></i><i></i></button><div id="hsub" role="group" aria-label="Webcam controls for Splatterhaus mode" hidden><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bHelp" type="button" aria-expanded="false" aria-controls="tut" aria-label="How to use the finger gun, the shotgun hold and head look" hidden>How to</button></div></div></div>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button><div id="hg"><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"/><path d="M8 .8v4M8 11.2v4M.8 8h4M11.2 8h4"/></svg>Splatterhaus mode<i></i><i></i><i></i></button><div id="hsub" role="group" aria-label="Webcam controls for Splatterhaus mode" hidden><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bPhone" type="button" aria-pressed="false" aria-label="Phone look: the screen is a window, so point the phone where you want to look" hidden>Phone look</button><button id="bHelp" type="button" aria-expanded="false" aria-controls="tut" aria-label="How to use the finger gun, the shotgun hold and head look" hidden>How to</button></div></div></div>
 <button id="bShow" type="button">Show menus</button>
 <aside id="tut" hidden aria-label="How to use the camera controls">
   <h4>How to<button type="button" id="tutX" aria-label="Close">×</button></h4>
-  <div class="tabs"><button type="button" data-t="finger" aria-pressed="true">Finger gun</button><button type="button" data-t="hold" aria-pressed="false">Shotgun hold</button><button type="button" data-t="head" aria-pressed="false">Head look</button></div>
+  <div class="tabs"><button type="button" data-t="finger" aria-pressed="true">Finger gun</button><button type="button" data-t="hold" aria-pressed="false">Shotgun hold</button><button type="button" data-t="head" aria-pressed="false">Head look</button><button type="button" data-t="phone" aria-pressed="false" hidden>Phone look</button></div>
   <div class="pic" aria-hidden="true"></div><ol></ol><p></p>
 </aside>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
@@ -2223,12 +2223,15 @@ function updateCamera(dt){
   if(cam.mode==='hunt'){
     // on foot in the barn field: W A S D walk, and the fences, the barn and the trees stop you
     const kd_=keysDown,JS=Finger.J,jw=JS.on&&JS.mode==='walk';
-    const HD=Finger.H,lx_=HD.ax-(cam.hax||0),ly_=HD.ay-(cam.hay||0);
+    const HD=Finger.H,lx_=HD.ax-(cam.hax||0),ly_=HD.ay-(cam.hay||0);Phone.update(dt);const PL=Phone.live;
+    if(PL){cam.hax=HD.ax;cam.hay=HD.ay;}
+    else{
     if(HD.live){cam.hyaw-=HD.x*1.9*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+HD.y*.8*cam.hzoom*dt,-.6,1.45);}                                // the head as a stick: turned away from the middle, the view keeps turning
     if(lx_||ly_){cam.hyaw-=lx_;cam.hpitch=clamp(cam.hpitch+ly_,-.6,1.45);cam.hax=HD.ax;cam.hay=HD.ay;}                                       // and the small lean that follows the head at once
     if(Finger.F.hold&&Finger.F.gun&&!HD.on){const pu=v=>Math.sign(v)*clamp((Math.abs(v)-.7)/.3,0,1);                                        // shotgun hold without head look: pushing the cross-hairs at an edge turns you that way
       cam.hyaw-=pu(Hunt.aim.x)*1.5*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+pu(Hunt.aim.y)*.8*cam.hzoom*dt,-.6,1.45);}
     if(JS.on&&JS.mode==='look'&&!HD.on){cam.hyaw-=JS.x*1.9*cam.hzoom*dt;cam.hpitch=clamp(cam.hpitch+JS.y*1.3*cam.hzoom*dt,-.6,1.45);}              // the other hand, open: turn the head
+    }
     const fw=(kd_.has('KeyW')?1:0)-(kd_.has('KeyS')?1:0)+(jw?JS.y:0),rt=(kd_.has('KeyD')?1:0)-(kd_.has('KeyA')?1:0)+(jw?JS.x:0),sy=Math.sin(cam.hyaw),cy=Math.cos(cam.hyaw);       // as a fist: walk
     let mx=sy*fw-cy*rt,mz=cy*fw+sy*rt;const ml=Math.hypot(mx,mz),spd=kd_.has('Shift')?6.5:3.6,k=1-Math.exp(-dt/.12);
     if(ml>1e-3){const mg=Math.min(1,ml);mx*=spd*mg/ml;mz*=spd*mg/ml;}
@@ -2238,6 +2241,7 @@ function updateCamera(dt){
     const sp_=Math.hypot(cam.hvel[0],cam.hvel[1]);cam.hbob+=sp_*dt;
     cam.pos=[cam.hpos[0],groundH(cam.hpos[0],cam.hpos[1])+1.62+.03*Math.sin(cam.hbob*2.4)*Math.min(1,sp_/3.6),cam.hpos[1]];
     const cp=Math.cos(cam.hpitch);cam.fwd=[Math.sin(cam.hyaw)*cp,Math.sin(cam.hpitch),Math.cos(cam.hyaw)*cp];cam.up=[0,1,0];cam.zoom=cam.hzoom;
+    if(PL){const[f,u]=Phone.view();cam.fwd=f;cam.up=u;cam.hyaw=Math.atan2(f[0],f[2]);cam.hpitch=Math.asin(clamp(f[1],-1,1));}       // the phone as a window: it sets the view outright, roll and all
   }else if(standing()){
     // frame every flock, and keep the horizon in shot whenever the birds are low enough
     const p=cam.pos=cam.mode==='shore'?SHOREP.slice():[0,1.55,0],fr=frameFlock(p,pickFlock()),bot=Math.min(fr.bot,Math.max(-.2,fr.top-.9));
@@ -3241,9 +3245,9 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     if(!cam.hpos||!canStand(cam.hpos[0],cam.hpos[1])){cam.hpos=[GATE[0]+2,GATE[1]-6];cam.hyaw=Math.atan2(RSX-cam.hpos[0],RSZ-cam.hpos[1]);cam.hpitch=.25;cam.hzoom=1.05;cam.hvel=[0,0];cam.hbob=0;}
     aim.x=aim.y=0;if(!gvao)try{build();}catch(e){console.error(e);}
     {const d=bw([0,0,11]);dog.on=true;dog.p=[d[0],d[2]];dog.mode='heel';dog.tg=null;dog.spd=0;dog.ph=0;}      // the dog comes out from the barn
-    document.getElementById('hsub').hidden=false;document.getElementById('bHelp').hidden=false;document.getElementById('bFinger').hidden=false;document.getElementById('bHold').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
+    document.getElementById('hsub').hidden=false;document.getElementById('bPhone').hidden=!Phone.can;document.getElementById('bHelp').hidden=false;document.getElementById('bFinger').hidden=false;document.getElementById('bHold').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
   }
-  function leave(){Finger.stop();Tut.hide();document.getElementById('hsub').hidden=true;document.getElementById('bHelp').hidden=true;document.getElementById('bFinger').hidden=true;document.getElementById('bHold').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
+  function leave(){Finger.stop();Phone.set(false);Tut.hide();document.getElementById('hsub').hidden=true;document.getElementById('bPhone').hidden=true;document.getElementById('bHelp').hidden=true;document.getElementById('bFinger').hidden=true;document.getElementById('bHold').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
   function pointAt(cx,cy){const r=canvas.getBoundingClientRect();aim.x=clamp((cx-r.left)/r.width*2-1,-1,1);aim.y=clamp(1-(cy-r.top)/r.height*2,-1,1);}
   function step(h){
     stepFx(h);stepDead(h);dogStep(h);
@@ -3593,17 +3597,71 @@ const Finger=(()=>{
   }
   btn.onclick=e=>{aimWith(false);e.currentTarget.blur();};
   bHold.onclick=e=>{aimWith(true);e.currentTarget.blur();};
-  bHead.onclick=e=>{set('head',!want.head);e.currentTarget.blur();};
+  bHead.onclick=e=>{if(!want.head&&Phone.on)Phone.set(false);set('head',!want.head);e.currentTarget.blur();};
   bCen.onclick=e=>{if(Hd.on)headCentre();holdCentre();e.currentTarget.blur();};
   bCal.onclick=e=>{if(cal||hcal)calCancel();else calStart();e.currentTarget.blur();};
   return{F,J,H:Hd,FA,St,want,set,aimWith,holdCentre,headCentre,feedHead:(m,n)=>head(m,n||{x:.5,y:.4},clock()),read,feed,feedHands,start,stop,tick,calStart,calCancel,get cal(){return cal||hcal;},get C(){return C;},get HC(){return HC;},reset(){C=Object.assign({},DEF);HC=Object.assign({},HDEF);try{localStorage.removeItem(KEY);localStorage.removeItem(KEY2);}catch(e){}}};
 })();
 /* ---- how to: a short lesson for each way of using the camera. Each step gets a tick when the tracker sees you do it, so the lesson also
    shows where things stop working. It opens by itself the first time a camera control is switched on, and from the How to button or ?. ---- */
+/* ---- phone look ----
+   On a phone or tablet the screen becomes a window onto the hunting ground: turn it, tilt it, raise it, and the view does the same, as if
+   you were looking through it. The orientation sensor gives the device's rotation against the earth: alpha about the vertical, then beta
+   about the device's own x, then gamma about its y (R = Rz·Rx·Ry). The back of the device is the way you look, and the top of the screen,
+   whichever way the screen has turned, is up. Tilt and roll are used as they come, so a phone held upright looks level and one tipped on
+   its side tips the horizon; only the heading is taken relative to the way you faced when you turned it on, because a phone's compass is
+   often poor indoors. Dragging a finger across the screen swings you round, for when you cannot turn on the spot. */
+const Phone=(()=>{
+  const can=typeof DeviceOrientationEvent!=='undefined'&&!!window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+  const P={can,on:false,live:false,err:'',n:0,fw:[0,0,1],up:[0,1,0],off:0,t:0,raw:null,turned:0,drag:0,yaw0:null};
+  let need=true,chk=0;
+  const btn=document.getElementById('bPhone');
+  function onOri(e){if(e.alpha==null&&e.beta==null)return;P.raw=[e.alpha||0,e.beta||0,e.gamma||0];P.t=performance.now();P.n++;}
+  function say(m){const h=document.getElementById('hint');if(!h)return;h.textContent=m;h.classList.remove('off');clearTimeout(say.t);say.t=setTimeout(()=>h.classList.add('off'),7000);}
+  function sync(){btn.setAttribute('aria-pressed',String(P.on));}
+  async function set(on){
+    if(on===P.on)return;
+    if(on){
+      if(typeof DeviceOrientationEvent.requestPermission==='function'){        // iOS asks first, and only in answer to a tap
+        try{const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted'){P.err='denied';say('Motion is blocked for this page. Allow Motion & Orientation Access for the browser, or open the page on its own, not inside another site.');return;}}
+        catch(e){P.err=String(e&&e.message||e);say('This page is not allowed to read the phone\'s motion. Open it on its own, not inside another site.');return;}}
+      P.err='';P.on=true;P.n=0;P.raw=null;need=true;P.turned=0;P.drag=0;P.yaw0=null;addEventListener('deviceorientation',onOri);
+      if(Finger.want.head)Finger.set('head',false);                              // the phone and the head cannot both steer the view
+      clearTimeout(chk);chk=setTimeout(()=>{if(P.on&&!P.n){P.err='no data';say('No motion data is reaching this page. Some browsers keep it from pages shown inside another site: open it on its own.');}},1800);
+      say('Point the phone to look round · tap to fire at the cross-hairs · drag to swing round');
+    }else{removeEventListener('deviceorientation',onOri);P.on=false;P.live=false;clearTimeout(chk);cam.hpitch=clamp(cam.hpitch,-.6,1.45);}
+    sync();
+  }
+  const rotY=(v,o)=>{const c=Math.cos(o),s=Math.sin(o);return[v[0]*c+v[2]*s,v[1],v[2]*c-v[0]*s];};
+  function target(){
+    const d=Math.PI/180,a=P.raw[0]*d,b=P.raw[1]*d,g=P.raw[2]*d,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b),cg=Math.cos(g),sg=Math.sin(g);
+    const R=[ca*cg-sa*sb*sg,-sa*cb,ca*sg+sa*sb*cg, sa*cg+ca*sb*sg,ca*cb,sa*sg-ca*sb*cg, -cb*sg,sb,cb*cg];
+    const th=((screen.orientation&&screen.orientation.angle)||window.orientation||0)*d,sx=Math.sin(th),sy=Math.cos(th);
+    const mv=v=>[R[0]*v[0]+R[1]*v[1]+R[2]*v[2],R[3]*v[0]+R[4]*v[1]+R[5]*v[2],R[6]*v[0]+R[7]*v[1]+R[8]*v[2]];
+    const w=e=>[e[0],e[2],-e[1]];                                               // east, north, up → the world's x, -z, y
+    return[w(mv([0,0,-1])),w(mv([sx,sy,0]))];
+  }
+  function update(dt){
+    if(!P.on||!P.raw){P.live=false;return;}
+    P.live=performance.now()-P.t<2500;if(!P.live)return;                       // phones send many readings a second; a long gap means the sensor has stopped
+    let[f,u]=target();
+    if(need){P.fw=f;P.up=u;P.off=cam.hyaw-Math.atan2(f[0],f[2]);need=false;}
+    const k=1-Math.exp(-dt/.035);                                               // a light smoothing: the sensor is a little noisy, and slower than the screen
+    P.fw=nrm([P.fw[0]+(f[0]-P.fw[0])*k,P.fw[1]+(f[1]-P.fw[1])*k,P.fw[2]+(f[2]-P.fw[2])*k]);
+    let uu=[P.up[0]+(u[0]-P.up[0])*k,P.up[1]+(u[1]-P.up[1])*k,P.up[2]+(u[2]-P.up[2])*k];const dd=uu[0]*P.fw[0]+uu[1]*P.fw[1]+uu[2]*P.fw[2];
+    P.up=nrm([uu[0]-P.fw[0]*dd,uu[1]-P.fw[1]*dd,uu[2]-P.fw[2]*dd]);
+    const y=Math.atan2(P.fw[0],P.fw[2]);if(P.yaw0!==null){let dy=y-P.yaw0;dy-=6.2832*Math.round(dy/6.2832);P.turned+=Math.abs(dy);}P.yaw0=y;
+    if(!Finger.F.on){Hunt.aim.x=Hunt.aim.y=0;}                                 // without the finger gun, the cross-hairs sit in the middle and the phone is the gun
+  }
+  function view(){return[rotY(P.fw,P.off),rotY(P.up,P.off)];}
+  function turn(d){P.off+=d;P.drag+=Math.abs(d);}
+  if(btn)btn.onclick=e=>{set(!P.on);e.currentTarget.blur();};
+  return{get can(){return can;},get on(){return P.on;},get live(){return P.live;},get err(){return P.err;},P,set,update,view,turn};
+})();
 const Tut=(()=>{
   const el=document.getElementById('tut'),btn=document.getElementById('bHelp'),list=el.querySelector('ol'),pic=el.querySelector('.pic'),tip=el.querySelector('p'),tabs=[...el.querySelectorAll('.tabs button')],KEY='splatterhaus.howto';
   const F=Finger.F,H=Finger.H,J=Finger.J,S='<svg viewBox="0 0 120 62" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">';
-  let tab='finger',done={},base=null,fires0=0,nc0=-1,was={},lastT=0,sig='',errSig='';
+  let tab='finger',done={},base=null,fires0=0,shots0=0,nc0=-1,was={},lastT=0,sig='',errSig='';const PP=Phone.P;
   const moved=()=>{if(!F.gun){return false;}if(!base)base=[Hunt.aim.x,Hunt.aim.y];return Math.hypot(Hunt.aim.x-base[0],Hunt.aim.y-base[1])>.35;};
   const L={
     finger:{pic:S+'<rect x="30" y="28" width="34" height="27" rx="10"/><rect x="60" y="27" width="44" height="11" rx="5.5"/><rect x="36" y="5" width="11" height="29" rx="5.5"/><path d="M56 10q10 3 11 13m-5-3 5 4 3-6" stroke-dasharray="1 5"/></svg>',
@@ -3630,25 +3688,33 @@ const Tut=(()=>{
         ['Turn it further and the view keeps turning, faster the further you turn.',()=>H.live&&H.x!==0],
         ['Face the middle again and the view stops where it has got to.',()=>done.head3&&H.live&&H.x===0&&H.y===0&&Math.abs(H.yaw)<3],
         ['Press <b>C</b> whenever the view creeps: wherever you are facing becomes the new middle.',()=>{if(nc0<0){if(H.live)nc0=H.nc;return false;}return H.nc>nc0;}]],
-      tip:'It works with the mouse, the finger gun or the shotgun hold. Keep your face in the picture; a hand across it stops the view until your face is found again.'}};
+      tip:'It works with the mouse, the finger gun or the shotgun hold. Keep your face in the picture; a hand across it stops the view until your face is found again.'},
+    phone:{pic:S+'<rect x="44" y="8" width="32" height="48" rx="5"/><path d="M56 50h8"/><path d="M28 18q-10 14 0 28m-2-8 2 8 7-5"/><path d="M92 18q10 14 0 28m2-8-2 8-7-5"/></svg>',
+      steps:[['Press <b>Phone look</b>, and allow motion if the phone asks.',()=>PP.on],
+        ['Hold the phone up in front of you like a window. The view is what you would see through it.',()=>Phone.live],
+        ['Turn round, look up at the sky, down at the grass. The view follows the phone, and tilting it tilts the horizon.',()=>Phone.live&&PP.turned>1.2],
+        ['<b>Tap</b> anywhere to fire at the cross-hairs in the middle: the phone is the gun.',()=>Phone.live&&Hunt.st.shots>shots0],
+        ['Drag a finger across the screen to swing round without turning yourself.',()=>PP.drag>.3],
+        ['For finger guns, turn on <b>Finger gun</b> too: hold the phone in one hand and shoot with the other where the front camera can see it.',()=>Phone.live&&F.on&&!F.hold]],
+      tip:'If nothing moves, the page is not being given the phone\'s motion. Some browsers withhold it from pages shown inside another site: open the page on its own. Phone look replaces Head look.'}};
   function draw(){const l=L[tab];let h='',cur=-1;for(let i=0;i<l.steps.length;i++){const d=done[tab+i];if(!d&&cur<0)cur=i;h+='<li class="'+(d?'d':i===cur?'c':'')+'">'+l.steps[i][0]+'</li>';}
     if(h!==sig){sig=h;list.innerHTML=h;}}
-  function show(t){tab=t;base=null;fires0=F.fires;nc0=-1;sig='';for(const b of tabs)b.setAttribute('aria-pressed',String(b.dataset.t===t));pic.innerHTML=L[t].pic;tips();draw();}
+  function show(t){tab=t;base=null;fires0=F.fires;shots0=Hunt.st.shots;nc0=-1;sig='';for(const b of tabs)b.setAttribute('aria-pressed',String(b.dataset.t===t));pic.innerHTML=L[t].pic;tips();draw();}
   function tips(){const t=tab;errSig=F.err;
     tip.innerHTML=(F.err?'<b>'+(/denied|NotAllowed|Permission/i.test(F.err)?'The camera is blocked on this page. Open the page on its own, not inside another site.':'The camera or its tracker could not start here.')+'</b> ':'')+L[t].tip;}
   function open(t){el.hidden=false;btn.setAttribute('aria-expanded','true');show(t||tab);}
   function hide(){el.hidden=true;btn.setAttribute('aria-expanded','false');}
   function close(){hide();try{localStorage.setItem(KEY,'1');}catch(e){}}                // closed by hand: it will not open by itself again
-  function toggle(){if(el.hidden)open(F.on?(F.hold?'hold':'finger'):H.on?'head':tab);else close();}
+  function toggle(){if(el.hidden)open(PP.on?'phone':F.on?(F.hold?'hold':'finger'):H.on?'head':tab);else close();}
   function tick(){
-    const W=Finger.want,now={finger:W.gun&&!F.hold,hold:W.gun&&F.hold,head:W.head};let turned='';for(const k in now){if(now[k]&&!was[k])turned=k;was[k]=now[k];}
+    const W=Finger.want,now={finger:W.gun&&!F.hold,hold:W.gun&&F.hold,head:W.head,phone:PP.on};let turned='';for(const k in now){if(now[k]&&!was[k])turned=k;was[k]=now[k];}
     if(turned){let seen=false;try{seen=!!localStorage.getItem(KEY);}catch(e){}if(el.hidden){if(!seen)open(turned);}else if(turned!==tab)show(turned);}       // the lesson follows whatever was just switched on
     if(el.hidden)return;const t=performance.now();if(t-lastT<150)return;lastT=t;if(F.err!==errSig)tips();
     const l=L[tab];for(let i=0;i<l.steps.length;i++)if(!done[tab+i]&&l.steps[i][1])try{if(l.steps[i][1]())done[tab+i]=true;}catch(e){}
     draw();
   }
   btn.onclick=e=>{toggle();e.currentTarget.blur();};document.getElementById('tutX').onclick=close;
-  for(const b of tabs)b.onclick=e=>{show(b.dataset.t);e.currentTarget.blur();};
+  for(const b of tabs){b.onclick=e=>{show(b.dataset.t);e.currentTarget.blur();};if(b.dataset.t==='phone')b.hidden=!Phone.can;}
   return{open,close,hide,toggle,tick,get tab(){return tab;},done};
 })();
 const hint=document.getElementById('hint'),pts=new Map();let pinch=0,hintTimer=0;
@@ -3679,6 +3745,7 @@ canvas.addEventListener('pointermove',e=>{
     if(standing()){cam.track=false;cam.yaw+=dx*k;cam.pitch=clamp(cam.pitch+dy*k,-.25,1.5);}
     else if(cam.mode==='orbit'){cam.oauto=false;cam.oyaw-=dx*.0075;cam.opitch=clamp(cam.opitch+dy*.006,-.4,1.4);}
     else if(cam.mode==='ride')cam.rideYaw-=dx*.008;
+    else if(cam.mode==='hunt'&&Phone.live){const kh=cam.hzoom/Math.min(canvas.clientWidth,canvas.clientHeight);Phone.turn(dx*kh*1.3);}
     else if(cam.mode==='hunt'){const sgn=e.pointerType==='mouse'?-1:1,kh=cam.hzoom/Math.min(canvas.clientWidth,canvas.clientHeight);cam.hyaw+=sgn*dx*kh*1.3;cam.hpitch=clamp(cam.hpitch+sgn*dy*kh*1.3,-.6,1.45);}
     else{const sgn=e.pointerType==='mouse'?-1:1;     // mouse turns the head, a finger drags the scene
       cam.fyaw+=sgn*dx*k*1.3;cam.fpitch=clamp(cam.fpitch+sgn*dy*k*1.3,-1.45,1.45);}
@@ -3692,7 +3759,7 @@ function zoomBy(k,isPinch){
   else if(isPinch){const d=-Math.log(k)*30,f=cam.fwd;cam.fpos[0]+=f[0]*d;cam.fpos[2]+=f[2]*d;cam.fpos[1]=Math.max(Math.max(groundH(cam.fpos[0],cam.fpos[2]),SEA)+.5,cam.fpos[1]+f[1]*d);}
   else cam.fspeed=clamp(cam.fspeed/k,3,60);
 }
-const up=e=>{if(e.type==='pointerup'&&tapOK&&pts.size===1&&performance.now()-tapT<400&&Math.hypot(e.clientX-tapX,e.clientY-tapY)<7){if(cam.mode==='ride')pickBird(e.clientX,e.clientY);else if(cam.mode==='hunt')Hunt.fireAt(e.clientX,e.clientY);}
+const up=e=>{if(e.type==='pointerup'&&tapOK&&pts.size===1&&performance.now()-tapT<400&&Math.hypot(e.clientX-tapX,e.clientY-tapY)<7){if(cam.mode==='ride')pickBird(e.clientX,e.clientY);else if(cam.mode==='hunt'){if(Phone.live&&!Finger.F.on)Hunt.fire();else Hunt.fireAt(e.clientX,e.clientY);}}
   pts.delete(e.pointerId);pinch=0;};
 addEventListener('pointermove',e=>{if(cam.mode==='hunt'&&e.pointerType==='mouse'&&!pts.size&&e.target===canvas&&!Finger.F.gun)Hunt.pointAt(e.clientX,e.clientY);});      // the cross-hairs follow the mouse
 canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
@@ -3801,7 +3868,7 @@ for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
 {const ch=document.getElementById('chips'),put=()=>{const b=ch.getBoundingClientRect();document.documentElement.style.setProperty('--cb',Math.round(b.bottom+8)+'px');};
   try{new ResizeObserver(put).observe(ch);}catch(e){}addEventListener('resize',put);put();}      // panels that open under the button row keep clear of it as it grows
-window.__score=Score;window.__tut=Tut;window.__sim={dyn:()=>({DY,nd,view,focal}),groundH,nStatic,CAP,S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
+window.__score=Score;window.__tut=Tut;window.__phone=Phone;window.__sim={dyn:()=>({DY,nd,view,focal}),groundH,nStatic,CAP,S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
