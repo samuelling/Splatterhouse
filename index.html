@@ -55,16 +55,29 @@ button[aria-disabled="true"]{opacity:.42;cursor:default}
 input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:20px;background:#2a2638}
 #err[hidden]{display:none}
-#chips{position:fixed;left:14px;top:96px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 28px)}
+#chips{position:fixed;left:14px;top:96px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px;max-width:calc(100% - 28px)}
+#chips>button{margin-top:3px}
+/* Splatterhaus mode and, nested under it while it is on, the webcam controls: a blood-red bracket joins them, and the blood running off
+   the big button drips down over the little ones */
+#hg{display:flex;flex-direction:column;align-items:flex-start;gap:10px;max-width:100%}
+#hsub{position:relative;display:flex;flex-wrap:wrap;gap:6px;margin-left:12px;padding-left:14px}
+#hsub[hidden]{display:none}
+#hsub::before{content:"";position:absolute;left:0;top:-11px;height:calc(13px + 13px);width:9px;border-left:2px solid #9b100c;border-bottom:2px solid #9b100c;border-bottom-left-radius:7px;pointer-events:none}
+#hsub button{position:relative}
+#hsub button::before{content:"";position:absolute;left:var(--sl,8%);right:var(--sr,30%);top:-1px;height:9px;pointer-events:none;opacity:.94;      /* blood that has run onto the button and beads along its top edge */
+  background:radial-gradient(4px 5px at 10% 1px,#9b100c 96%,transparent),radial-gradient(3px 7px at 38% 1px,#8f0f0b 96%,transparent),radial-gradient(6px 4px at 62% 1px,#a5120d 96%,transparent),radial-gradient(2.5px 8px at 87% 1px,#8f0f0b 96%,transparent),linear-gradient(90deg,transparent,#a5120d 12%,#8f0f0b 80%,transparent) top/100% 2px no-repeat}
+#hsub button::after{content:"";position:absolute;top:0;left:var(--dx,30%);width:3px;height:0;border-radius:0 0 2px 2px;background:#8f0f0b;pointer-events:none;animation:seep 6.5s ease-in infinite;animation-delay:var(--dl,0s)}
+#hsub button:nth-child(1){--dx:24%;--dl:-1.2s;--sl:3%;--sr:22%}#hsub button:nth-child(2){--dx:58%;--dl:-4.4s;--sl:18%;--sr:9%}#hsub button:nth-child(3){--dx:36%;--dl:-2.7s;--sl:26%;--sr:38%}#hsub button:nth-child(4){--dx:62%;--dl:-5.6s;--sl:30%;--sr:14%}
+@keyframes seep{0%,30%{height:0}70%{height:12px}82%{height:13px}100%{height:0}}
 #bClean,#bFull,#bFinger,#bHead,#bHold,#bHelp{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bFinger[hidden],#bHead[hidden],#bHold[hidden],#bHelp[hidden]{display:none}
 #bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bHold[aria-pressed="true"],#bFull[aria-pressed="true"],#bHelp[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bAdv[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
-#adv{position:fixed;left:14px;top:128px;width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 140px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
+#adv{position:fixed;left:14px;top:max(128px,var(--cb,0px));width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - max(140px,calc(var(--cb,0px) + 12px)));overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
   background:rgba(30,23,36,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.3 var(--mono);color:var(--ink);display:grid;gap:7px}
 #adv[hidden]{display:none}
-#tut{position:fixed;right:14px;top:150px;width:272px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 164px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
+#tut{position:fixed;right:14px;top:max(150px,calc(var(--cb,0px) + 8px));width:272px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 164px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
   background:rgba(30,23,36,.66);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:12px/1.4 var(--mono);color:var(--ink)}
 #tut[hidden]{display:none}
 #tut h4{margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;font:600 15px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
@@ -86,7 +99,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 @media (max-width:470px){#tut{left:14px;right:14px;width:auto;top:auto;bottom:14px;max-height:46%}}
 /* The Splatterhaus button is the one thing on the page that wants to be pressed: blood red, glossy, with a heartbeat of light round it and
    blood gathering and dropping from its lower edge. Hovering makes it tremble. Once pressed it stops beckoning. */
-#bHunt{position:relative;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px 0 11px;font-size:14px;font-weight:700;letter-spacing:.12em;border-radius:10px;color:#fff1e8;
+#bHunt{position:relative;z-index:2;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px 0 11px;font-size:14px;font-weight:700;letter-spacing:.12em;border-radius:10px;color:#fff1e8;
   border:1px solid #ff7a5c;background:linear-gradient(#d3261b,#8f0f0b 62%,#6b0907);text-shadow:0 1px 0 rgba(60,0,0,.7);
   box-shadow:inset 0 1px 0 rgba(255,210,190,.55),inset 0 -6px 9px rgba(40,0,0,.45),0 2px 10px rgba(120,0,0,.55);animation:beat 2.4s ease-out infinite}
 #bHunt svg{width:15px;height:15px;flex:none;filter:drop-shadow(0 1px 0 rgba(60,0,0,.7))}
@@ -104,8 +117,10 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
   70%,100%{box-shadow:inset 0 1px 0 rgba(255,210,190,.55),inset 0 -6px 9px rgba(40,0,0,.45),0 2px 10px rgba(120,0,0,.55),0 0 0 16px rgba(255,70,45,0)}}
 @keyframes itch{0%,100%{transform:rotate(0)}25%{transform:rotate(-.7deg) translateY(-.5px)}75%{transform:rotate(.7deg) translateY(.5px)}}
 @keyframes ooze{0%{height:0}45%{height:9px}62%{height:10px}70%{height:5px}100%{height:0}}
+@keyframes spill{0%{height:0}50%{height:21px}64%{height:24px}74%{height:12px}100%{height:0}}
+#hg:has(#hsub:not([hidden])) #bHunt i,body.hunt #bHunt i{animation-name:spill}    /* with the webcam controls showing, the blood runs on down over them */
 @keyframes drop{0%,60%{opacity:0;transform:translateY(0)}63%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(17px) scaleY(1.25)}}
-@media (prefers-reduced-motion:reduce){#bHunt,#bHunt:hover{animation:none}#bHunt i{animation:none;height:7px}#bHunt i::after{animation:none}}
+@media (prefers-reduced-motion:reduce){#bHunt,#bHunt:hover{animation:none}#bHunt i{animation:none;height:7px}#bHunt i::after{animation:none}#hsub button::after{animation:none;height:6px}body.hunt #bHunt i{height:16px}}
 @media (max-width:470px){#bHunt{height:30px;font-size:13px;padding:0 12px 0 9px}}
 #bag{position:fixed;right:14px;top:14px;width:214px;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,106,74,.4);background:rgba(30,23,36,.5);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.5 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums;pointer-events:none}
 #bag[hidden],#xh[hidden]{display:none}
@@ -147,7 +162,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #calib small{position:absolute;left:50%;top:calc(27% + 66px);transform:translateX(-50%);padding:3px 8px;border-radius:6px;background:rgba(30,23,36,.6);font:12px/1.2 var(--mono);color:var(--ink);white-space:nowrap}
 #calib i{--p:0;position:absolute;width:34px;height:34px;margin:-17px;border-radius:50%;border:3px solid var(--hot);background:conic-gradient(var(--hot) calc(var(--p)*1turn),rgba(30,23,36,.55) 0);box-shadow:0 0 0 7px rgba(255,106,74,.22),0 0 0 1px rgba(0,0,0,.4);animation:calp 1s ease-in-out infinite}
 @keyframes calp{50%{box-shadow:0 0 0 13px rgba(255,106,74,.08),0 0 0 1px rgba(0,0,0,.4)}}
-@media (max-width:470px){#cam{bottom:auto;top:128px;width:104px}}
+@media (max-width:470px){#cam{bottom:auto;top:max(128px,var(--cb,0px));width:104px}}
 body.hunt canvas{cursor:none}
 /* nothing but the birds: every menu and line of text hidden; a faint button comes back when the pointer moves */
 body.clean #tag,body.clean #chips,body.clean #dock,body.clean #hint,body.clean #hud,body.clean #adv,body.clean #bag,body.clean #cam,body.clean #tut{display:none!important}
@@ -155,7 +170,7 @@ body.clean #tag,body.clean #chips,body.clean #dock,body.clean #hint,body.clean #
 body.clean #bShow{display:block}
 body.clean.peek #bShow{opacity:.8;pointer-events:auto}
 body.clean:not(.peek):not(.hunt) canvas{cursor:none}
-@media (max-width:470px){#bag{width:168px;font-size:10px;top:128px}}
+@media (max-width:470px){#bag{width:168px;font-size:10px;top:max(128px,var(--cb,0px))}}
 #adv h4 small{font:11px/1 var(--mono);letter-spacing:0;text-transform:none;color:var(--ink-dim);margin:0 auto 0 8px}
 #adv h4{margin:0;display:flex;justify-content:space-between;align-items:center;font:600 15px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 #adv label{display:grid;grid-template-columns:84px 1fr 34px;align-items:center;gap:6px;color:var(--ink-dim)}
@@ -185,7 +200,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"/><path d="M8 .8v4M8 11.2v4M.8 8h4M11.2 8h4"/></svg>Splatterhaus mode<i></i><i></i><i></i></button><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bHelp" type="button" aria-expanded="false" aria-controls="tut" aria-label="How to use the finger gun, the shotgun hold and head look" hidden>How to</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button></div>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button><div id="hg"><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"/><path d="M8 .8v4M8 11.2v4M.8 8h4M11.2 8h4"/></svg>Splatterhaus mode<i></i><i></i><i></i></button><div id="hsub" role="group" aria-label="Webcam controls for Splatterhaus mode" hidden><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bHelp" type="button" aria-expanded="false" aria-controls="tut" aria-label="How to use the finger gun, the shotgun hold and head look" hidden>How to</button></div></div></div>
 <button id="bShow" type="button">Show menus</button>
 <aside id="tut" hidden aria-label="How to use the camera controls">
   <h4>How to<button type="button" id="tutX" aria-label="Close">×</button></h4>
@@ -3226,9 +3241,9 @@ precision highp float;in vec4 vC;out vec4 o;uniform float uI;void main(){o=vec4(
     if(!cam.hpos||!canStand(cam.hpos[0],cam.hpos[1])){cam.hpos=[GATE[0]+2,GATE[1]-6];cam.hyaw=Math.atan2(RSX-cam.hpos[0],RSZ-cam.hpos[1]);cam.hpitch=.25;cam.hzoom=1.05;cam.hvel=[0,0];cam.hbob=0;}
     aim.x=aim.y=0;if(!gvao)try{build();}catch(e){console.error(e);}
     {const d=bw([0,0,11]);dog.on=true;dog.p=[d[0],d[2]];dog.mode='heel';dog.tg=null;dog.spd=0;dog.ph=0;}      // the dog comes out from the barn
-    document.getElementById('bHelp').hidden=false;document.getElementById('bFinger').hidden=false;document.getElementById('bHold').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
+    document.getElementById('hsub').hidden=false;document.getElementById('bHelp').hidden=false;document.getElementById('bFinger').hidden=false;document.getElementById('bHold').hidden=false;document.getElementById('bHead').hidden=false;Score.sfxMode(true);sync();
   }
-  function leave(){Finger.stop();Tut.hide();document.getElementById('bHelp').hidden=true;document.getElementById('bFinger').hidden=true;document.getElementById('bHold').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
+  function leave(){Finger.stop();Tut.hide();document.getElementById('hsub').hidden=true;document.getElementById('bHelp').hidden=true;document.getElementById('bFinger').hidden=true;document.getElementById('bHold').hidden=true;document.getElementById('bHead').hidden=true;st.on=false;st.rl=null;dog.on=false;if(dog.tg){if(dog.tg.st===2)dog.tg.st=1;dog.tg.claimed=false;dog.tg=null;}document.body.classList.remove('hunt');bagEl.hidden=true;xh.hidden=true;bHunt.setAttribute('aria-pressed','false');Score.sfxMode(false);}
   function pointAt(cx,cy){const r=canvas.getBoundingClientRect();aim.x=clamp((cx-r.left)/r.width*2-1,-1,1);aim.y=clamp(1-(cy-r.top)/r.height*2,-1,1);}
   function step(h){
     stepFx(h);stepDead(h);dogStep(h);
@@ -3784,6 +3799,8 @@ addEventListener('blur',()=>keysDown.clear());
 resize();setSpecies('starling');
 for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
+{const ch=document.getElementById('chips'),put=()=>{const b=ch.getBoundingClientRect();document.documentElement.style.setProperty('--cb',Math.round(b.bottom+8)+'px');};
+  try{new ResizeObserver(put).observe(ch);}catch(e){}addEventListener('resize',put);put();}      // panels that open under the button row keep clear of it as it grows
 window.__score=Score;window.__tut=Tut;window.__sim={dyn:()=>({DY,nd,view,focal}),groundH,nStatic,CAP,S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
