@@ -387,14 +387,14 @@ const bcos=Math.cos(BARN.th),bsin=Math.sin(BARN.th);
 const bw=p=>[BARN.x+p[0]*bcos+p[2]*bsin,p[1],BARN.z-p[0]*bsin+p[2]*bcos];
 const bv=v=>[v[0]*bcos+v[2]*bsin,v[1],-v[0]*bsin+v[2]*bcos];
 const SILO=bw([-7.7,0,-3]);
-const TREES=[['oak',-12,-67,13],['oak',37,-33,10.5],['oak',-58,-82,12.5],['oak',96,-40,12],
-  ['maple',17,-64,10],['maple',-45,-37,8.5],['maple',70,-130,11],
-  ['birch',25,-74,11],['birch',27.5,-76,9.5],['birch',23.5,-77,10.2],['birch',-71,-50,10.5],['birch',-73.5,-52.5,9],['birch',-69.5,-54,9.6],
+const TREES=[['oak',-12,-67,16],['oak',37,-33,13.5],['oak',-58,-82,15.5],['oak',96,-40,14.5],
+  ['maple',17,-64,11.5],['maple',-45,-37,9.8],['maple',70,-130,12.5],
+  ['birch',25,-74,12],['birch',27.5,-76,10.4],['birch',23.5,-77,11.2],['birch',-71,-50,11.5],['birch',-73.5,-52.5,9.8],['birch',-69.5,-54,10.5],
   ['spruce',34,-66,14],['spruce',39,-70,11],['spruce',30,-86,16],['spruce',42,-81,12.5],['spruce',-90,-120,15],['spruce',-95,-114,12],
   ['poplar',60,-102,18],['poplar',66,-103.5,19.5],['poplar',72,-105,17.5],['poplar',78,-106.5,19],['poplar',84,-108,18],
   ['willow',52,-47,9.5],['snag',-26,-104,9]];
 for(let i=0;i<3;i++)for(let j=0;j<2;j++){const p=bw([-4+i*6.5+(rnd()-.5),0,-15.5-j*6.5+(rnd()-.5)]);TREES.push(['apple',p[0],p[2],4.4+rnd()*.8]);}
-const CROWN={oak:.42,maple:.4,birch:.22,spruce:.2,poplar:.09,willow:.46,apple:.5,snag:.22};
+const CROWN={oak:.46,maple:.33,birch:.2,spruce:.2,poplar:.09,willow:.46,apple:.56,snag:.3};
 const OBST=[BARN.x,BARN.z,8.5,9.5,SILO[0],SILO[2],2.5,13.5];
 for(const t of TREES)OBST.push(t[1],t[2],t[3]*CROWN[t[0]]+1,t[3]+1);
 const TRACK=[bw([0,0,7.6]),bw([0,0,15])].map(p=>[p[0],p[2]]).concat([[-22,-34],[-13,-27],[-8,-22],[-2,-14],[5,-6],[7,6],[3,30],[-8,70],[-20,130],[-24,205]]);
@@ -836,7 +836,9 @@ const PAL={oak:[[.09,.20,.06],[.19,.34,.10],[.28,.41,.12],[.34,.45,.14]],       
   willow:[[.13,.25,.08],[.22,.36,.11],[.33,.44,.14],[.42,.48,.16]],
   apple:[[.08,.19,.06],[.17,.31,.09],[.26,.37,.11],[.30,.40,.12]],
   bush:[[.06,.15,.06],[.13,.25,.09],[.20,.30,.10],[.32,.33,.11]]};
+const LIMBS=/[?&#]limbs/.test(location.search+location.hash)?(window.__limbs={l:[],f:[]}):null;      // ?limbs keeps the skeleton of every tree for inspection
 function limb(a,b,r0,r1,bark){
+  if(LIMBS)LIMBS.l.push([a[0],a[1],a[2],b[0],b[1],b[2],r0,r1]);
   const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],len=Math.hypot(d[0],d[1],d[2]);d[0]/=len;d[1]/=len;d[2]/=len;
   const h=Math.abs(d[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,d)),e2=cross(d,e1),bk=bark||BARK,birch=bark===BIRCH;
   if(r0>.1){
@@ -873,6 +875,7 @@ function limb(a,b,r0,r1,bark){
    sun and those underneath are darker, and those on the sunward skin catch the light. That is what gives a crown its modelling. */
 const LEAFN=coarse?1.25:2.7,LEAFS=coarse?.9:.62;
 function leafBlob(c,r,nL,pal,ls,fruit,cs){
+  if(LIMBS)LIMBS.f.push([c[0],c[1],c[2],r]);
   nL=Math.round(nL*LEAFN);const hue=[.92+.16*rnd(),.94+.12*rnd(),.9+.2*rnd()];
   for(let k=0;k<nL;k++){
     let x,y,z;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;}while(x*x+y*y+z*z>1);
@@ -886,75 +889,123 @@ function leafBlob(c,r,nL,pal,ls,fruit,cs){
     add(c[0]+x*r,c[1]+y*r*.75,c[2]+z*r,3,s,s*(.6+.3*rnd()),.012,.93,quatFromBasis(tx,ty,nv),col[0]*j*hue[0],col[1]*j*hue[1],col[2]*j*hue[2],.5+.5*rnd());
     if(fruit&&rnd()<fruit[3])add(c[0]+x*r*1.02,c[1]+y*r*.75-.08,c[2]+z*r*1.02,3,.05,.05,.05,.97,QID,fruit[0],fruit[1],fruit[2],4);}
 }
-/* A broadleaf tree is grown the way a real one is built. Every axis wanders and tapers; side branches leave it all along its length and
-   not only at its end, each a thinner copy of the same thing, set off at the kind's own angle and turning up towards the light (or, for
-   a birch, hanging); at a fork the limbs share the wood out, so the squares of their radii add up to the parent's; and the leaves sit
-   in small clumps along the outer shoots and on every twig end, which makes the crown a lumpy shell with gaps that show the limbs
-   inside it, and not a ball on a stick. A kind is a handful of numbers: how much of the height is clear trunk, how far the limbs
-   reach, the angle they leave at, how crooked they grow, how strongly they turn up, and whether one leader runs to the top. */
+/* A broadleaf tree is grown the way a real one is built, in five sizes of wood: stems, limbs, branches, branchlets and twigs. Each is
+   a curved, tapering axis that carries the next size down all along its length. A kind is a table of numbers for each size (how many
+   children to the metre, the angle they leave at, how much they turn up or sag, how crooked they grow) and the outline its crown fills.
+   The tables follow published branch measurements (Weber and Penn's species tables, the ez-tree presets) and the outlines are read off
+   laser scans of real trees. Leaves sit in small clumps on the outer shoots only, so the crown is a lumpy shell with sky between its
+   masses and the limbs showing inside it, and not a ball on a stick. */
 function rotAbout(d,ang,az){const h=Math.abs(d[1])<.95?[0,1,0]:[1,0,0],e1=nrm(cross(h,d)),e2=cross(d,e1),s=Math.sin(ang),c=Math.cos(ang),ca=Math.cos(az),sa=Math.sin(az);
   return nrm([d[0]*c+(e1[0]*ca+e2[0]*sa)*s,d[1]*c+(e1[1]*ca+e2[1]*sa)*s,d[2]*c+(e1[2]*ca+e2[2]*sa)*s]);}
-function grow(p,dir,len,rad,depth,tp,az){
-  const ns=3,seg=len/ns,last=depth>=tp.depth;let a=p,d=dir,r=rad;
+/* The crown's envelope: how far out a branch may reach at each height, as a share of the tree's height, by tenths from the ground to the
+   top. The numbers are read off laser scans of real trees (see the README): widest about the middle and drawn in to a rounded top. Two
+   slow waves round the compass keep the crown from being a turned shape. A branch that would leave the envelope is grown shorter. */
+function envR(tp,y,az){const u=clamp(y/tp.H,0,1)*10,i=Math.min(9,u|0);return tp.H*tp.ek*lerp(tp.env[i],tp.env[i+1],u-i)*(1+.2*Math.sin(az*2+tp.l1)+.14*Math.sin(az*3+tp.l2));}
+// how near the outside of the crown a point is: 1 on its skin (or near its top), towards 0 in its shaded heart
+function skin(tp,q){const rx=q[0]-tp.x,rz=q[2]-tp.z;return Math.max(Math.hypot(rx,rz)/envR(tp,q[1],Math.atan2(rz,rx)),(q[1]/tp.H-.62)*2.6);}
+function fit(tp,p,d,len,lift){
+  for(let k=0;k<7;k++){const y=p[1]+(d[1]+lift)*len,rx=p[0]+d[0]*len-tp.x,rz=p[2]+d[2]*len-tp.z;
+    if(y>tp.floor&&y<tp.H*1.03&&Math.hypot(rx,rz)<=envR(tp,y,Math.atan2(rz,rx)))break;len*=.84;}
+  return len;}
+/* One axis of a tree: a stem, a limb, a branch, a branchlet or a twig (levels 0 to 4). It is a smooth curve of short lengths that
+   tapers, wanders by a slowly changing amount, sweeps up towards the light near its base and sags near its tip. Its children leave it
+   all along its length, each further round it by the golden angle, at the level's own angle, shorter towards the tip, and thinner in
+   proportion to their length. The numbers for each level are in the kind's table S. */
+function axis(p,d,len,r,lv,tp){
+  const S=tp.S[lv],U=tp.H/12,ns=Math.max(2,Math.min(S.ns,Math.round(len/(.2*U)))),seg=len/ns,rT=Math.max(.008,r*S.tip),top=lv>=tp.top;
+  const nk=top?0:Math.max(1,Math.round(len/U*S.dens*(.85+.3*rnd()))),ts=[];             // lengths are counted in twelfths of the tree's height, so a big tree has as many parts as a small one of its kind
+  for(let i=0;i<nk;i++)ts.push(S.start+(1-S.start)*(i+.25+.5*rnd())/nk*.97);
+  let a=p,dd=d,rr=r,w=[0,0,0],ci=0,az=rnd()*6.2832;
   for(let s=0;s<ns;s++){
-    const t=(s+1)/ns,r1=Math.max(.011,rad*(1-(1-tp.taper)*t)),b=[a[0]+d[0]*seg,a[1]+d[1]*seg,a[2]+d[2]*seg];
-    limb(a,b,r,r1,tp.bark);a=b;r=r1;
-    if(tp.leaves&&(last||depth===tp.depth-1||depth===tp.depth-2&&s===ns-1))leafBlob([a[0]+(rnd()-.5)*tp.blob*.6,a[1]+(rnd()-.2)*tp.blob*.5,a[2]+(rnd()-.5)*tp.blob*.6],tp.blob*(.75+.5*rnd()),tp.leaves,tp.pal,tp.ls,tp.fruit,tp.cs);
-    if(!last&&tp.leaves&&depth>0&&depth<tp.depth-0&&(s>0||depth>1)){az+=2.4+(rnd()-.5)*.9;                                // a leafy twig off the limb itself
-      grow(a,rotAbout(d,.9+.5*rnd(),az),len*(.26+.14*rnd()),Math.max(.012,r*.26),tp.depth,tp,0);}
-    if(!last&&s<ns-1&&rnd()<tp.lat){az+=2.4+(rnd()-.5)*.9;                                   // a side branch, each further round the axis than the last
-      grow(a,rotAbout(d,tp.ang*(.75+.5*rnd()),az),len*(.5+.25*rnd())*(1.1-.25*t),r*.52,depth+1,tp,rnd()*6.28);}
-    const g=tp.gnarl*(depth?1:.3);d=nrm([d[0]+(rnd()-.5)*g,d[1]+(rnd()-.5)*g*.7+tp.up*(depth?1:0)*(last?tp.tip:1),d[2]+(rnd()-.5)*g]);}
-  if(last){if(!tp.leaves)limb(a,[a[0]+d[0]*.3,a[1]+d[1]*.3,a[2]+d[2]*.3],r,.01,tp.bark);return;}
-  const a0=rnd()*6.28,k=.7+.06*rnd();                                                     // and the axis ends in a fork
-  grow(a,rotAbout(d,.2+.2*rnd(),a0),len*(.62+.14*rnd()),r*k,depth+1,tp,rnd()*6.28);
-  grow(a,rotAbout(d,tp.ang*(.45+.3*rnd()),a0+3.14),len*(.55+.14*rnd()),r*Math.sqrt(Math.max(.08,1-k*k)),depth+1,tp,rnd()*6.28);
+    const t1=(s+1)/ns,r1=lerp(r,rT,t1),b=[a[0]+dd[0]*seg,a[1]+dd[1]*seg,a[2]+dd[2]*seg];
+    if(!(coarse&&top&&tp.leaves))limb(a,b,rr,r1,tp.bark);                                // small screens do without the twigs' wood: the leaves hide it at that size
+    for(;ci<nk&&ts[ci]<=t1;ci++){
+      const t=ts[ci],f=clamp((t-s/ns)*ns,0,1),q=[lerp(a[0],b[0],f),lerp(a[1],b[1],f),lerp(a[2],b[2],f)],rq=lerp(rr,r1,f),C=tp.S[lv+1];
+      az+=2.4+(rnd()-.5)*.9;
+      const ang=lerp(S.ang,S.ang1??S.ang,t)*(.8+.4*rnd());let cd=rotAbout(dd,ang,az);
+      if(lv===0&&tp.stems>1&&(q[0]-tp.x)*cd[0]+(q[2]-tp.z)*cd[2]<0&&rnd()<.75){az+=3.1416;cd=rotAbout(dd,ang,az);}     // where a tree has several stems, their limbs mostly grow outwards, away from each other
+      if(cd[1]<C.low)cd=nrm([cd[0],C.low+.1*rnd(),cd[2]]);                                                             // and no branch sets off steeply towards the ground
+      if(lv===0)tp.ek=lerp(1,.62+.5*rnd(),tp.lump);                                                                                   // each limb reaches its own share of the way to the envelope, so the crown is built of separate masses with sky between
+      else if(lv+1===tp.top&&tp.leaves&&skin(tp,q)<.42&&rnd()<.65)continue;                                           // twigs in the shade at the heart of the crown have died and dropped
+      const full=lv===0?tp.reach:len*S.lenK,cl=fit(tp,q,cd,full*(1-S.fall*t)*(.75+.5*rnd()),C.up*.35);
+      if(cl<C.min*U)continue;
+      axis(q,cd,cl,Math.max(.008,Math.min(rq*.8,rq*S.radK*Math.pow(Math.min(1,cl/full),.6))),lv+1,tp);
+    }
+    a=b;rr=r1;
+    w=[w[0]*.72+(rnd()-.5)*S.gn,w[1]*.72+(rnd()-.5)*S.gn*.7,w[2]*.72+(rnd()-.5)*S.gn];             // the bend carries over from one length to the next, so the axis curves in long arcs and does not jitter
+    dd=nrm([dd[0]+w[0],dd[1]+w[1]+(S.up*2*(1-t1)-S.droop*2*t1)/ns,dd[2]+w[2]]);
+  }
+  if(!tp.leaves)return;
+  if(lv<tp.top-1)for(let k=0;k<(lv?2:3);k++){const cd=rotAbout(dd,.3+.4*rnd(),rnd()*6.2832),cl=fit(tp,a,cd,len*(.16+.14*rnd()),0);      // an axis does not end in a bare point: it breaks into a spray of shoots
+    if(cl>.2*U)axis(a,cd,cl,Math.max(.008,rr*.8),tp.top-1,tp);}
+  if(skin(tp,a)<.5&&rnd()<.8)return;                                                    // leaves need light: few grow inside the crown, which is why its limbs can be seen from below
+  const B=tp.blob;                                                                       // leaves sit in small clumps at the ends of the branchlets and twigs
+  if(lv>=tp.top-1)leafBlob([a[0]+(rnd()-.5)*B*.5,a[1]+(rnd()-.3)*B*.4,a[2]+(rnd()-.5)*B*.5],B*(.7+.8*rnd()*rnd()+.25*rnd()),tp.leaves,tp.pal,tp.ls,tp.fruit,tp.cs);
+  if(len>B*1.2&&(top||rnd()<.5))leafBlob([(p[0]+a[0])/2,(p[1]+a[1])/2,(p[2]+a[2])/2],B*(.6+.4*rnd()),Math.round(tp.leaves*.7),tp.pal,tp.ls,tp.fruit,tp.cs);
 }
+/* A kind's table: one row for each level, 0 the stems down to the twigs. ns lengths in the curve, dens children to the metre, start how
+   far along the first child leaves, ang the angle children leave at (ang1 at the far end, if different), lenK a child's length as a
+   share of its parent's, fall how much shorter children get towards the tip, radK their thickness as a share of the parent's there, up
+   how hard the axis turns upward, droop how much its tip sags, gn how crooked it grows, tip how thin its end is, low the steepest
+   downward start allowed, min the shortest length worth growing. */
+const lvl=(ns,dens,start,ang,ang1,lenK,fall,radK,up,droop,gn,tip,low,min)=>({ns,dens,start,ang,ang1,lenK,fall,radK,up,droop,gn,tip,low,min});
+const KIND={
+  // oak: a short bole breaks into a few great stems; heavy limbs leave them nearly level and elbow about; the crown is as wide as it is tall
+  oak:{trunk:.2,rad:.029,stems:3,split:.6,reach:.5,floor:.15,top:4,blob:.03,leaves:5,cw:.5,ch:.42,cy:.58,
+    env:[0,.05,.24,.40,.47,.50,.48,.43,.35,.24,.07],
+    S:[lvl(9,.85,.1,1.3,.7,0,.35,.62,.5,0,.13,.09,0,0),lvl(8,1.2,.2,.9,.9,.55,.45,.7,.5,.2,.15,.18,-.08,1.1),lvl(6,1.8,.15,.8,.8,.55,.4,.7,.3,.08,.18,.3,-.3,.5),lvl(4,2.5,.1,.75,.75,.5,.3,.7,.15,0,.2,.5,-.45,.28),lvl(2,0,0,0,0,0,0,0,.1,0,.25,.6,-.6,.15)]},
+  // maple: several stems climbing steeply into a dense egg of a crown; straighter wood than an oak
+  maple:{trunk:.22,rad:.028,stems:4,split:.42,reach:.36,floor:.2,top:4,blob:.034,leaves:6,cw:.36,ch:.42,cy:.6,
+    env:[0,0,.12,.27,.32,.34,.34,.31,.27,.19,.06],
+    S:[lvl(9,1.25,.1,.95,.5,0,.4,.6,.45,0,.07,.09,0,0),lvl(7,1.7,.2,.65,.65,.5,.45,.7,.35,.05,.08,.2,.05,.9),lvl(5,2.1,.15,.6,.6,.55,.4,.7,.25,0,.1,.3,-.2,.45),lvl(4,2.8,.1,.6,.6,.5,.3,.7,.15,0,.14,.5,-.4,.26),lvl(2,0,0,0,0,0,0,0,.1,0,.2,.6,-.5,.15)]},
+  // birch: one white pole to the top, slender branches that climb, arch over and end in hanging twigs
+  birch:{trunk:.3,rad:.015,stems:1,reach:.22,floor:.24,top:3,blob:.034,leaves:7,lump:.7,ls:.7,cw:.2,ch:.4,cy:.64,
+    env:[0,0,.03,.09,.15,.18,.19,.17,.13,.09,.03],
+    S:[lvl(10,2.7,0,.95,.5,0,.45,.5,0,0,.035,.12,0,0),lvl(7,3.0,.2,.6,.6,.5,.3,.7,.1,.6,.08,.3,.1,.5),lvl(4,3.4,.1,.7,.7,.6,.2,.7,-.2,.7,.1,.5,-.9,.22),lvl(3,0,0,0,0,0,0,0,-.3,.8,.12,.6,-1,.14)]},
+  // apple: low, wide and crooked, an open cup of scaffold limbs
+  apple:{trunk:.3,rad:.04,stems:4,split:.95,reach:.55,floor:.22,top:3,blob:.075,leaves:5,cw:.62,ch:.4,cy:.62,
+    env:[0,0,.12,.4,.56,.62,.6,.52,.4,.24,.08],
+    S:[lvl(7,.8,.15,1.0,.7,0,.3,.62,.6,.15,.16,.14,0,0),lvl(6,1.05,.15,.85,.85,.55,.4,.7,.35,.1,.24,.3,-.1,1.0),lvl(4,1.3,.1,.8,.8,.55,.3,.7,.2,0,.26,.5,-.4,.5),lvl(2,0,0,0,0,0,0,0,.1,0,.28,.6,-.6,.28)]},
+  // Lombardy poplar: a column. Branches leave the pole from near the ground, climb at a narrow angle and turn up to run beside it
+  poplar:{trunk:.07,rad:.02,stems:1,reach:.3,floor:.05,top:3,blob:.04,leaves:6,ls:.9,lump:.4,cw:.1,ch:.48,cy:.52,
+    env:[0,.045,.068,.08,.084,.084,.08,.072,.058,.04,.012],
+    S:[lvl(10,2.8,0,.5,.3,0,.2,.42,0,0,.02,.12,0,0),lvl(7,2.5,.15,.4,.4,.42,.3,.6,.5,0,.05,.3,.3,.8),lvl(4,2.6,.1,.45,.45,.5,.3,.7,.3,0,.08,.5,.2,.35),lvl(2,0,0,0,0,0,0,0,.2,0,.1,.6,.1,.18)]},
+  // the snag: a dead oak that has lost everything finer than its branches, and the ends of those
+  snag:{trunk:.3,rad:.031,stems:3,split:.6,reach:.42,floor:.2,top:2,leaves:0,
+    env:[0,0,.2,.34,.4,.42,.4,.36,.3,.2,.07],
+    S:[lvl(8,.5,.15,1.2,.8,0,.3,.62,.4,0,.12,.4,0,0),lvl(7,.8,.25,.9,.9,.5,.4,.7,.35,.15,.18,.45,-.1,1.0),lvl(4,0,0,0,0,0,0,0,.2,0,.2,.6,-.3,.5)]}};
 function broadleaf(x,z,Ht,o){
-  const R=Ht*(o.rad||.031),tH=Ht*(o.trunk||.24),reach=Ht*(o.reach||.4),lean=[(rnd()-.5)*.1,1,(rnd()-.5)*.1],
-    tp={depth:o.depth||3,taper:.62,ang:o.ang||1.05,gnarl:o.gnarl??.3,up:o.up??.1,tip:o.tip??1,lat:o.lat??.8,blob:Ht*(o.blob||.05),leaves:Math.round((o.leaves??13)*LEAFK),
-      pal:o.pal,bark:o.bark,ls:o.ls||1,fruit:o.fruit,cs:[x,Ht*(o.cy||.6),z,Ht*(o.cw||.5),Ht*(o.ch||.42)]};
+  const R=Ht*o.rad,tH=Ht*o.trunk,lean=[(rnd()-.5)*.1,1,(rnd()-.5)*.1],
+    tp={x,z,H:Ht,env:o.env,l1:rnd()*6.2832,l2:rnd()*6.2832,floor:Ht*o.floor,reach:Ht*o.reach,top:o.top,stems:o.stems,S:o.S,blob:Ht*(o.blob||.05),
+      ek:1,lump:o.lump??1,leaves:Math.round(o.leaves*LEAFK),pal:o.pal,bark:o.bark,ls:o.ls||1,fruit:o.fruit,cs:[x,Ht*(o.cy||.6),z,Ht*(o.cw||.5),Ht*(o.ch||.42)]};
   // the foot: the trunk swells into the ground and sends out a few roots
   const nr=5+(rnd()*3|0),r0=rnd()*6.28;for(let k=0;k<nr;k++){const an=r0+(k+rnd()*.5)/nr*6.28,c=Math.cos(an),sn=Math.sin(an),l=R*(1.7+.9*rnd());
     limb([x+c*R*.5,R*1.1+.1,z+sn*R*.5],[x+c*l,-.15,z+sn*l],R*.62,R*.3,o.bark);}
-  // the bole, in three lengths, a little thicker at the foot
-  let a=[x,-.15,z],d=nrm(lean);const top=[];
-  for(let sg=0;sg<3;sg++){const b=[a[0]+d[0]*tH/3,a[1]+d[1]*tH/3,a[2]+d[2]*tH/3];limb(a,b,R*(sg?1-.1*sg:1.28),R*(1-.1*(sg+1)),o.bark);a=b;d=nrm([d[0]+(rnd()-.5)*.07,d[1],d[2]+(rnd()-.5)*.07]);}
-  const rt=R*.8;
-  if(o.leader){                                                                           // one leader to the top, with branches all the way up it (birch)
-    const n=o.leader,L=(Ht-tH)*.97/n;let az=rnd()*6.28,r=rt;
-    for(let i=0;i<n;i++){const t=i/n,b=[a[0]+d[0]*L,a[1]+d[1]*L,a[2]+d[2]*L],r1=Math.max(.02,rt*(1-.93*(i+1)/n));limb(a,b,r,r1,o.bark);a=b;r=r1;
-      d=nrm([d[0]+(rnd()-.5)*.12,d[1]+.2,d[2]+(rnd()-.5)*.12]);
-      for(let k=0;k<2;k++){az+=2.4+(rnd()-.5);grow(a,rotAbout(d,tp.ang*(.8+.4*rnd()),az),reach*(1-.6*t)*(.7+.5*rnd()),Math.max(.02,r*.42),1,tp,rnd()*6.28);}}
-    leafBlob(a,tp.blob,tp.leaves,tp.pal,tp.ls,null,tp.cs);return;}
-  const nf=o.forks||(5+(rnd()*2|0)),a0=rnd()*6.28,rl=rt*Math.sqrt(1.25/nf);                  // or the bole breaks into great limbs, one of them the most upright
-  for(let k=0;k<nf;k++){const up=k===0?.4:1;
-    grow(a,rotAbout(d,tp.ang*up*(.8+.4*rnd()),a0+(k+rnd()*.5)/nf*6.28),reach*(k===0?1.1:.8+.4*rnd()),rl*(k===0?1.15:.85+.3*rnd()),1,tp,rnd()*6.28);}
+  // the bole, in four lengths, a little thicker at the foot and never quite straight
+  let a=[x,-.15,z],d=nrm(lean);
+  for(let sg=0;sg<4;sg++){const b=[a[0]+d[0]*tH/4,a[1]+d[1]*tH/4,a[2]+d[2]*tH/4];limb(a,b,R*(sg?1-.07*sg:1.28),R*(1-.07*(sg+1)),o.bark);a=b;d=nrm([d[0]+(rnd()-.5)*.07,d[1],d[2]+(rnd()-.5)*.07]);}
+  const rt=R*.74,n=o.stems;
+  if(n<2){axis(a,d,(Ht-tH)*.96,rt,0,tp);return;}                                          // one leader to the top (birch)
+  const a0=rnd()*6.2832;                                                                  // or the bole divides into stems, one of them the most upright, which share its wood between them
+  for(let k=0;k<n;k++){const dir=rotAbout(d,o.split*(k?.8+.5*rnd():.4),a0+(k+.4*rnd())/n*6.2832);
+    axis(a,dir,fit(tp,a,dir,(Ht-tH)*(k?.72+.2*rnd():.92)/((dir[1]+1.15)/2.15),.2),rt*Math.sqrt(1.4/n)*(k?.88+.2*rnd():1.12),0,tp);}
 }
 function spruce(x,z,Ht){
-  limb([x,0,z],[x,Ht*.96,z],Ht*.021,.03,[.15,.11,.09]);
+  const SPB=[.15,.11,.09];
+  for(let k=0;k<6;k++)limb([x,Ht*.96*k/6-(k?0:.1),z],[x,Ht*.96*(k+1)/6,z],Ht*.021*(1-k/6.6)+.012,Ht*.021*(1-(k+1)/6.6)+.012,SPB);            // the pole tapers all the way up
   const R0=Ht*.2;
   for(let y=Ht*.1;y<Ht;y+=.36+.2*rnd()){
     const t=y/Ht,r=R0*Math.pow(1-t,.85)+.12,nb=Math.max(4,Math.round(5+r*2.4)),a0=rnd()*6.2832,ns=Math.round(r/.36*LEAFK)+1;
     for(let k=0;k<nb;k++){
       if(rnd()<.07)continue;                                                              // a bough missing here and there, and no two the same length: a spruce is not turned on a lathe
       const a=a0+(k+rnd()*.5)/nb*6.2832,ca=Math.cos(a),sa=Math.sin(a),o=nrm([ca,-.42,sa]),tg=[-sa,0,ca],q=quatFromBasis(o,tg,cross(o,tg)),qh=quatFromBasis(tg,[0,1,0],[ca,0,sa]),rl=r*(.74+.38*rnd()),dr=.3+.16*rnd();
+      {const bm=[x+ca*rl*.5,y-dr*rl*.25,z+sa*rl*.5],br=.014+.012*r;limb([x,y,z],bm,br,br*.7,SPB);limb(bm,[x+ca*rl*.96,y-dr*rl*.92+.12*rl,z+sa*rl*.96],br*.7,.01,SPB);}   // the branch the bough's needles hang on: it sags, then lifts at its tip
       for(let s=0;s<ns;s++){const f=(s+.55+rnd()*.35)/ns,j=.7+.6*rnd(),c=mix3([.045,.12,.085],[.10,.22,.12],f*f),yy=y-dr*rl*f*f+.14*rl*smooth((f-.72)/.28)+(rnd()-.5)*.1;   // the bough sags, and its tip turns up
         add(x+ca*rl*f,yy,z+sa*rl*f,3,.3*(.7+.5*rnd())*Math.min(1,rl*.8+.3),.19,.012,.94,q,c[0]*j,c[1]*j,c[2]*j,.12);
         if(f>.25&&rl>.5&&rnd()<.62)add(x+ca*rl*f-sa*(rnd()-.5)*.2,yy-.15-.1*rnd(),z+sa*rl*f+ca*(rnd()-.5)*.2,3,.09+.05*rnd(),.2+.12*rnd(),.012,.93,qh,c[0]*j*.8,c[1]*j*.82,c[2]*j*.85,.12);}   // the branchlets hang from it like a curtain
     }
   }
   add(x,Ht*.99,z,3,.05,.35,.05,.95,QID,.06,.14,.09,4);
-}
-function poplar(x,z,Ht){
-  limb([x,0,z],[x,Ht*.92,z],Ht*.02,.04);
-  for(let y=Ht*.08;y<Ht*.96;y+=.6){
-    const t=y/Ht,rr=(1.45*Math.sin(Math.PI*Math.pow(t,.72))+.3)*Ht/18;
-    for(let k=0;k<3;k++){const a=rnd()*6.2832,f=.5+.5*rnd(),tip=[x+Math.cos(a)*rr*f,y+1.1+rnd(),z+Math.sin(a)*rr*f];
-      limb([x,y,z],tip,.045,.02);
-      leafBlob(tip,.85,Math.round(12*LEAFK),PAL.poplar,.9);
-      leafBlob([(x+tip[0])/2,(y+tip[1])/2,(z+tip[2])/2],.6,Math.round(5*LEAFK),PAL.poplar,.8);}
-  }
 }
 function willow(x,z,Ht){
   /* A weeping willow: a short bole forks into a few great limbs that climb and arch into a dome, and from the dome hang
@@ -1010,16 +1061,18 @@ function willow(x,z,Ht){
 function bush(x,z,r,berries){
   for(let k=0;k<2;k++)leafBlob([x+(rnd()-.5)*r,r*.62+rnd()*.3,z+(rnd()-.5)*r],r,Math.round(34*LEAFK),PAL.bush,1.15,berries?[.62,.08,.07,.22]:null);
 }
-for(const[ty,x,z,h]of TREES){
-  if(ty==='oak')broadleaf(x,z,h,{pal:PAL.oak,trunk:.2,reach:.45,ang:1.2,gnarl:.36,up:.14,rad:.034,blob:.078,leaves:12,cw:.6,ch:.44,cy:.6});              // short thick bole, great crooked limbs reaching out as far as the tree is tall
-  else if(ty==='maple')broadleaf(x,z,h,{pal:PAL.maple,trunk:.24,reach:.4,ang:.72,gnarl:.2,up:.2,blob:.075,leaves:12,cw:.42,ch:.44,cy:.62});          // limbs climbing steeply into a dense egg of a crown
-  else if(ty==='birch')broadleaf(x,z,h,{pal:PAL.birch,trunk:.36,reach:.2,ang:.75,gnarl:.26,up:-.16,tip:1.7,rad:.015,blob:.04,leaves:8,bark:BIRCH,ls:.7,leader:7,depth:2,lat:.7,cw:.24,ch:.4,cy:.66});   // a white pole to the top, thin branches that end in hanging twigs
-  else if(ty==='apple')broadleaf(x,z,h,{pal:PAL.apple,trunk:.3,reach:.5,ang:1.2,gnarl:.45,up:.08,rad:.04,blob:.13,leaves:18,depth:2,forks:5,cw:.62,ch:.4,cy:.62,fruit:[.72,.10,.07,.1]});   // low, wide and crooked
-  else if(ty==='snag')broadleaf(x,z,h,{pal:PAL.oak,leaves:0,trunk:.3,reach:.34,ang:1.0,gnarl:.4,depth:2,lat:.5,bark:[.30,.28,.26]});
+const seed0=seed;let treeN=0;
+for(const[ty,x,z,h]of TREES){seed=(770031+7919*treeN++)|0;                     // every tree grows from its own seed, so a change to one kind leaves the rest as they were
+  if(ty==='oak')broadleaf(x,z,h,{...KIND.oak,pal:PAL.oak});
+  else if(ty==='maple')broadleaf(x,z,h,{...KIND.maple,pal:PAL.maple});
+  else if(ty==='birch')broadleaf(x,z,h,{...KIND.birch,pal:PAL.birch,bark:BIRCH});
+  else if(ty==='apple')broadleaf(x,z,h,{...KIND.apple,pal:PAL.apple,fruit:[.72,.10,.07,.1]});
+  else if(ty==='snag')broadleaf(x,z,h,{...KIND.snag,pal:PAL.oak,bark:[.30,.28,.26]});
   else if(ty==='spruce')spruce(x,z,h);
-  else if(ty==='poplar')poplar(x,z,h);
+  else if(ty==='poplar')broadleaf(x,z,h,{...KIND.poplar,pal:PAL.poplar});
   else willow(x,z,h);
 }
+seed=seed0;
 // hedgerow shrubs strung along the fence lines
 for(const line of FENCES)for(let k=0;k<line.length-1;k++){
   const a=line[k],b=line[k+1],len=Math.hypot(b[0]-a[0],b[1]-a[1]);
