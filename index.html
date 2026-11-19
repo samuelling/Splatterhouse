@@ -155,6 +155,8 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #cam em{position:absolute;width:10px;height:10px;margin:-5px;border:2px solid #f3c96b;transform:rotate(45deg)}
 #cam em.a{background:#f3c96b}
 #cam b[hidden],#cam u[hidden],#cam i[hidden],#cam em[hidden],#cam button[hidden],#cam small[hidden]{display:none}
+#cam select{pointer-events:auto;display:block;width:100%;margin-top:5px;height:24px;font:inherit;font-size:11px;color:var(--ink);background:rgba(10,12,22,.8);border:1px solid var(--edge);border-radius:7px;padding:0 4px}
+#cam select[hidden]{display:none}
 #cam button{pointer-events:auto;margin-top:5px;width:100%;height:24px;padding:0;font-size:12px;letter-spacing:.08em;border-radius:7px}
 #calib{position:fixed;inset:0;pointer-events:none}
 #calib[hidden]{display:none}
@@ -223,7 +225,7 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 </form>
 <div id="flash"></div><div id="lens"></div>
 <div id="bag" hidden></div>
-<div id="cam" hidden><div><video playsinline muted></video><u hidden></u><s hidden></s><em hidden></em><i hidden></i><b hidden></b></div><span></span><small></small><small hidden></small><small></small><button id="bCal" type="button">Calibrate</button><button id="bCen" type="button" hidden>Centre (C)</button></div>
+<div id="cam" hidden><div><video playsinline muted></video><u hidden></u><s hidden></s><em hidden></em><i hidden></i><b hidden></b></div><span></span><small></small><small hidden></small><small></small><select id="camSel" aria-label="Camera" hidden></select><button id="bCal" type="button">Calibrate</button><button id="bCen" type="button" hidden>Centre (C)</button></div>
 <div id="calib" hidden><p></p><i></i><small></small></div>
 <div id="xh" hidden><i></i><b></b></div>
 <div id="hint"></div>
@@ -3360,7 +3362,7 @@ const Finger=(()=>{
   function calDone(){const T=cal.T;cal=null;ov.hidden=true;
     if(Math.abs(T.x2-T.x1)<.12){T.x1=DEF.x1;T.x2=DEF.x2;}if(Math.abs(T.y2-T.y1)<.09){T.y1=DEF.y1;T.y2=DEF.y2;}       // corners too close together to be believed: keep the standard reach
     if(!(T.up-T.down>.12*T.up)){T.up=0;T.down=0;}                                                                   // thumb barely moved: fall back to judging it on the fly
-    T.done=true;C=T;try{localStorage.setItem(KEY,JSON.stringify(C));}catch(e){}
+    T.done=true;C=T;try{localStorage.setItem(KC,JSON.stringify(C));}catch(e){}
     note.textContent='calibrated';F.hi=0;F.inN=F.outN=0;fx.t=fy.t=null;}
   function calFrame(r){
     const t=clock(),st=cal.step,T=cal.T;
@@ -3443,13 +3445,44 @@ const Finger=(()=>{
      to each side (HC, in metres of swing at the fore-end) and keeps it in the browser. The middle is retaken whenever you centre. */
   const HDEF={l:.76*HX,r:.76*HX,u:.72*HY,d:.72*HY,done:false},KEY2='splatterhaus.shotgunhold';let HC=Object.assign({},HDEF),hcal=null;
   try{const j=JSON.parse(localStorage.getItem(KEY2));if(j&&j.done)HC=Object.assign({},HDEF,j);}catch(e){}
+  /* Which camera. With more than one, a menu under the picture chooses, and the choice is kept. Each camera keeps its own calibrations, since
+     each sees you from its own place; the ones made before there was a choice belong to whichever camera was in use then. A camera that
+     faces away from you, as a phone's back camera does, sees the world the right way round already, so its pictures are mirrored before the
+     trackers read them: everything after that works as it does with a camera facing you. */
+  let KC=KEY,KC2=KEY2,FLIP=false,fcv=null,fctx=null;
+  const CAMK='splatterhaus.camera',OWN='splatterhaus.camera.calibrated';
+  const camSel=document.getElementById('camSel');
+  const camPick=()=>{try{return localStorage.getItem(CAMK)||'';}catch(e){return '';}};
+  function camUse(tr){
+    const st=tr.getSettings?tr.getSettings():{},lab=tr.label||st.deviceId||'camera';
+    FLIP=st.facingMode==='environment'||(!st.facingMode&&/\b(back|rear)\b/i.test(lab));video.style.transform=FLIP?'none':'';
+    let own=null;try{own=localStorage.getItem(OWN);if(!own){own=lab;localStorage.setItem(OWN,lab);}}catch(e){}
+    KC=lab===own?KEY:KEY+'@'+lab;KC2=lab===own?KEY2:KEY2+'@'+lab;
+    C=Object.assign({},DEF);HC=Object.assign({},HDEF);
+    try{const j=JSON.parse(localStorage.getItem(KC));if(j&&j.done)C=Object.assign({},DEF,j);}catch(e){}
+    try{const j=JSON.parse(localStorage.getItem(KC2));if(j&&j.done)HC=Object.assign({},HDEF,j);}catch(e){}
+    camList(st.deviceId);
+  }
+  async function camList(cur){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices)return;
+    let ds=[];try{ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');}catch(e){}
+    if(cur===undefined&&stream){const t=stream.getVideoTracks()[0];cur=t&&t.getSettings?t.getSettings().deviceId:'';}
+    camSel.hidden=ds.length<2;if(ds.length<2)return;
+    camSel.innerHTML='';ds.forEach((d,k)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=(d.label||'Camera '+(k+1)).replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)$/i,'');if(d.deviceId===cur)o.selected=true;camSel.appendChild(o);});
+  }
+  camSel.onchange=()=>{try{localStorage.setItem(CAMK,camSel.value);}catch(e){}
+    if(stream){for(const t of stream.getTracks())t.stop();stream=null;video.srcObject=null;}
+    if(cal){cal=null;ov.hidden=true;}if(hcal){hcal=null;ov.hidden=true;}F.gun=false;F.held=false;Hd.seen=-9;
+    busy=busy.then(ensure).then(()=>{if(note.textContent==='asking for the camera')note.textContent=want.gun?(F.hold?'hold an imaginary shotgun':'show the camera a finger gun'):'';
+      if(want.gun&&(F.hold?!HC.done:!C.done))calStart();if(want.head)headCentre();});camSel.blur();};
+  if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)navigator.mediaDevices.addEventListener('devicechange',()=>{if(stream)camList();});
   const HSTEPS=[null,['Shoulder the gun and point it at the dot',.5,.5],['Swing it to the top-left dot',.12,.14],['Now the bottom-right dot',.88,.86]];
   function hcalShow(sub,p){const q=HSTEPS[hcal.step];ov.hidden=false;ovT.textContent=hcal.pause?'Got it':q[0];ovS.textContent=hcal.pause?'':(sub||'')+(sub?' \u00b7 ':'')+'Esc to skip';ovD.style.left=(q[1]*100)+'%';ovD.style.top=(q[2]*100)+'%';ovD.style.setProperty('--p',clamp(p||0,0,1).toFixed(3));}
   function hcalNext(){hcal.step++;hcal.buf=[];hcal.win=[];hcal.c0=0;hcal.pause=0;hcal.t0=clock();if(hcal.step>3)hcalDone();else hcalShow('move to the dot and hold still',0);}
   function hcalStart(){if(!F.on||!F.hold)return;hcal={step:0,miss:0};F.gun=false;hcalNext();note.textContent='calibrating';}
   function hcalDone(){const q=hcal,T=Object.assign({},HDEF),ok=v=>v>.04&&v<.6;hcal=null;ov.hidden=true;                 // a reach too short or too long to be believed keeps the standard one
     if(ok(q.cx-q.x1))T.l=q.cx-q.x1;if(ok(q.x2-q.cx))T.r=q.x2-q.cx;if(ok(q.cy-q.y1))T.u=q.cy-q.y1;if(ok(q.y2-q.cy))T.d=q.y2-q.cy;
-    T.done=true;HC=T;try{localStorage.setItem(KEY2,JSON.stringify(HC));}catch(e){}
+    T.done=true;HC=T;try{localStorage.setItem(KC2,JSON.stringify(HC));}catch(e){}
     F.n0=[q.cx,q.cy];F.nbuf=null;F.cocked=false;hist.length=0;fx.t=fy.t=null;note.textContent='calibrated';}
   function hcalFrame(ox,oy){
     const t=clock(),st=hcal.step;
@@ -3545,15 +3578,19 @@ const Finger=(()=>{
   function stop(){want.gun=want.head=false;sync();shut();}
   function set(what,on){want[what]=!!on;sync();busy=busy.then(ensure);return busy;}
   const start=()=>set('gun',true);
+  window.__cam={get flip(){return FLIP;},get kc(){return[KC,KC2];},list:camList};
   async function ensure(){
     if(!want.gun&&!want.head){shut();return;}
     F.err='';box.hidden=false;
     try{
       if(!stream){note.textContent='asking for the camera';nums.textContent='';
         if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('no camera access in this browser or page');
-        const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:30}},audio:false});
+        const V={width:{ideal:640},height:{ideal:480},frameRate:{ideal:30}},id=camPick();let s;
+        try{s=await navigator.mediaDevices.getUserMedia({video:Object.assign({},V,id?{deviceId:{exact:id}}:{facingMode:'user'}),audio:false});}
+        catch(e){if(!id||/denied|NotAllowed|Permission/i.test(String(e&&(e.name+e.message))))throw e;try{localStorage.removeItem(CAMK);}catch(e2){}       // the chosen camera has gone: back to the usual one
+          s=await navigator.mediaDevices.getUserMedia({video:Object.assign({},V,{facingMode:'user'}),audio:false});}
         if(!want.gun&&!want.head){for(const t of s.getTracks())t.stop();return;}
-        stream=s;video.srcObject=s;await video.play();}
+        stream=s;camUse(s.getVideoTracks()[0]);video.srcObject=s;await video.play();}
       if(!vis){note.textContent='fetching the tracker';vis=await import(SRC.mjs);fset=await vis.FilesetResolver.forVisionTasks(SRC.wasm);}
       if(want.gun&&!lm){note.textContent='fetching the hand tracker';
         const mk=dg=>vis.HandLandmarker.createFromOptions(fset,{baseOptions:{modelAssetPath:SRC.model,delegate:dg},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.35,minHandPresenceConfidence:.35,minTrackingConfidence:.35});      // readier to keep hold of a hand than the standard settings
@@ -3579,11 +3616,15 @@ const Finger=(()=>{
   const ema=(k,v)=>{St[k]=St[k]?St[k]+(v-St[k])*.12:v;};
   function tick(){
     if((!F.on&&!Hd.on)||video.readyState<2||video.currentTime===lastT)return;lastT=video.currentTime;const now=performance.now();let t1=now,did=false;
-    if(F.on&&lm)try{const r=lm.detectForVideo(video,now),hd=r.handedness||r.handednesses,hs=[];
+    let src=video;
+    if(FLIP&&video.videoWidth){if(!fcv){fcv=document.createElement('canvas');fctx=fcv.getContext('2d');}                 // a camera facing away: mirror the picture, so it reads like one facing you
+      if(fcv.width!==video.videoWidth||fcv.height!==video.videoHeight){fcv.width=video.videoWidth;fcv.height=video.videoHeight;}
+      fctx.setTransform(-1,0,0,1,fcv.width,0);fctx.drawImage(video,0,0);src=fcv;}
+    if(F.on&&lm)try{const r=lm.detectForVideo(src,now),hd=r.handedness||r.handednesses,hs=[];
       for(let i=0;r.landmarks&&i<r.landmarks.length&&i<2;i++)if(r.worldLandmarks&&r.worldLandmarks[i]){const c=hd&&hd[i]&&hd[i][0];hs.push([r.landmarks[i],r.worldLandmarks[i],c?c.categoryName:'',c?c.score:0]);}
       t1=performance.now();ema('hand',t1-now);did=true;feedHands(hs);}catch(e){F.err=String(e);}
     // the head moves slowly beside a hand, so with both running the face is read on every other picture
-    if(Hd.on&&fm&&(!F.on||(Hd.n++&1)===0))try{const r=fm.detectForVideo(video,now),m=r.facialTransformationMatrixes&&r.facialTransformationMatrixes[0],l=r.faceLandmarks&&r.faceLandmarks[0];ema('face',performance.now()-t1);did=true;head(m&&l?m.data:null,l&&l[1],clock());}catch(e){F.err=String(e);}
+    if(Hd.on&&fm&&(!F.on||(Hd.n++&1)===0))try{const r=fm.detectForVideo(src,now),m=r.facialTransformationMatrixes&&r.facialTransformationMatrixes[0],l=r.faceLandmarks&&r.faceLandmarks[0];ema('face',performance.now()-t1);did=true;head(m&&l?m.data:null,l&&l[1],clock());}catch(e){F.err=String(e);}
     if(!did)return;const t2=performance.now();St.n++;if(St.cap&&t2-St.cap>0&&t2-St.cap<2000)ema('lag',t2-St.cap);
     if(t2-St.t0>600){St.fps=St.t0?St.n*1000/(t2-St.t0):0;St.n=0;St.t0=t2;
       rate.textContent=(St.fps?St.fps.toFixed(0)+'/s':'')+(F.on?' · hand '+St.hand.toFixed(0)+' ms':'')+(Hd.on?' · face '+St.face.toFixed(0)+' ms':'')+(St.lag?' · lag '+St.lag.toFixed(0)+' ms':'');}
