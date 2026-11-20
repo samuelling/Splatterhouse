@@ -99,9 +99,11 @@ The files in `assets/` are the ones embedded in `index.html` (as base64, so the 
 
 ## Invisible Hands
 
-**Link** opens the Invisible Hands panel: start a room, type a code, or copy an invite link. Anyone in the same room, from any app that speaks the protocol, can then move Splatterhaus, and gets its outputs back. While linked, the button reads *Linked · n*, with n the number of others in the room. The panel's *Let others move my controls* switch stops remote control at once. Local hands win: whatever you move here becomes the centre that remote modulation swings around.
+**Link** carries the Invisible Hands mark and opens its panel: start a room, type a code, copy an invite link, or bring MEGA·CV into the room. Anyone in the same room, from any app that speaks the protocol, can then move Splatterhaus, and gets its outputs back. While linked, the button reads *Linked · n*, with n the number of others in the room. The panel's *Let others move my controls* switch stops remote control at once. Local hands win: whatever you move here becomes the centre that remote modulation swings around.
 
-The file is [`invisible-hands.js`](https://github.com/samuelling/InvisibleHands) from commit `d98f174`, copied unchanged into the page so the page stays one file. It talks to the deployed relay (`wss://invisible-hands.samuelling.workers.dev`) unless `?relay=` says otherwise.
+**The mark.** Following [the brand page](https://samuelling.github.io/InvisibleHands/brand/), the mark (a knob turned by a hand you can't see) is pinned after the label of every control others can move: the species, the bird count, the view buttons, Falcon, Split and Slow-mo in the dock, and every setting in the Advanced panel. It is grey while unlinked, lit once linked, and at full strength while others are in the room. Its pointer follows the value, and its orange ink jumps when someone else moves that control. The Link chip carries the mark too and jumps with any remote move. Fire and the Splatterhaus-mode view (look across, look up, zoom) are offered but have no control of their own on the page, so they carry no tag. The mark uses the brand's colours for a dark ground (teal `#2FB3B0`, flame `#FF7A45`). Moving any of these controls by hand recentres a running remote modulation on the new value.
+
+The file is [`invisible-hands.js`](https://github.com/samuelling/InvisibleHands) from commit `b1e037c`, copied unchanged into the page so the page stays one file. It talks to the deployed relay (`wss://invisible-hands.samuelling.workers.dev`) unless `?relay=` says otherwise.
 
 Every value travels as 0 to 1. A choice among several things is cut into equal bands. A trigger fires when its value rises through a half. A toggle is on above a half.
 
