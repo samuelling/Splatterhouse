@@ -29,6 +29,7 @@ Open `index.html`, or serve the repo with GitHub Pages. It needs WebGL2 and has 
 | **Slider** | How many birds. The range depends on the species: 150 to 2,400 starlings, 7 to 120 geese. |
 | **Barn lights** (`L`) | Strings of coloured lights on the barn and a wreath on its loft door. They come on by themselves in December; `L`, or the tick box in the Advanced panel, turns them on or off at any time, and adding `?xmas` to the address starts with them on. |
 | **Advanced** (`G`) | The button under the title opens a panel that changes how the Gaussian splats themselves are drawn; see below. |
+| **Link** | Joins an [Invisible Hands](https://github.com/samuelling/InvisibleHands) room, so another app, such as MEGA·CV, can move Splatterhaus from anywhere and read back what the flock is doing. A page opened with `?room=<code>` joins by itself. See below. |
 
 ## Splatterhaus mode
 
@@ -95,6 +96,40 @@ Press `B`, or the button under the title. You are on foot in the barn field with
 | Tree proportions (reference only, nothing shipped) | Scanned tree point clouds from [AdTree](https://github.com/tudelft3d/AdTree); branch tables from [ez-tree](https://github.com/dgreenheck/ez-tree) and Blender's Sapling add-on (Weber and Penn, 1995) | Used as measurements to set the generator's numbers. No code, data or models from them are in this repository. |
 
 The files in `assets/` are the ones embedded in `index.html` (as base64, so the page still runs from a single file). The sounds were converted from Ogg to MP3 so that Safari can decode them.
+
+## Invisible Hands
+
+**Link** opens the Invisible Hands panel: start a room, type a code, or copy an invite link. Anyone in the same room, from any app that speaks the protocol, can then move Splatterhaus, and gets its outputs back. While linked, the button reads *Linked · n*, with n the number of others in the room. The panel's *Let others move my controls* switch stops remote control at once. Local hands win: whatever you move here becomes the centre that remote modulation swings around.
+
+The file is [`invisible-hands.js`](https://github.com/samuelling/InvisibleHands) from commit `d98f174`, copied unchanged into the page so the page stays one file. It talks to the deployed relay (`wss://invisible-hands.samuelling.workers.dev`) unless `?relay=` says otherwise.
+
+Every value travels as 0 to 1. A choice among several things is cut into equal bands. A trigger fires when its value rises through a half. A toggle is on above a half.
+
+| Control | What 0 to 1 does |
+|---|---|
+| Species | Starlings, dunlin, jackdaws, pigeons, geese, ducks, storks, pteranodon, in eight bands |
+| Number of birds | The species' own range. Applied at most five times a second, since each change adds or removes birds |
+| View | Meadow, shore, orbit, ride, fly, Splatterhaus mode, in six bands |
+| Falcon, Split the flock | Triggers (the falcon only hunts the flocking species) |
+| Slow-mo | Toggle |
+| Fire | Trigger; fires the shotgun in Splatterhaus mode |
+| Look across, Look up, Zoom | The Splatterhaus-mode view: a full turn, the pitch range, and the zoom range |
+| Splat size, opacity, edge, pixel filter, density | The Advanced panel's ranges |
+| Splat colouring | As painted, one colour per splat, by distance, in three bands |
+| Splat outlines, Depth sort, Barn lights, Modulate the splats | Toggles |
+
+| Output | What it reports |
+|---|---|
+| Flock height | Mean height of the birds, 0 to 120 m |
+| Flock spread | Root-mean-square distance from the flock's centre, 0 to 150 m |
+| Flock speed | Mean speed as a share of the species' top speed |
+| Share of birds flapping | 1 when every wing is beating; dips when ducks set their wings or storks soar |
+| Number of flocks | 1 for eight or more |
+| Falcon hunting | 1 while a falcon is in the air |
+| Shot fired, Bird hit, Dog barks | 160 ms gates |
+| Looking across, Looking up | The Splatterhaus-mode view direction |
+
+The outputs are worked out at most 25 times a second and published at the library's 15 a second. That is too slow to carry a wingbeat, which is why the flapping output is a share and not a phase. Tested against a local relay and the deployed one from a stand-in source: sets, modulation and its release, ramps, triggers, the outputs, and the off switch.
 
 ## December
 

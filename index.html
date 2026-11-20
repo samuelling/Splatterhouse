@@ -69,7 +69,7 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #hsub button::after{content:"";position:absolute;top:0;left:var(--dx,30%);width:3px;height:0;border-radius:0 0 2px 2px;background:#8f0f0b;pointer-events:none;animation:seep 6.5s ease-in infinite;animation-delay:var(--dl,0s)}
 #hsub button:nth-child(1){--dx:24%;--dl:-1.2s;--sl:3%;--sr:22%}#hsub button:nth-child(2){--dx:58%;--dl:-4.4s;--sl:18%;--sr:9%}#hsub button:nth-child(3){--dx:36%;--dl:-2.7s;--sl:26%;--sr:38%}#hsub button:nth-child(4){--dx:62%;--dl:-5.6s;--sl:30%;--sr:14%}#hsub button:nth-child(5){--dx:44%;--dl:-3.3s;--sl:12%;--sr:34%}
 @keyframes seep{0%,30%{height:0}70%{height:12px}82%{height:13px}100%{height:0}}
-#bClean,#bFull,#bFinger,#bHead,#bHold,#bPhone,#bHelp{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
+#bClean,#bFull,#bLink,#bFinger,#bHead,#bHold,#bPhone,#bHelp{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
 #bFinger[hidden],#bHead[hidden],#bHold[hidden],#bPhone[hidden],#bHelp[hidden]{display:none}
 #bFinger[aria-pressed="true"],#bHead[aria-pressed="true"],#bPhone[aria-pressed="true"],#bHold[aria-pressed="true"],#bFull[aria-pressed="true"],#bHelp[aria-expanded="true"]{background:var(--accent);color:#2b1d0c;border-color:transparent}
 #bAdv{height:26px;padding:0 10px;font-size:13px;letter-spacing:.1em;border-radius:8px;color:var(--ink-dim);background:rgba(30,23,36,.35)}
@@ -77,6 +77,16 @@ input[type=range]{flex:1;min-width:96px;accent-color:var(--accent);height:24px}
 #adv{position:fixed;left:14px;top:max(128px,var(--cb,0px));width:232px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - max(140px,calc(var(--cb,0px) + 12px)));overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
   background:rgba(30,23,36,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:11px/1.3 var(--mono);color:var(--ink);display:grid;gap:7px}
 #adv[hidden]{display:none}
+#link{position:fixed;left:14px;top:max(128px,var(--cb,0px));width:300px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - max(140px,calc(var(--cb,0px) + 12px)));overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
+  background:rgba(30,23,36,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:12px/1.4 var(--mono);color:var(--ink);z-index:5}
+#link[hidden]{display:none}
+#link h4{margin:0 0 6px;display:flex;align-items:center;gap:8px;font:600 15px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+#link h4 small{font:11px var(--mono);letter-spacing:0;text-transform:none;color:var(--ink-dim)}
+#link h4 button{margin-left:auto;width:28px;height:28px;padding:0;border-radius:8px}
+#link>p,#link details p{margin:0 0 10px;color:var(--ink-dim)}
+#link details{margin-top:10px;color:var(--ink-dim)}#link summary{cursor:pointer;color:var(--ink)}#link details p{margin:6px 0 0;font-size:11px}
+#link .ih button{height:auto}
+#bLink.on{color:#0c1712;background:#5fe0c0;border-color:#5fe0c0}
 #tut{position:fixed;right:14px;top:max(150px,calc(var(--cb,0px) + 8px));width:272px;max-width:calc(100% - 28px);box-sizing:border-box;margin:0;max-height:calc(100% - 164px);overflow:auto;padding:10px 12px 12px;border-radius:12px;border:1px solid var(--edge);
   background:rgba(30,23,36,.66);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font:12px/1.4 var(--mono);color:var(--ink)}
 #tut[hidden]{display:none}
@@ -202,13 +212,19 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
 <canvas id="c" tabindex="0"></canvas>
 <div id="tag"><b>Splatterhaus</b><i id="tagline">Murmuration</i><span class="stat" id="st1">building splats</span><span class="stat" id="st2"></span></div>
 <div id="hud" hidden></div>
-<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button><div id="hg"><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"/><path d="M8 .8v4M8 11.2v4M.8 8h4M11.2 8h4"/></svg>Splatterhaus mode<i></i><i></i><i></i></button><div id="hsub" role="group" aria-label="Webcam controls for Splatterhaus mode" hidden><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bPhone" type="button" aria-pressed="false" aria-label="Phone look: the screen is a window, so point the phone where you want to look" hidden>Phone look</button><button id="bHelp" type="button" aria-expanded="false" aria-controls="tut" aria-label="How to use the finger gun, the shotgun hold and head look" hidden>How to</button></div></div></div>
+<div id="chips"><button id="bAdv" type="button" aria-expanded="false" aria-controls="adv">Advanced</button><button id="bLink" type="button" aria-expanded="false" aria-controls="link">Link</button><button id="bClean" type="button" aria-label="Hide the menus and text">Hide menus</button><button id="bFull" type="button" aria-pressed="false" aria-label="Full screen (F)">Full screen</button><div id="hg"><button id="bHunt" type="button" aria-pressed="false" aria-label="Splatterhaus mode: hunt the birds with a shotgun"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"/><path d="M8 .8v4M8 11.2v4M.8 8h4M11.2 8h4"/></svg>Splatterhaus mode<i></i><i></i><i></i></button><div id="hsub" role="group" aria-label="Webcam controls for Splatterhaus mode" hidden><button id="bFinger" type="button" aria-pressed="false" hidden>Finger gun</button><button id="bHold" type="button" aria-pressed="false" aria-label="Shotgun hold: aim by holding an imaginary shotgun in both hands in front of the webcam" hidden>Shotgun hold</button><button id="bHead" type="button" aria-pressed="false" aria-label="Head look: turn your head in front of the webcam to look around" hidden>Head look</button><button id="bPhone" type="button" aria-pressed="false" aria-label="Phone look: the screen is a window, so point the phone where you want to look" hidden>Phone look</button><button id="bHelp" type="button" aria-expanded="false" aria-controls="tut" aria-label="How to use the finger gun, the shotgun hold and head look" hidden>How to</button></div></div></div>
 <button id="bShow" type="button">Show menus</button>
 <aside id="tut" hidden aria-label="How to use the camera controls">
   <h4>How to<button type="button" id="tutX" aria-label="Close">×</button></h4>
   <div class="tabs"><button type="button" data-t="finger" aria-pressed="true">Finger gun</button><button type="button" data-t="hold" aria-pressed="false">Shotgun hold</button><button type="button" data-t="head" aria-pressed="false">Head look</button><button type="button" data-t="phone" aria-pressed="false" hidden>Phone look</button></div>
   <div class="pic" aria-hidden="true"></div><ol></ol><p></p>
 </aside>
+<section id="link" hidden aria-label="Link: Invisible Hands">
+  <h4>Link <small>Invisible Hands</small><button type="button" id="linkX" aria-label="Close">×</button></h4>
+  <p>Join a room, and anyone in it can move Splatterhaus from their own app: the birds, the view, the splats, and in Splatterhaus mode the gun. What the flock is doing comes back to them as outputs.</p>
+  <div id="linkPanel"></div>
+  <details><summary>What is offered</summary><p id="linkWhat"></p></details>
+</section>
 <form id="adv" hidden aria-label="Advanced: Gaussian splat settings">
   <h4>Advanced <small>Gaussian splats</small><button type="button" id="advX" aria-label="Close">×</button></h4>
   <label>Size <input type="range" data-k="size" min="0.1" max="2.5" step="0.05" value="1"><output></output></label>
@@ -252,6 +268,289 @@ body.clean:not(.peek):not(.hunt) canvas{cursor:none}
     </select>
     <input id="count" type="range" aria-label="Number of birds" min="150" max="2400" step="50" value="1000"><output id="countOut" for="count">1000</output></div>
 </div>
+<script>
+/* invisible-hands.js, copied unchanged from github.com/samuelling/InvisibleHands at commit d98f174 (protocol 1). */
+/* Invisible Hands — remote control between apps, over the internet. Protocol 1.
+   One file, no dependencies. Add it to a page, describe your controls, and anyone in the same room can move them:
+
+     <script src="invisible-hands.js"><\/script>
+     const hands = InvisibleHands.create({
+       app: 'my-app', name: 'My App',
+       params: [{ id: 'speed', label: 'Speed', get: () => speed, set: v => { speed = v; } }],   // values are always 0..1
+       outs:   [{ id: 'beat',  label: 'Beat',  get: () => beat }]                                // optional: what you publish
+     });
+     button.onclick = () => dialog.append(hands.panel());   // optional built-in panel: start, join, invite, switch off
+
+   A page opened with ?room=<code> joins that room by itself. See SPEC.md for the messages. */
+(function (root) {
+  'use strict';
+  var VERSION = 1;
+  // The relay every app uses unless told otherwise. Override with create({relay}), window.INVISIBLE_HANDS_RELAY,
+  // or ?relay=wss://... in the address.
+  var DEFAULT_RELAY = 'wss://invisible-hands.samuelling.workers.dev';
+  var WORDS = ('moss kiln opal fern dusk reed salt wren pine silk rust plum mint coal lark dune ' +
+    'echo flax gale haze iris jade kelp loam moth nest onyx peat quay rook sage tide ' +
+    'vole wasp yarn zinc bark clay dove elm fawn glow hush ink jute knot lime mist ' +
+    'nook oat pond rye soot teal umber vine wick yew birch crow drift ember frost grain').split(' ');
+  var ROOM = /^[a-z0-9][a-z0-9-]{3,47}$/;
+
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  function rand(n) {
+    var a = new Uint32Array(1);
+    if (root.crypto && root.crypto.getRandomValues) { root.crypto.getRandomValues(a); return a[0] % n; }
+    return Math.floor(Math.random() * n);
+  }
+  // four words and two digits: easy to read out, and too many to stumble on (about 1.5 billion)
+  function makeCode() { var w = []; for (var i = 0; i < 4; i++) w.push(WORDS[rand(WORDS.length)]); return w.join('-') + '-' + (10 + rand(90)); }
+  function cleanCode(c) { c = String(c || '').trim().toLowerCase().replace(/\s+/g, '-'); return ROOM.test(c) ? c : null; }
+  function query(name) {
+    try { return new URLSearchParams(root.location.search).get(name); } catch (err) { return null; }
+  }
+  function okRelay(u) { return typeof u === 'string' && /^(wss:\/\/[^\s]+|ws:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/[^\s]*)?)$/.test(u) ? u.replace(/\/+$/, '') : ''; }
+
+  function create(opts) {
+    opts = opts || {};
+    var app = String(opts.app || 'app'), name = String(opts.name || app);
+    var params = (opts.params || []).slice(), outs = (opts.outs || []).slice();
+    var relayFromQuery = okRelay(query('relay'));
+    var relay = okRelay(opts.relay) || relayFromQuery || okRelay(root.INVISIBLE_HANDS_RELAY) || okRelay(DEFAULT_RELAY);
+    var stateHz = opts.stateHz || 15;
+    var ws = null, room = null, id = null, status = 'off', wanted = false, tries = 0, retryTimer = 0, pingTimer = 0, stateTimer = 0;
+    var peers = new Map(), listeners = {}, allow = opts.allow !== false, offset = 0, rtt = null;
+    var ramps = new Map(), base = new Map(), sent = {}, sentAll = 0, pings = {}, pingN = 0, lastError = '';
+
+    function emit(ev, a, b) { (listeners[ev] || []).slice().forEach(function (fn) { try { fn(a, b); } catch (err) { if (root.console) root.console.error(err); } }); }
+    function on(ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); return function () { listeners[ev] = (listeners[ev] || []).filter(function (f) { return f !== fn; }); }; }
+    function setStatus(s) { if (s !== status) { status = s; emit('status', s); } }
+    function param(pid) { for (var i = 0; i < params.length; i++) if (params[i].id === pid) return params[i]; return null; }
+    function read(p) { try { var v = +p.get(); return isFinite(v) ? clamp(v, 0, 1) : 0; } catch (err) { return 0; } }
+    function send(obj) { if (ws && ws.readyState === 1) { try { ws.send(JSON.stringify(obj)); return true; } catch (err) {} } return false; }
+    function target(to) { return to && typeof to === 'object' ? to.id : to; }
+
+    function describe(to) {
+      var m = { t: 'describe',
+        params: params.map(function (p) { return { id: p.id, label: p.label || p.id, kind: p.kind || 'cont', value: read(p) }; }),
+        outs: outs.map(function (o) { return { id: o.id, label: o.label || o.id }; }) };
+      if (to) m.to = to;
+      send(m);
+    }
+
+    // ---- what arrives ----
+    function stopRamp(pid) { var r = ramps.get(pid); if (r) { clearTimeout(r.timer); ramps.delete(pid); } }
+    function applySet(p, v) { stopRamp(p.id); base.set(p.id, v); try { p.set(v); } catch (err) {} }
+    function applyMod(p, v) {
+      if (typeof p.mod === 'function') { try { p.mod(v); } catch (err) {} return; }
+      // no mod of its own: swing around wherever the control stood when the modulation began
+      if (!base.has(p.id)) base.set(p.id, read(p));
+      try { p.set(clamp(base.get(p.id) + v, 0, 1)); } catch (err) {}
+    }
+    // a ramp is played here, against this machine's clock, so network jitter cannot roughen it
+    function applyRamp(p, pts, at) {
+      stopRamp(p.id);
+      var t0 = at ? at - offset : Date.now(), from = read(p), total = 0, i;
+      for (i = 0; i < pts.length; i++) total += pts[i][0];
+      var r = { timer: 0 };
+      ramps.set(p.id, r);
+      (function tick() {
+        var t = Date.now() - t0, v = from, acc = 0, prev = from, done = t >= total;
+        if (done) v = pts[pts.length - 1][1];
+        else if (t > 0) for (i = 0; i < pts.length; i++) {
+          var d = pts[i][0];
+          if (t <= acc + d) { v = d > 0 ? prev + (pts[i][1] - prev) * (t - acc) / d : pts[i][1]; break; }
+          acc += d; prev = pts[i][1];
+        }
+        try { p.set(clamp(v, 0, 1)); } catch (err) {}
+        if (done) { ramps.delete(p.id); base.set(p.id, v); } else r.timer = setTimeout(tick, 16);
+      })();
+    }
+
+    function onMessage(ev) {
+      var m; try { m = JSON.parse(ev.data); } catch (err) { return; }
+      if (!m || typeof m !== 'object') return;
+      var peer = m.from ? peers.get(m.from) : null, p;
+      switch (m.t) {
+        case 'welcome':
+          id = m.id; offset = (+m.now || Date.now()) - Date.now(); tries = 0; lastError = '';
+          peers.clear();
+          (m.peers || []).forEach(function (q) { peers.set(q.id, { id: q.id, app: q.app, name: q.name, params: [], outs: [], state: {} }); });
+          setStatus('on'); describe(); ping(); emit('peers', api.peers);
+          break;
+        case 'join':
+          if (m.peer && m.peer.id) { peers.set(m.peer.id, { id: m.peer.id, app: m.peer.app, name: m.peer.name, params: [], outs: [], state: {} }); describe(m.peer.id); sentAll = 0; emit('peers', api.peers); }
+          break;
+        case 'leave':
+          if (peers.delete(m.id)) emit('peers', api.peers);
+          break;
+        case 'describe':
+          if (peer) { peer.params = Array.isArray(m.params) ? m.params : []; peer.outs = Array.isArray(m.outs) ? m.outs : []; emit('peers', api.peers); }
+          break;
+        case 'state':
+          if (peer && m.outs) { for (var k in m.outs) peer.state[k] = m.outs[k]; emit('state', peer); }
+          break;
+        case 'set': case 'mod': case 'ramp':
+          p = param(m.p);
+          if (!p || !allow) break;
+          if (m.t === 'set' && typeof m.v === 'number') applySet(p, clamp(m.v, 0, 1));
+          else if (m.t === 'mod' && typeof m.v === 'number') applyMod(p, clamp(m.v, -1, 1));
+          else if (m.t === 'ramp' && Array.isArray(m.pts) && m.pts.length) applyRamp(p, m.pts, m.at);
+          emit('in', { from: m.from, p: m.p, t: m.t });
+          break;
+        case 'pong':
+          if (pings[m.n]) {
+            var now = Date.now(), trip = now - pings[m.n]; delete pings[m.n];
+            if (rtt === null || trip <= rtt * 1.5) { rtt = rtt === null ? trip : Math.min(rtt, trip) * 0.7 + trip * 0.3; offset = m.now - (now - trip / 2); }
+          }
+          break;
+        case 'error':
+          emit('error', m.code);
+          break;
+      }
+    }
+    function ping() { var n = ++pingN; pings[n] = Date.now(); send({ t: 'ping', n: n }); }
+
+    // ---- what goes out by itself: this app's own outputs, a few times a second, only when they change ----
+    function publish() {
+      if (status !== 'on' || !peers.size || !outs.length) return;
+      var now = Date.now(), all = now - sentAll > 2000, o = {}, n = 0;
+      outs.forEach(function (q) { var v = read(q); if (all || sent[q.id] === undefined || Math.abs(v - sent[q.id]) > 0.002) { o[q.id] = Math.round(v * 10000) / 10000; sent[q.id] = v; n++; } });
+      if (all) sentAll = now;
+      if (n) send({ t: 'state', outs: o });
+    }
+
+    // ---- the connection ----
+    function open() {
+      clearTimeout(retryTimer);
+      if (!relay) { lastError = 'No relay address is set.'; setStatus('error'); return; }
+      setStatus(tries ? 'retrying' : 'connecting');
+      var sock;
+      try { sock = new WebSocket(relay + '/room/' + room + '?app=' + encodeURIComponent(app) + '&name=' + encodeURIComponent(name)); }
+      catch (err) { lastError = 'The relay address is not usable.'; setStatus('error'); return; }
+      ws = sock;
+      sock.onmessage = onMessage;
+      sock.onclose = function () {
+        if (ws !== sock) return;
+        ws = null; id = null;
+        if (peers.size) { peers.clear(); emit('peers', api.peers); }
+        if (!wanted) { setStatus('off'); return; }
+        tries++; lastError = 'Cannot reach the relay. Trying again.';
+        setStatus('retrying');
+        retryTimer = setTimeout(open, Math.min(15000, 500 * Math.pow(2, Math.min(tries, 5))));
+      };
+      sock.onerror = function () {};
+    }
+    function join(code) {
+      var c = cleanCode(code);
+      if (!c) { lastError = 'Room codes are 4 to 48 letters, digits and hyphens.'; emit('status', status); return false; }
+      leave(); room = c; wanted = true; tries = 0; lastError = '';
+      open();
+      clearInterval(pingTimer); pingTimer = setInterval(function () { if (status === 'on') ping(); }, 10000);
+      clearInterval(stateTimer); stateTimer = setInterval(publish, Math.round(1000 / stateHz));
+      return true;
+    }
+    function leave() {
+      wanted = false; clearTimeout(retryTimer); clearInterval(pingTimer); clearInterval(stateTimer);
+      ramps.forEach(function (r) { clearTimeout(r.timer); }); ramps.clear(); base.clear(); sent = {};
+      var s = ws; ws = null; id = null; room = null;
+      if (s) { try { s.close(1000, 'bye'); } catch (err) {} }
+      if (peers.size) { peers.clear(); emit('peers', api.peers); }
+      setStatus('off');
+    }
+    function inviteUrl() {
+      if (!room) return '';
+      try {
+        var u = new URL(root.location.href);
+        u.searchParams.set('room', room);
+        if (relayFromQuery) u.searchParams.set('relay', relayFromQuery);
+        return u.toString();
+      } catch (err) { return ''; }
+    }
+
+    // ---- the optional panel: plain elements that take the host page's font and colour ----
+    function panel() {
+      var doc = root.document;
+      if (!doc.getElementById('ih-style')) {
+        var st = doc.createElement('style'); st.id = 'ih-style';
+        st.textContent = '.ih{font:inherit;color:inherit;display:flex;flex-direction:column;gap:12px;max-width:440px}' +
+          '.ih-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
+          '.ih button,.ih input[type=text]{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-color:color-mix(in srgb,currentColor 40%,transparent);border-radius:999px;padding:7px 14px;min-height:38px;cursor:pointer}' +
+          '.ih input[type=text]{flex:1;min-width:130px;border-radius:10px;cursor:text}' +
+          '.ih button:disabled{opacity:.45;cursor:default}' +
+          '.ih-dot{flex:none;width:10px;height:10px;border-radius:50%;background:currentColor;opacity:.3}.ih-dot.on{opacity:1;background:#5fe0c0}.ih-dot.wait{opacity:.8;background:#e8b04a}' +
+          '.ih-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.05em;letter-spacing:.03em;user-select:all;-webkit-user-select:all;word-break:break-all}' +
+          '.ih-peers{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}.ih-peers li{padding:0;margin:0}.ih-peers li::before{content:none}' +
+          '.ih-note{margin:0;opacity:.72;font-size:.9em;line-height:1.4}.ih label{display:flex;gap:8px;align-items:center;cursor:pointer}';
+        doc.head.appendChild(st);
+      }
+      var el = function (tag, cls, txt) { var e = doc.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
+      var box = el('div', 'ih'), copied = 0;
+      function draw() {
+        while (box.firstChild) box.removeChild(box.firstChild);
+        var row = el('div', 'ih-row'), dot = el('span', 'ih-dot' + (status === 'on' ? ' on' : status === 'connecting' || status === 'retrying' ? ' wait' : ''));
+        var words = status === 'on' ? 'Linked' : status === 'connecting' ? 'Connecting…' : status === 'retrying' ? 'Reconnecting…' : status === 'error' ? 'Not linked' : 'Not linked';
+        row.appendChild(dot); row.appendChild(el('span', '', words)); box.appendChild(row);
+        if (lastError && status !== 'on') box.appendChild(el('p', 'ih-note', lastError));
+        if (room) {
+          var r2 = el('div', 'ih-row'); r2.appendChild(el('span', '', 'Room')); r2.appendChild(el('span', 'ih-code', room)); box.appendChild(r2);
+          var r3 = el('div', 'ih-row'), copy = el('button', '', Date.now() - copied < 1500 ? 'Copied' : 'Copy invite link'), bye = el('button', '', 'Leave');
+          copy.type = bye.type = 'button';
+          copy.onclick = function () {
+            var u = inviteUrl(), done = function () { copied = Date.now(); draw(); setTimeout(draw, 1600); };
+            if (root.navigator && root.navigator.clipboard && root.navigator.clipboard.writeText) root.navigator.clipboard.writeText(u).then(done, function () { root.prompt && root.prompt('Copy this link', u); });
+            else if (root.prompt) root.prompt('Copy this link', u);
+          };
+          bye.onclick = function () { leave(); };
+          r3.appendChild(copy); r3.appendChild(bye); box.appendChild(r3);
+          var list = el('ul', 'ih-peers');
+          if (!peers.size) list.appendChild(el('li', 'ih-note', status === 'on' ? 'Nobody else is here yet. Send them the invite link.' : ''));
+          peers.forEach(function (p) { list.appendChild(el('li', '', p.name + ' · ' + p.params.length + (p.params.length === 1 ? ' control' : ' controls'))); });
+          box.appendChild(list);
+        } else {
+          var r4 = el('div', 'ih-row'), start = el('button', '', 'Start a room'); start.type = 'button';
+          start.onclick = function () { join(makeCode()); };
+          r4.appendChild(start); box.appendChild(r4);
+          var r5 = el('div', 'ih-row'), inp = el('input'), go = el('button', '', 'Join'); go.type = 'button';
+          inp.type = 'text'; inp.placeholder = 'room code'; inp.autocapitalize = 'none'; inp.autocomplete = 'off'; inp.spellcheck = false; inp.setAttribute('aria-label', 'Room code');
+          var doJoin = function () { if (!join(inp.value)) draw(); };
+          go.onclick = doJoin; inp.onkeydown = function (e) { if (e.key === 'Enter') doJoin(); };
+          r5.appendChild(inp); r5.appendChild(go); box.appendChild(r5);
+        }
+        if (params.length) {   // an app with nothing to move has nothing to switch off
+          var lab = el('label'), cb = el('input'); cb.type = 'checkbox'; cb.checked = allow;
+          cb.onchange = function () { api.allow = cb.checked; };
+          lab.appendChild(cb); lab.appendChild(el('span', '', 'Let others move my controls')); box.appendChild(lab);
+          box.appendChild(el('p', 'ih-note', 'Only numbers travel between apps. Untick the box, or leave the room, to take your controls back.'));
+        } else box.appendChild(el('p', 'ih-note', 'Only numbers travel between apps.'));
+      }
+      on('status', draw); on('peers', draw);
+      draw();
+      return box;
+    }
+
+    var api = {
+      version: VERSION,
+      get room() { return room; }, get id() { return id; }, get status() { return status; }, get error() { return lastError; },
+      get relay() { return relay; }, set relay(u) { relay = okRelay(u); },
+      get peers() { return Array.from(peers.values()); },
+      get allow() { return allow; }, set allow(v) { allow = !!v; if (!allow) { ramps.forEach(function (r) { clearTimeout(r.timer); }); ramps.clear(); } emit('allow', allow); },
+      get latency() { return rtt === null ? null : Math.round(rtt / 2); },
+      on: on, join: join, leave: leave, makeCode: makeCode, inviteUrl: inviteUrl, panel: panel,
+      newRoom: function () { var c = makeCode(); join(c); return c; },
+      describe: function () { describe(); },                        // call again if your controls change
+      serverNow: function () { return Date.now() + offset; },         // the relay's clock, for timed ramps
+      // sending: `to` is a peer (or its id), 'app:<slug>' for every copy of an app, or nothing for everyone
+      set: function (to, p, v) { return send({ t: 'set', to: target(to) || undefined, p: p, v: clamp(+v, 0, 1) }); },
+      mod: function (to, p, v) { return send({ t: 'mod', to: target(to) || undefined, p: p, v: clamp(+v, -1, 1) }); },
+      ramp: function (to, p, pts, at) { var m = { t: 'ramp', to: target(to) || undefined, p: p, pts: pts }; if (at) m.at = at; return send(m); }
+    };
+    var auto = opts.autoJoin === false ? null : cleanCode(query('room'));
+    if (auto) join(auto);
+    return api;
+  }
+
+  root.InvisibleHands = { create: create, makeCode: makeCode, version: VERSION };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
 <div id="err" hidden>This demo needs WebGL2, which this browser did not provide. Try a current Safari, Chrome or Firefox.</div>
 <script>
 (()=>{
@@ -2552,7 +2851,8 @@ function advMod(now){
 }
 adv.addEventListener('change',e=>{if(e.target.blur)e.target.blur();});
 const bAdv=document.getElementById('bAdv');
-function toggleAdv(){adv.hidden=!adv.hidden;bAdv.setAttribute('aria-expanded',String(!adv.hidden));advSync();}
+function toggleAdv(){adv.hidden=!adv.hidden;bAdv.setAttribute('aria-expanded',String(!adv.hidden));advSync();
+  const lk=document.getElementById('link');if(!adv.hidden&&!lk.hidden){lk.hidden=true;document.getElementById('bLink').setAttribute('aria-expanded','false');}}      // the two panels share a place
 bAdv.onclick=toggleAdv;
 document.getElementById('advX').onclick=toggleAdv;
 document.getElementById('advR').onclick=()=>{modSave=null;Object.assign(ADV,ADV0);advSync();};
@@ -2918,6 +3218,7 @@ const Score=(()=>{
     return{b:buf,off:0};
   }
   function sfx(name,a,b,c){
+    if(name==='bark')document.dispatchEvent(new Event('splat:bark'));
     sfxInit();const t=ac.currentTime+.004;
     if(name==='shot'){
       const e=smp.shot[(Math.random()*smp.shot.length)|0],rate=.96+.08*Math.random(),had=play(e,t,1.15,rate);
@@ -3909,7 +4210,63 @@ for(let i=0;i<40;i++)updateCamera(.2);
 showHint();
 {const ch=document.getElementById('chips'),put=()=>{const b=ch.getBoundingClientRect();document.documentElement.style.setProperty('--cb',Math.round(b.bottom+8)+'px');};
   try{new ResizeObserver(put).observe(ch);}catch(e){}addEventListener('resize',put);put();}      // panels that open under the button row keep clear of it as it grows
-window.__score=Score;window.__tut=Tut;window.__phone=Phone;window.__sim={dyn:()=>({DY,nd,view,focal}),groundH,nStatic,CAP,S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
+/* ---- Invisible Hands ----
+   Splatterhaus offers its controls to a room on the Invisible Hands relay (see github.com/samuelling/InvisibleHands), so another app, such
+   as Matt's MEGA·CV, can move them from anywhere, and it publishes what the flock is doing as outputs that app can patch elsewhere. Every
+   value travels as 0 to 1. A choice among several things (species, view, colouring) is cut into equal bands; a trigger fires when its value
+   rises through a half. The bird count is applied at most five times a second, because each change adds or removes birds. Local hands win:
+   whatever you move here becomes the centre that remote modulation swings around, and the panel's switch stops remote control. */
+const IH=(()=>{
+  if(!window.InvisibleHands)return null;
+  const SPK=[...selSp.options].map(o=>o.value),VIEWS=['meadow','shore','orbit','ride','fly','hunt'];
+  const band=(v,n)=>Math.min(n-1,Math.max(0,Math.floor(v*n))),mid=(i,n)=>(Math.max(0,i)+.5)/n;
+  const trig=fn=>{let last=0;return v=>{if(v>.5&&last<=.5)fn();last=v;};};
+  let cntT=0,cntN=0,advT=0;
+  const advLater=()=>{if(!advT)advT=setTimeout(()=>{advT=0;advSync();},120);};
+  const advP=(id,label,lo,hi)=>({id,label,get:()=>(ADV[id]-lo)/(hi-lo),set:v=>{ADV[id]=lo+clamp(v,0,1)*(hi-lo);advLater();}});
+  const advB=(id,label,fn)=>({id,label,kind:'toggle',get:()=>ADV[id]?1:0,set:v=>{const on=v>.5;if(on!==!!ADV[id]){ADV[id]=on;if(fn)fn(on);advLater();}}});
+  const params=[
+    {id:'species',label:'Species',get:()=>mid(SPK.indexOf(selSp.value),SPK.length),set:v=>{const k=SPK[band(v,SPK.length)];if(k!==selSp.value){selSp.value=k;setSpecies(k);}}},
+    {id:'birds',label:'Number of birds',get:()=>(+cnt.value-+cnt.min)/(+cnt.max-+cnt.min),
+      set:v=>{const st=+cnt.step||1;cntN=Math.round((+cnt.min+clamp(v,0,1)*(+cnt.max-+cnt.min))/st)*st;if(!cntT)cntT=setTimeout(()=>{cntT=0;if(+cnt.value!==cntN){cnt.value=cntN;cnt.oninput();}},200);}},
+    {id:'view',label:'View',get:()=>mid(VIEWS.indexOf(cam.mode),VIEWS.length),set:v=>{const m=VIEWS[band(v,VIEWS.length)];if(m!==cam.mode){if(m==='hunt')toggleHunt();else setMode(m);}}},
+    {id:'falcon',label:'Falcon',kind:'trig',get:()=>0,set:trig(launchFalcon)},
+    {id:'split',label:'Split the flock',kind:'trig',get:()=>0,set:trig(forceSplit)},
+    {id:'slowmo',label:'Slow-mo',kind:'toggle',get:()=>S.slow?1:0,set:v=>{if((v>.5)!==!!S.slow)toggleSlow();}},
+    {id:'fire',label:'Fire (Splatterhaus mode)',kind:'trig',get:()=>0,set:trig(()=>{if(cam.mode==='hunt')Hunt.fire();})},
+    {id:'lookAcross',label:'Look across (Splatterhaus mode)',get:()=>((cam.hyaw/6.2832)%1+1)%1,set:v=>{cam.hyaw=clamp(v,0,1)*6.2832;}},
+    {id:'lookUp',label:'Look up (Splatterhaus mode)',get:()=>(cam.hpitch+.6)/2.05,set:v=>{cam.hpitch=-.6+clamp(v,0,1)*2.05;}},
+    {id:'zoom',label:'Zoom (Splatterhaus mode)',get:()=>(1.2-cam.hzoom)/.98,set:v=>{cam.hzoom=1.2-clamp(v,0,1)*.98;}},
+    advP('size','Splat size',.1,2.5),advP('op','Splat opacity',.1,1.5),advP('sharp','Splat edge',.4,6),advP('low','Pixel filter',0,4),advP('dens','Splat density',.02,1),
+    {id:'colour',label:'Splat colouring',get:()=>mid(+ADV.mode,3),set:v=>{const m=band(v,3);if(m!==+ADV.mode){ADV.mode=m;advLater();}}},
+    advB('ring','Splat outlines'),advB('sort','Depth sort'),advB('xmas','Barn lights'),advB('mod','Modulate the splats',advModSet)];
+  // what the flock is doing, worked out at most 25 times a second however often it is asked
+  let O={},Ot=0,shots=-1,bag=-1,tShot=-9e9,tHit=-9e9,tBark=-9e9;
+  document.addEventListener('splat:bark',()=>{tBark=performance.now();});
+  function outs(){const t=performance.now();if(t-Ot<40)return O;Ot=t;
+    const n=S.n||0;let x=0,y=0,z=0,v=0,f=0;
+    for(let i=0;i<n;i++){x+=P[i*3];y+=P[i*3+1];z+=P[i*3+2];v+=V[i];if(FLAP[i]>.5)f++;}
+    if(n){x/=n;y/=n;z/=n;}let r=0;for(let i=0;i<n;i++)r+=(P[i*3]-x)**2+(P[i*3+1]-y)**2+(P[i*3+2]-z)**2;
+    const st=Hunt.st;if(shots>=0&&st.shots!==shots)tShot=t;if(bag>=0&&st.bag!==bag)tHit=t;shots=st.shots;bag=st.bag;
+    O={height:clamp(y/120,0,1),spread:clamp(Math.sqrt(n?r/n:0)/150,0,1),speed:clamp(n?v/n/VMAX:0,0,1),flapping:n?f/n:0,flocks:clamp(NC/8,0,1),
+      falcon:FALS.length?1:0,shot:t-tShot<160?1:0,hit:t-tHit<160?1:0,bark:t-tBark<160?1:0,
+      lookAcross:((cam.hyaw/6.2832)%1+1)%1,lookUp:clamp((cam.hpitch+.6)/2.05,0,1)};
+    return O;}
+  const OUTS=[['height','Flock height'],['spread','Flock spread'],['speed','Flock speed'],['flapping','Share of birds flapping'],['flocks','Number of flocks'],['falcon','Falcon hunting'],
+    ['shot','Shot fired'],['hit','Bird hit'],['bark','Dog barks'],['lookAcross','Looking across'],['lookUp','Looking up']];
+  const hands=InvisibleHands.create({app:'splatterhaus',name:'Splatterhaus',params,outs:OUTS.map(([id,label])=>({id,label,get:()=>outs()[id]}))});
+  const box=document.getElementById('link'),btn=document.getElementById('bLink');
+  document.getElementById('linkPanel').appendChild(hands.panel());
+  document.getElementById('linkWhat').textContent='Controls: '+params.map(p=>p.label).join(', ')+'. Outputs: '+OUTS.map(o=>o[1]).join(', ')+'.';
+  const show=open=>{box.hidden=!open;btn.setAttribute('aria-expanded',String(open));if(open&&!adv.hidden)toggleAdv();};
+  btn.onclick=e=>{show(box.hidden);e.currentTarget.blur();};
+  document.getElementById('linkX').onclick=()=>show(false);
+  const label=()=>{const on=hands.status==='on';btn.classList.toggle('on',on);btn.textContent=on?'Linked · '+hands.peers.length:hands.status==='off'?'Link':'Linking…';};
+  hands.on('status',label);hands.on('peers',label);label();
+  return{hands,show,outs};
+})();
+if(!IH)document.getElementById('bLink').hidden=true;
+window.__score=Score;window.__tut=Tut;window.__phone=Phone;window.__ih=IH;window.__sim={ADV,dyn:()=>({DY,nd,view,focal}),groundH,nStatic,CAP,S,cam,FALS,setSpecies,SPECIES,TH,setScale:v=>{scale=v;},ESC,TT,LAB,CLn,CLr,pickBird,getP:()=>P,getH:()=>H,getV:()=>V,BND,FLAP,BOF,TIRE,SLOT,SIDE,LEADI,ROOT,MODE,TGT,MATE,RANK,getNC:()=>NC,advance,setMode,launchFalcon,forceSplit,startTurn,updateCamera,render,Finger,Hunt,removeBird,keysDown,
   count:()=>({nStatic,nMeadow,props:nStatic-nProps,nd,drawn,n:S.n,cap:CAP})};
 requestAnimationFrame(t=>{last=t/1000;frame(t);});
 })();
